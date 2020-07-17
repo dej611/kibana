@@ -26,7 +26,8 @@ export default function ({ getService, getPageObjects }) {
   const find = getService('find');
   const comboBox = getService('comboBox');
 
-  describe('chained controls', function () {
+  // eslint-disable-next-line mocha/no-exclusive-tests
+  describe.only('chained controls', function () {
     this.tags('includeFirefox');
 
     before(async () => {
@@ -58,7 +59,7 @@ export default function ({ getService, getPageObjects }) {
       await comboBox.set('listControlSelect1', '14.61.182.136');
 
       await PageObjects.visEditor.inputControlSubmit();
-
+      await PageObjects.common.sleep(500);
       const hasParentControlFilter = await filterBar.hasFilter('geo.src', 'BR');
       expect(hasParentControlFilter).to.equal(true);
 
