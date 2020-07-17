@@ -23,11 +23,11 @@ export default function ({ getService, getPageObjects }) {
   const filterBar = getService('filterBar');
   const PageObjects = getPageObjects(['common', 'visualize', 'visEditor', 'header', 'timePicker']);
   const testSubjects = getService('testSubjects');
+  const retry = getService('retry');
   const find = getService('find');
   const comboBox = getService('comboBox');
 
-  // eslint-disable-next-line mocha/no-exclusive-tests
-  describe.only('chained controls', function () {
+  describe('chained controls', function () {
     this.tags('includeFirefox');
 
     before(async () => {
@@ -59,12 +59,15 @@ export default function ({ getService, getPageObjects }) {
       await comboBox.set('listControlSelect1', '14.61.182.136');
 
       await PageObjects.visEditor.inputControlSubmit();
-      await PageObjects.common.sleep(500);
-      const hasParentControlFilter = await filterBar.hasFilter('geo.src', 'BR');
-      expect(hasParentControlFilter).to.equal(true);
 
-      const hasChildControlFilter = await filterBar.hasFilter('clientip', '14.61.182.136');
-      expect(hasChildControlFilter).to.equal(true);
+      // Try to add a retry here for slow browsers
+      await retry.try(async () => {
+        const hasParentControlFilter = await filterBar.hasFilter('geo.src', 'BR');
+        expect(hasParentControlFilter).to.equal(true);
+
+        const hasChildControlFilter = await filterBar.hasFilter('clientip', '14.61.182.136');
+        expect(hasChildControlFilter).to.equal(true);
+      });
     });
 
     it('should clear child control dropdown when parent control value is removed', async () => {
