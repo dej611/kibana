@@ -23,7 +23,7 @@ export default function ({ getService, getPageObjects }) {
   const filterBar = getService('filterBar');
   const PageObjects = getPageObjects(['common', 'visualize', 'visEditor', 'header', 'timePicker']);
   const testSubjects = getService('testSubjects');
-  const retry = getService('retry');
+  // const retry = getService('retry');
   const find = getService('find');
   const comboBox = getService('comboBox');
 
@@ -56,18 +56,16 @@ export default function ({ getService, getPageObjects }) {
     });
 
     it('should create a seperate filter pill for parent control and child control', async () => {
+      await PageObjects.common.sleep(200); // give time for filter bar to load
       await comboBox.set('listControlSelect1', '14.61.182.136');
 
-      // Try to add a retry here for slow browsers
-      await retry.try(async () => {
-        await PageObjects.visEditor.inputControlSubmit();
+      await PageObjects.visEditor.inputControlSubmit();
 
-        const hasParentControlFilter = await filterBar.hasFilter('geo.src', 'BR');
-        expect(hasParentControlFilter).to.equal(true);
+      const hasParentControlFilter = await filterBar.hasFilter('geo.src', 'BR');
+      expect(hasParentControlFilter).to.equal(true);
 
-        const hasChildControlFilter = await filterBar.hasFilter('clientip', '14.61.182.136');
-        expect(hasChildControlFilter).to.equal(true);
-      });
+      const hasChildControlFilter = await filterBar.hasFilter('clientip', '14.61.182.136');
+      expect(hasChildControlFilter).to.equal(true);
     });
 
     it('should clear child control dropdown when parent control value is removed', async () => {
