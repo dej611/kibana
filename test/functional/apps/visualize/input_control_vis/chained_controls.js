@@ -28,19 +28,15 @@ export default function ({ getService, getPageObjects }) {
 
   describe('chained controls', function () {
     this.tags('includeFirefox');
+    // Firefox can be very slow and sometimes the filter bar and the combo box may take
+    // some time before they render: wait for no more than 4s before starting the tests
+    const waitingTimeout = 4000;
 
     before(async () => {
       await PageObjects.common.navigateToApp('visualize');
       await PageObjects.visualize.loadSavedVisualization('chained input control', {
         navigateToVisualize: false,
       });
-      // Firefox can be very slow and sometimes the filter bar and the combo box may take
-      // some time before they render: wait for no more than 4s before starting the tests
-      const waitingTimeout = 4000;
-      await Promise.all([
-        testSubjects.waitForEnabled('addFilter', waitingTimeout),
-        testSubjects.waitForEnabled('listControlSelect0', waitingTimeout),
-      ]);
     });
 
     it('should disable child control when parent control is not set', async () => {
@@ -63,7 +59,7 @@ export default function ({ getService, getPageObjects }) {
 
     it('should create a seperate filter pill for parent control and child control', async () => {
       await comboBox.set('listControlSelect1', '14.61.182.136');
-
+      await testSubjects.waitForEnabled('addFilter', waitingTimeout);
       await PageObjects.visEditor.inputControlSubmit();
 
       const hasParentControlFilter = await filterBar.hasFilter('geo.src', 'BR');
