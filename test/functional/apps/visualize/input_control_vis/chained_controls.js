@@ -23,7 +23,6 @@ export default function ({ getService, getPageObjects }) {
   const filterBar = getService('filterBar');
   const PageObjects = getPageObjects(['common', 'visualize', 'visEditor', 'header', 'timePicker']);
   const testSubjects = getService('testSubjects');
-  // const retry = getService('retry');
   const find = getService('find');
   const comboBox = getService('comboBox');
 
@@ -56,7 +55,8 @@ export default function ({ getService, getPageObjects }) {
     });
 
     it('should create a seperate filter pill for parent control and child control', async () => {
-      await PageObjects.common.sleep(4000); // give time for filter bar to load
+      // wait here for the filter bar to be loaded
+      await testSubjects.waitForEnabled('addFilter', 4000);
       await comboBox.set('listControlSelect1', '14.61.182.136');
 
       await PageObjects.visEditor.inputControlSubmit();
