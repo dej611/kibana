@@ -34,6 +34,13 @@ export default function ({ getService, getPageObjects }) {
       await PageObjects.visualize.loadSavedVisualization('chained input control', {
         navigateToVisualize: false,
       });
+      // Firefox can be very slow and sometimes the filter bar and the combo box may take
+      // some time before they render: wait for no more than 4s before starting the tests
+      const waitingTimeout = 4000;
+      await Promise.all([
+        testSubjects.waitForEnabled('addFilter', waitingTimeout),
+        testSubjects.waitForEnabled('listControlSelect0', waitingTimeout),
+      ]);
     });
 
     it('should disable child control when parent control is not set', async () => {
@@ -55,8 +62,6 @@ export default function ({ getService, getPageObjects }) {
     });
 
     it('should create a seperate filter pill for parent control and child control', async () => {
-      // wait here for the filter bar to be loaded
-      await testSubjects.waitForEnabled('addFilter', 4000);
       await comboBox.set('listControlSelect1', '14.61.182.136');
 
       await PageObjects.visEditor.inputControlSubmit();
