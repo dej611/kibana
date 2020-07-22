@@ -26,7 +26,7 @@ export default function ({ getService, getPageObjects }) {
   const find = getService('find');
   const comboBox = getService('comboBox');
 
-  describe('chained controls', function () {
+  describe.skip('chained controls', function () {
     this.tags('includeFirefox');
 
     before(async () => {
