@@ -28,16 +28,12 @@ export default function ({ getService, getPageObjects }) {
 
   describe('chained controls', function () {
     this.tags('includeFirefox');
-    // Firefox can be very slow and sometimes the filter bar and the combo box may take
-    // some time before they render: wait for no more than 4s before starting the tests
-    const waitingTimeout = 5000;
 
     before(async () => {
       await PageObjects.common.navigateToApp('visualize');
       await PageObjects.visualize.loadSavedVisualization('chained input control', {
         navigateToVisualize: false,
       });
-      await testSubjects.waitForEnabled('addFilter', waitingTimeout);
     });
 
     it('should disable child control when parent control is not set', async () => {
