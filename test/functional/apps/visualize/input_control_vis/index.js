@@ -18,8 +18,7 @@
  */
 
 export default function ({ loadTestFile }) {
-  // eslint-disable-next-line mocha/no-exclusive-tests
-  describe.only('input controls', function () {
+  describe('input controls', function () {
     loadTestFile(require.resolve('./input_control_options'));
     loadTestFile(require.resolve('./dynamic_options'));
     loadTestFile(require.resolve('./chained_controls'));
