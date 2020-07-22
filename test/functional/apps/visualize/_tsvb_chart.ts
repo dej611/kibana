@@ -29,7 +29,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const retry = getService('retry');
   const PageObjects = getPageObjects(['visualize', 'visualBuilder', 'timePicker', 'visChart']);
 
-  describe('visual builder', function describeIndexTests() {
+  // eslint-disable-next-line ban/ban
+  describe.only('visual builder', function describeIndexTests() {
     this.tags('includeFirefox');
     beforeEach(async () => {
       await security.testUser.setRoles([
