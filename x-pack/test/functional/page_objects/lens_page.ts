@@ -90,6 +90,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
         operation: string;
         field?: string;
         isPreviousIncompatible?: boolean;
+        keepOpen?: boolean;
       },
       layerIndex = 0
     ) {
@@ -101,11 +102,16 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
         ? `lns-indexPatternDimension-${opts.operation} incompatible`
         : `lns-indexPatternDimension-${opts.operation}`;
       await testSubjects.click(operationSelector);
+      console.log('Click', { operationSelector });
 
       if (opts.field) {
         const target = await testSubjects.find('indexPattern-dimension-field');
         await comboBox.openOptionsList(target);
         await comboBox.setElement(target, opts.field);
+      }
+
+      if (!opts.keepOpen) {
+        this.closeDimensionEditor();
       }
     },
 
