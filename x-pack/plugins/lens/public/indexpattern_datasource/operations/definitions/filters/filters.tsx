@@ -247,7 +247,6 @@ export const FilterList = ({
                       defaultMessage: 'Click to edit',
                     })}
                   >
-                    {filter.label} - {filter.input.query} -
                     {filter.label || filter.input.query || defaultLabel}
                   </EuiLink>
                 )}

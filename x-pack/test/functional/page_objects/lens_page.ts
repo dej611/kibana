@@ -100,9 +100,10 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
 
       await retry.try(async () => {
         await testSubjects.click(`lns-layerPanel-${layerIndex} > ${opts.dimension}`);
-        await testSubjects.exists(`lns-indexPatternDimension-${opts.operation}`);
-        await testSubjects.click(operationSelector);
+        await testSubjects.exists(operationSelector);
       });
+
+      await testSubjects.click(operationSelector);
 
       if (opts.field) {
         const target = await testSubjects.find('indexPattern-dimension-field');
@@ -132,17 +133,10 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
     async addFilterToAgg(queryString: string) {
       await testSubjects.click('lns-newBucket-add');
       const queryInput = await testSubjects.find('indexPattern-filters-queryStringInput');
-      const contentText = await queryInput.getVisibleText();
-      log.debug(
-        `Current content of queryInput ${contentText === '' ? '(empty string)' : contentText}`
-      );
-      log.debug(`String to input: ${queryString}`);
-      // make sure to clear any other input here
-      await queryInput.clearValue();
       await queryInput.type(queryString);
       await PageObjects.common.pressEnterKey();
       await PageObjects.common.pressEnterKey();
-      await PageObjects.common.sleep(1000); // give time for debounced components to rerender
+      await PageObjects.common.sleep(2000); // give time for debounced components to rerender
     },
     /**
      * Save the current Lens visualization.
@@ -210,7 +204,6 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       for (let i = 0; i < filters.length; i++) {
         labels.push(await filters[i].getVisibleText());
       }
-      log.debug(`Found ${labels.length} filters on current page: [${labels.join(', ')}]`);
       return labels;
     },
 
