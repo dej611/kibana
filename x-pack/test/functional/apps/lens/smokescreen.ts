@@ -13,8 +13,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const listingTable = getService('listingTable');
   const testSubjects = getService('testSubjects');
 
-  describe.only('lens smokescreen tests', () => {
-    it.skip('should allow creation of lens xy chart', async () => {
+  describe('lens smokescreen tests', () => {
+    it('should allow creation of lens xy chart', async () => {
       await PageObjects.visualize.navigateToNewVisualization();
       await PageObjects.visualize.clickVisType('lens');
       await PageObjects.lens.goToTimeRange();
@@ -79,7 +79,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       expect(await find.allByCssSelector('.echLegendItem')).to.have.length(2);
     });
 
-    it.skip('should transition from metric to table to metric', async () => {
+    it('should transition from metric to table to metric', async () => {
       await PageObjects.visualize.gotoVisualizationLandingPage();
       await listingTable.searchForItemWithName('Artistpreviouslyknownaslens');
       await PageObjects.lens.clickVisualizeListItemTitle('Artistpreviouslyknownaslens');
@@ -92,7 +92,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await PageObjects.lens.assertMetric('Maximum of bytes', '19,986');
     });
 
-    it.skip('should transition from a multi-layer stacked bar to a multi-layer line chart and correctly remove all layers', async () => {
+    it('should transition from a multi-layer stacked bar to a multi-layer line chart and correctly remove all layers', async () => {
       await PageObjects.visualize.navigateToNewVisualization();
       await PageObjects.visualize.clickVisType('lens');
       await PageObjects.lens.goToTimeRange();
@@ -138,7 +138,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await testSubjects.existOrFail('empty-workspace');
     });
 
-    it.skip('should edit settings of xy line chart', async () => {
+    it('should edit settings of xy line chart', async () => {
       await PageObjects.visualize.gotoVisualizationLandingPage();
       await listingTable.searchForItemWithName('lnsXYvis');
       await PageObjects.lens.clickVisualizeListItemTitle('lnsXYvis');
@@ -168,7 +168,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       );
     });
 
-    it.skip('should transition from a multi-layer stacked bar to donut chart using suggestions', async () => {
+    it('should transition from a multi-layer stacked bar to donut chart using suggestions', async () => {
       await PageObjects.visualize.navigateToNewVisualization();
       await PageObjects.visualize.clickVisType('lens');
       await PageObjects.lens.goToTimeRange();
@@ -217,7 +217,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       );
     });
 
-    it.skip('should transition from line chart to donut chart and to bar chart', async () => {
+    it('should transition from line chart to donut chart and to bar chart', async () => {
       await PageObjects.visualize.gotoVisualizationLandingPage();
       await listingTable.searchForItemWithName('lnsXYvis');
       await PageObjects.lens.clickVisualizeListItemTitle('lnsXYvis');
@@ -244,7 +244,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       );
     });
 
-    it.skip('should transition from bar chart to line chart using layer chart switch', async () => {
+    it('should transition from bar chart to line chart using layer chart switch', async () => {
       await PageObjects.visualize.gotoVisualizationLandingPage();
       await listingTable.searchForItemWithName('lnsXYvis');
       await PageObjects.lens.clickVisualizeListItemTitle('lnsXYvis');
@@ -262,7 +262,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       );
     });
 
-    it.skip('should transition from pie chart to treemap chart', async () => {
+    it('should transition from pie chart to treemap chart', async () => {
       await PageObjects.visualize.gotoVisualizationLandingPage();
       await listingTable.searchForItemWithName('lnsPieVis');
       await PageObjects.lens.clickVisualizeListItemTitle('lnsPieVis');
@@ -280,7 +280,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       );
     });
 
-    it.skip('should create a pie chart and switch to datatable', async () => {
+    it('should create a pie chart and switch to datatable', async () => {
       await PageObjects.visualize.navigateToNewVisualization();
       await PageObjects.visualize.clickVisType('lens');
       await PageObjects.lens.goToTimeRange();
