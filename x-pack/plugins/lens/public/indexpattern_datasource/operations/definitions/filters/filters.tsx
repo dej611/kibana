@@ -228,6 +228,7 @@ export const FilterList = ({
               })}
             >
               <FilterPopover
+                key={filter.id}
                 data-test-subj="indexPattern-filters-existingFilterContainer"
                 isOpenByCreation={idx === localFilters.length - 1 && isOpenByCreation}
                 setIsOpenByCreation={setIsOpenByCreation}
@@ -246,6 +247,7 @@ export const FilterList = ({
                       defaultMessage: 'Click to edit',
                     })}
                   >
+                    {filter.label} - {filter.input.query} -
                     {filter.label || filter.input.query || defaultLabel}
                   </EuiLink>
                 )}
