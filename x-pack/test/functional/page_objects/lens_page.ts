@@ -132,7 +132,10 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
     async addFilterToAgg(queryString: string) {
       await testSubjects.click('lns-newBucket-add');
       const queryInput = await testSubjects.find('indexPattern-filters-queryStringInput');
-      log.info(`Current content of queryInput ${queryInput.getVisibleText()}`);
+      const contentText = await queryInput.getVisibleText();
+      log.info(
+        `Current content of queryInput ${contentText === '' ? '(empty string)' : contentText}`
+      );
       // make sure to clear any other input here
       await queryInput.clearValue();
       await queryInput.type(queryString);
