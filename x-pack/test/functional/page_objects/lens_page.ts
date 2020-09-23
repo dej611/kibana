@@ -135,7 +135,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       await queryInput.type(queryString);
       await PageObjects.common.pressEnterKey();
       await PageObjects.common.pressEnterKey();
-      await PageObjects.common.sleep(1000); // give time for debounced components to rerender
+      await PageObjects.common.sleep(2000); // give time for debounced components to rerender
     },
     /**
      * Save the current Lens visualization.
