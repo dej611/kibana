@@ -133,9 +133,10 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       await testSubjects.click('lns-newBucket-add');
       const queryInput = await testSubjects.find('indexPattern-filters-queryStringInput');
       const contentText = await queryInput.getVisibleText();
-      log.info(
+      log.debug(
         `Current content of queryInput ${contentText === '' ? '(empty string)' : contentText}`
       );
+      log.debug(`String to input: ${queryString}`);
       // make sure to clear any other input here
       await queryInput.clearValue();
       await queryInput.type(queryString);
@@ -209,7 +210,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       for (let i = 0; i < filters.length; i++) {
         labels.push(await filters[i].getVisibleText());
       }
-      log.info(`Found ${labels.length} filters on current page: [${labels.join(', ')}]`);
+      log.debug(`Found ${labels.length} filters on current page: [${labels.join(', ')}]`);
       return labels;
     },
 
