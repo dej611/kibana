@@ -132,10 +132,13 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
     async addFilterToAgg(queryString: string) {
       await testSubjects.click('lns-newBucket-add');
       const queryInput = await testSubjects.find('indexPattern-filters-queryStringInput');
+      log.info(`Current content of queryInput ${queryInput.getVisibleText()}`);
+      // make sure to clear any other input here
+      await queryInput.clearValue();
       await queryInput.type(queryString);
       await PageObjects.common.pressEnterKey();
       await PageObjects.common.pressEnterKey();
-      await PageObjects.common.sleep(2000); // give time for debounced components to rerender
+      await PageObjects.common.sleep(1000); // give time for debounced components to rerender
     },
     /**
      * Save the current Lens visualization.
@@ -203,7 +206,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       for (let i = 0; i < filters.length; i++) {
         labels.push(await filters[i].getVisibleText());
       }
-      log.debug(`Found ${labels.length} filters on current page`);
+      log.info(`Found ${labels.length} filters on current page: [${labels.join(', ')}]`);
       return labels;
     },
 
