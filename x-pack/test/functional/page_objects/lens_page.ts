@@ -134,7 +134,9 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
       await testSubjects.click('lns-newBucket-add');
       const queryInput = await testSubjects.find('indexPattern-filters-queryStringInput');
       await queryInput.type(queryString);
-      await PageObjects.common.pressEnterKey();
+      // Avoid to enter Enter key the first time
+      await PageObjects.common.pressTabKey();
+      await PageObjects.common.pressTabKey();
       await PageObjects.common.pressEnterKey();
       await PageObjects.common.sleep(2000); // give time for debounced components to rerender
     },

@@ -202,12 +202,6 @@ export const FilterList = ({
       )
     );
 
-  console.log(
-    localFilters
-      .map((filter) => `${filter.id} - ${filter.label || filter.input.query || defaultLabel}`)
-      .join(', ')
-  );
-
   return (
     <>
       <DragDropBuckets
