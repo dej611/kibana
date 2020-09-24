@@ -229,7 +229,6 @@ export const FilterList = ({
               isNotRemovable={localFilters.length === 1}
             >
               <FilterPopover
-                key={filter.id}
                 data-test-subj="indexPattern-filters-existingFilterContainer"
                 isOpenByCreation={idx === localFilters.length - 1 && isOpenByCreation}
                 setIsOpenByCreation={setIsOpenByCreation}
