@@ -35,7 +35,7 @@ export default function ({ getService, getPageObjects }) {
   }
 
   // FLAKY: https://github.com/elastic/kibana/issues/39842
-  describe.skip('inspect', () => {
+  describe.only('inspect', () => {
     before(async () => {
       await esArchiver.loadIfNeeded('logstash_functional');
       await esArchiver.load('discover');
