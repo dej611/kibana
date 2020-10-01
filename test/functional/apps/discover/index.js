@@ -21,7 +21,7 @@ export default function ({ getService, loadTestFile }) {
   const esArchiver = getService('esArchiver');
   const browser = getService('browser');
 
-  describe('discover app', function () {
+  describe.only('discover app', function () {
     this.tags('ciGroup6');
 
     before(function () {
@@ -45,9 +45,9 @@ export default function ({ getService, loadTestFile }) {
     loadTestFile(require.resolve('./_source_filters'));
     loadTestFile(require.resolve('./_large_string'));
     loadTestFile(require.resolve('./_inspector'));
-    loadTestFile(require.resolve('./_doc_navigation'));
-    loadTestFile(require.resolve('./_date_nanos'));
-    loadTestFile(require.resolve('./_date_nanos_mixed'));
-    loadTestFile(require.resolve('./_indexpattern_without_timefield'));
+    // loadTestFile(require.resolve('./_doc_navigation'));
+    // loadTestFile(require.resolve('./_date_nanos'));
+    // loadTestFile(require.resolve('./_date_nanos_mixed'));
+    // loadTestFile(require.resolve('./_indexpattern_without_timefield'));
   });
 }
