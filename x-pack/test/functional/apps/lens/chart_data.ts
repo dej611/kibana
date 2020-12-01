@@ -58,26 +58,28 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       assertMatchesExpectedData(data!);
     });
 
-    it('should render pie chart', async () => {
+    // Re-enable them when https://github.com/elastic/elastic-charts/issues/917 is fixed
+    it.skip('should render pie chart', async () => {
       await PageObjects.lens.switchToVisualization('pie');
       await PageObjects.header.waitUntilLoadingHasFinished();
       const data = await PageObjects.lens.getCurrentChartDebugState();
       assertMatchesExpectedData(data!);
     });
 
-    it('should render donut chart', async () => {
+    it.skip('should render donut chart', async () => {
       await PageObjects.lens.switchToVisualization('donut');
       await PageObjects.header.waitUntilLoadingHasFinished();
       const data = await PageObjects.lens.getCurrentChartDebugState();
       assertMatchesExpectedData(data!);
     });
 
-    it('should render treemap chart', async () => {
+    it.skip('should render treemap chart', async () => {
       await PageObjects.lens.switchToVisualization('treemap');
       await PageObjects.header.waitUntilLoadingHasFinished();
       const data = await PageObjects.lens.getCurrentChartDebugState();
       assertMatchesExpectedData(data!);
     });
+
     it('should render datatable', async () => {
       await PageObjects.lens.switchToVisualization('lnsDatatable');
       await PageObjects.header.waitUntilLoadingHasFinished();
