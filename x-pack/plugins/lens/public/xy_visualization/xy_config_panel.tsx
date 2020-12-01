@@ -485,6 +485,7 @@ export function DimensionEditor(props: VisualizationDimensionEditorProps<State>)
           legend={i18n.translate('xpack.lens.xyChart.axisSide.label', {
             defaultMessage: 'Axis side',
           })}
+          data-test-subj="lnsXY_axisSide_groups"
           name="axisSide"
           buttonSize="compressed"
           options={[
@@ -493,6 +494,7 @@ export function DimensionEditor(props: VisualizationDimensionEditorProps<State>)
               label: i18n.translate('xpack.lens.xyChart.axisSide.auto', {
                 defaultMessage: 'Auto',
               }),
+              'data-test-subj': 'lnsXY_axisSide_groups_auto',
             },
             {
               id: `${idPrefix}left`,
@@ -503,6 +505,7 @@ export function DimensionEditor(props: VisualizationDimensionEditorProps<State>)
                 : i18n.translate('xpack.lens.xyChart.axisSide.left', {
                     defaultMessage: 'Left',
                   }),
+              'data-test-subj': 'lnsXY_axisSide_groups_left',
             },
             {
               id: `${idPrefix}right`,
@@ -513,6 +516,7 @@ export function DimensionEditor(props: VisualizationDimensionEditorProps<State>)
                 : i18n.translate('xpack.lens.xyChart.axisSide.right', {
                     defaultMessage: 'Right',
                   }),
+              'data-test-subj': 'lnsXY_axisSide_groups_right',
             },
           ]}
           idSelected={`${idPrefix}${axisMode}`}
