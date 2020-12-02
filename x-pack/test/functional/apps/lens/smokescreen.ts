@@ -9,11 +9,9 @@ import { FtrProviderContext } from '../../ftr_provider_context';
 
 export default function ({ getService, getPageObjects }: FtrProviderContext) {
   const PageObjects = getPageObjects(['visualize', 'lens', 'common', 'header']);
-  const find = getService('find');
   const listingTable = getService('listingTable');
   const testSubjects = getService('testSubjects');
   const elasticChart = getService('elasticChart');
-  const retry = getService('retry');
 
   describe('lens smokescreen tests', () => {
     it('should allow creation of lens xy chart', async () => {
@@ -57,13 +55,11 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await listingTable.searchForItemWithName('Afancilenstest');
       await PageObjects.lens.clickVisualizeListItemTitle('Afancilenstest');
       await PageObjects.lens.goToTimeRange();
+      await elasticChart.setNewChartUiDebugFlag(true);
 
       expect(await PageObjects.lens.getTitle()).to.eql('Afancilenstest');
 
-      // .echLegendItem__title is the only viable way of getting the xy chart's
-      // legend item(s), so we're using a class selector here.
-      // 4th item is the other bucket
-      expect(await find.allByCssSelector('.echLegendItem')).to.have.length(4);
+      await PageObjects.lens.assertLegendItems(4);
     });
 
     it('should create an xy visualization with filters aggregation', async () => {
@@ -71,6 +67,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await listingTable.searchForItemWithName('lnsXYvis');
       await PageObjects.lens.clickVisualizeListItemTitle('lnsXYvis');
       await PageObjects.lens.goToTimeRange();
+      await elasticChart.setNewChartUiDebugFlag(true);
       // Change the IP field to filters
       await PageObjects.lens.configureDimension({
         dimension: 'lnsXY_splitDimensionPanel > lns-dimensionTrigger',
@@ -82,7 +79,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       // Verify that the field was persisted from the transition
       expect(await PageObjects.lens.getFiltersAggLabels()).to.eql([`ip : *`, `geo.src : CN`]);
-      expect(await find.allByCssSelector('.echLegendItem')).to.have.length(2);
+
+      await PageObjects.lens.assertLegendItems(2);
     });
 
     it('should transition from metric to table to metric', async () => {
@@ -176,6 +174,7 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
     });
 
     it('should be able to add very long labels and still be able to remove a dimension', async () => {
+      await elasticChart.setNewChartUiDebugFlag(true);
       await PageObjects.lens.openDimensionEditor('lnsXY_yDimensionPanel > lns-dimensionTrigger');
       const longLabel =
         'Veryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryveryvery long label wrapping multiple lines';
@@ -186,6 +185,9 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       expect(await PageObjects.lens.getDimensionTriggerText('lnsXY_yDimensionPanel')).to.eql(
         longLabel
       );
+      const debugData = await elasticChart.getChartDebugData();
+
+      expect(debugData?.axes?.y[0].title).to.eql(longLabel);
       expect(
         await testSubjects.isDisplayed('lnsXY_yDimensionPanel >  indexPattern-dimension-remove')
       ).to.equal(true);
@@ -223,11 +225,11 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       await PageObjects.lens.closeDimensionEditor();
 
-      await retry.tryForTime(3000, async () => {
-        const data = await PageObjects.lens.getCurrentChartDebugState();
-        expect(data?.axes?.y.length).to.eql(2);
-        expect(data?.axes?.y.some(({ position }) => position === 'right')).to.eql(true);
-      });
+      await PageObjects.header.awaitGlobalLoadingIndicatorHidden();
+
+      const data = await PageObjects.lens.getCurrentChartDebugState();
+      expect(data?.axes?.y.length).to.eql(2);
+      expect(data?.axes?.y[1].position).to.eql('right');
     });
 
     it('should transition from a multi-layer stacked bar to donut chart using suggestions', async () => {

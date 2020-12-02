@@ -324,7 +324,22 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
         await testSubjects.existOrFail('visTypeTitle');
       });
     },
+    /**
+     * Asserts the number of items in the legend, based on both rendering and chart state.
+     *
+     * @param count - the expected number of legend items
+     */
+    async assertLegendItems(count: number) {
+      expect(await find.allByCssSelector('.echLegendItem')).to.have.length(count);
 
+      const data = await this.getCurrentChartDebugState();
+      expect(data?.legend?.items).to.have.length(count);
+    },
+    /**
+     * Changes the axis position. It requires the dimension panel to be open.
+     *
+     * @param newSide - the new position for the axis. Value can be 'auto' | 'left' | 'right'
+     */
     async changeAxisSide(newSide: string) {
       await testSubjects.click(`lnsXY_axisSide_groups_${newSide}`);
     },
