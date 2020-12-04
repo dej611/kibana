@@ -205,7 +205,7 @@ export function LensPageProvider({ getService, getPageObjects }: FtrProviderCont
 
     // closes the dimension editor flyout
     async closeDimensionEditor() {
-      await testSubjects.click('lns-indexPattern-dimensionContainerTitle');
+      await testSubjects.click('lns-indexPattern-dimensionContainerBack');
     },
 
     /**
