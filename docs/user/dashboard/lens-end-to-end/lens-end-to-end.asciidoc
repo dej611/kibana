@@ -440,7 +440,7 @@ Compare the top sources of website traffic data to the top three countries.
 [role="screenshot"]
 image::images/lens_end_to_end_7_2.png[Treemap vis]
 
-. To view only the Facebook and Twitter data, remove the *Other* category. 
+. To view only the 3 top countries, remove the *Other* category. 
 
 .. From the editor, click *Top values of geo.src*.
 
@@ -460,6 +460,9 @@ image::images/lens_end_to_end_7_3.png[Group other values as Other]
 .. Select *Add to dashboard after saving*.
 
 .. Click *Save and return*.
++
+[role="screenshot"]
+image::images/lens_end_to_end_7_4.png[Traffic source for top 3 countries chart]
 
 That's it! You've created a dashboard that provides you with a complete picture of your website data.
 
