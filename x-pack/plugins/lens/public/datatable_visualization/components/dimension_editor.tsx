@@ -26,6 +26,7 @@ import { PalettePanelContainer } from './palette_panel_container';
 import { findMinMaxByColumnId } from './shared_utils';
 import { applyPaletteParams } from '../../shared_components/coloring/utils';
 import { defaultParams, FIXED_PROGRESSION } from '../../shared_components/coloring/constants';
+import './dimension_editor.scss';
 
 const idPrefix = htmlIdGenerator()();
 
@@ -242,10 +243,11 @@ export function TableDimensionEditor(
           </EuiFormRow>
           {hasDynamicColoring && (
             <EuiFormRow
+              className="lnsDynamicColoringRow"
               display="columnCompressed"
               fullWidth
               label={i18n.translate('xpack.lens.paletteTableGradient.label', {
-                defaultMessage: 'Color palette',
+                defaultMessage: 'Color',
               })}
             >
               <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
