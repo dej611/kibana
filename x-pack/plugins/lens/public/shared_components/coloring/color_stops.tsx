@@ -15,6 +15,7 @@ import {
   EuiFlexGroup,
   EuiButtonEmpty,
   EuiSpacer,
+  EuiScreenReaderOnly,
 } from '@elastic/eui';
 import { DEFAULT_COLOR } from './constants';
 import { getDataMinMax, getStepValue, isValidColor } from './utils';
@@ -38,11 +39,11 @@ export const CustomStops = ({
   reverse,
   ['data-test-prefix']: dataTestPrefix,
 }: CustomStopsProps) => {
-  const shouldEnableDelete = colorStops.length > 2;
-
   const [localColorStops, setLocalColorStops] = useState<Array<{ color: string; stop: string }>>(
     colorStops.map(({ color, stop }) => ({ color, stop: String(stop) }))
   );
+  const [sortedReason, setSortReason] = useState<string>('');
+  const shouldEnableDelete = localColorStops.length > 2;
 
   const [popoverInFocus, setPopoverInFocus] = useState<boolean>(false);
 
@@ -69,6 +70,19 @@ export const CustomStops = ({
 
   return (
     <>
+      {sortedReason ? (
+        <EuiScreenReaderOnly>
+          <p aria-live="assertive">
+            {i18n.translate('xpack.lens.dynamicColoring.customPalette.sortReason', {
+              defaultMessage: 'Color stops have been sorted due to new stop value {value}',
+              values: {
+                value: sortedReason,
+              },
+            })}
+          </p>
+        </EuiScreenReaderOnly>
+      ) : null}
+
       <EuiFlexGroup
         data-test-subj={`${dataTestPrefix}_dynamicColoring_custom_stops`}
         direction="column"
@@ -107,6 +121,7 @@ export const CustomStops = ({
                       ({ stop: stopA }, { stop: stopB }) => Number(stopA) - Number(stopB)
                     )
                   );
+                  setSortReason(stop);
                 }
               }}
             >

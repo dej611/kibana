@@ -12,7 +12,7 @@ import {
   CUSTOM_PALETTE,
   DEFAULT_COLOR_STEPS,
   FIXED_PROGRESSION,
-  defaultParams,
+  defaultPaletteParams,
 } from '../../shared_components/coloring/constants';
 import { CustomPaletteParams } from '../../shared_components/coloring/types';
 import { remapStopsByNewInterval } from '../../shared_components/coloring/utils';
@@ -34,12 +34,13 @@ function getCustomPaletteConfig(
         title,
         type: FIXED_PROGRESSION,
         palette,
+        'data-test-subj': `custom-palette`,
       };
     }
   }
   // if not possible just show some text
   if (!activePalette?.params?.stops) {
-    return { value: id, title, type: 'text' as const };
+    return { value: id, title, type: 'text' as const, 'data-test-subj': `custom-palette` };
   }
 
   const referenceStops = activePalette.params.colorStops || activePalette.params.stops;
@@ -51,6 +52,7 @@ function getCustomPaletteConfig(
     value: id,
     title,
     type: FIXED_PROGRESSION,
+    'data-test-subj': `custom-palette`,
     palette: remapStopsByNewInterval(activePalette.params.stops, {
       newInterval: 100,
       oldInterval,
@@ -60,12 +62,15 @@ function getCustomPaletteConfig(
   };
 }
 
+// Note: this is a special palette picker different from the one in the root shared folder
+// ideally these should be merged together, but as for now this holds some custom logic hard to remove
 export function PalettePicker({
   palettes,
   activePalette,
   setPalette,
   showCustomPalette,
   showDynamicColorOnly,
+  ...rest
 }: {
   palettes: PaletteRegistry;
   activePalette?: PaletteOutput<CustomPaletteParams>;
@@ -88,6 +93,7 @@ export function PalettePicker({
         title,
         type: FIXED_PROGRESSION,
         palette: activePalette?.params?.reverse ? colors.reverse() : colors,
+        'data-test-subj': `${id}-palette`,
       };
     });
   if (showCustomPalette) {
@@ -104,8 +110,9 @@ export function PalettePicker({
           name: newPalette,
         });
       }}
-      valueOfSelected={activePalette?.name || defaultParams.name}
+      valueOfSelected={activePalette?.name || defaultPaletteParams.name}
       selectionDisplay="palette"
+      {...rest}
     />
   );
 }
