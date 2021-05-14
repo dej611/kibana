@@ -11,9 +11,13 @@ import {
   EuiFormRow,
   htmlIdGenerator,
   EuiButtonGroup,
+  EuiFlexGroup,
+  EuiFlexItem,
   EuiSuperSelect,
+  EuiIcon,
   EuiIconTip,
-  EuiButtonEmpty,
+  EuiLink,
+  EuiText,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { PalettePicker } from './palette_picker';
@@ -277,40 +281,47 @@ export function CustomizablePalette({
             defaultMessage: 'Color stops',
           })}
           labelAppend={
-            <EuiButtonEmpty
-              color="primary"
-              size="xs"
-              className="lnsPalettePanel__reverseButton"
-              data-test-subj="lnsDatatable_dynamicColoring_reverse"
-              onClick={() => {
-                const params: CustomPaletteParams = { reverse: !activePalette.params?.reverse };
-                if (isCurrentPaletteCustom) {
-                  params.colorStops = reversePalette(colorStopsToShow);
-                  params.stops = getPaletteStops(
-                    palettes,
-                    {
-                      ...(activePalette?.params || {}),
-                      colorStops: params.colorStops,
-                    },
-                    { dataBounds }
-                  );
-                } else {
-                  params.stops = reversePalette(
-                    activePalette?.params?.stops ||
-                      getPaletteStops(
-                        palettes,
-                        { ...activePalette.params, ...params },
-                        { prevPalette: activePalette.name, dataBounds }
-                      )
-                  );
-                }
-                setPalette(mergePaletteParams(activePalette, params));
-              }}
-            >
-              {i18n.translate('xpack.lens.table.dynamicColoring.reverse.label', {
-                defaultMessage: 'Reverse colors',
-              })}
-            </EuiButtonEmpty>
+            <EuiText size="xs">
+              <EuiLink
+                className="lnsPalettePanel__reverseButton"
+                data-test-subj="lnsDatatable_dynamicColoring_reverse"
+                onClick={() => {
+                  const params: CustomPaletteParams = { reverse: !activePalette.params?.reverse };
+                  if (isCurrentPaletteCustom) {
+                    params.colorStops = reversePalette(colorStopsToShow);
+                    params.stops = getPaletteStops(
+                      palettes,
+                      {
+                        ...(activePalette?.params || {}),
+                        colorStops: params.colorStops,
+                      },
+                      { dataBounds }
+                    );
+                  } else {
+                    params.stops = reversePalette(
+                      activePalette?.params?.stops ||
+                        getPaletteStops(
+                          palettes,
+                          { ...activePalette.params, ...params },
+                          { prevPalette: activePalette.name, dataBounds }
+                        )
+                    );
+                  }
+                  setPalette(mergePaletteParams(activePalette, params));
+                }}
+              >
+                <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
+                  <EuiFlexItem grow={false}>
+                    <EuiIcon size="s" type="sortable" />
+                  </EuiFlexItem>
+                  <EuiFlexItem>
+                    {i18n.translate('xpack.lens.table.dynamicColoring.reverse.label', {
+                      defaultMessage: 'Reverse colors',
+                    })}
+                  </EuiFlexItem>
+                </EuiFlexGroup>
+              </EuiLink>
+            </EuiText>
           }
         >
           <CustomStops
