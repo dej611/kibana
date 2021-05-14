@@ -8,7 +8,6 @@ import React, { useState, useEffect } from 'react';
 import type { FocusEvent } from 'react';
 import { i18n } from '@kbn/i18n';
 import {
-  EuiFormRow,
   EuiFieldNumber,
   EuiColorPicker,
   EuiButtonIcon,
@@ -70,130 +69,135 @@ export const CustomStops = ({
 
   return (
     <>
-      <EuiFlexGroup>
-        <EuiFlexItem data-test-subj={`${dataTestPrefix}_dynamicColoring_custom_stops`}>
-          {localColorStops.map(({ color, stop }, index) => {
-            const prevStopValue = Number(localColorStops[index - 1]?.stop ?? -Infinity);
-            const nextStopValue = Number(localColorStops[index + 1]?.stop ?? Infinity);
-            const errorMessages = [];
-            // do not show color error messages if number field is already in error
-            if (!isValidColor(color) && errorMessages.length === 0) {
-              errorMessages.push(
-                i18n.translate('xpack.lens.dynamicColoring.customPalette.hexWarningLabel', {
-                  defaultMessage: 'Color must provide a valid hex value',
-                })
-              );
-            }
-            return (
-              <EuiFormRow
-                key={index}
-                display="rowCompressed"
-                isInvalid={Boolean(errorMessages.length)}
-                error={errorMessages[0]}
-                data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_row_${index}`}
-                onBlur={(e: FocusEvent<HTMLDivElement>) => {
-                  // sort the stops when the focus leaves the row container
-                  const shouldSort = Number(stop) > nextStopValue || prevStopValue > Number(stop);
-                  const isFocusStillInContent =
-                    (e.currentTarget as Node)?.contains(e.relatedTarget as Node) || popoverInFocus;
-                  if (shouldSort && !isFocusStillInContent) {
-                    setLocalColorStops(
-                      [...localColorStops].sort(
-                        ({ stop: stopA }, { stop: stopB }) => Number(stopA) - Number(stopB)
-                      )
-                    );
-                  }
-                }}
-              >
-                <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
-                  <EuiFlexItem>
-                    <EuiFieldNumber
-                      compressed
-                      data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_value_${index}`}
-                      value={stop}
-                      min={-Infinity}
-                      onChange={({ target }) => {
-                        const newStopString = target.value.trim();
-                        const newColorStops = [...localColorStops];
-                        newColorStops[index] = {
-                          color,
-                          stop: newStopString,
-                        };
-                        setLocalColorStops(newColorStops);
-                      }}
-                      append={rangeType === 'percent' ? '%' : undefined}
-                      aria-label={i18n.translate(
-                        'xpack.lens.dynamicColoring.customPalette.stopAriaLabel',
-                        {
-                          defaultMessage: 'Stop {index}',
-                          values: {
-                            index: index + 1,
-                          },
-                        }
-                      )}
-                    />
-                  </EuiFlexItem>
+      <EuiFlexGroup
+        data-test-subj={`${dataTestPrefix}_dynamicColoring_custom_stops`}
+        direction="column"
+        gutterSize="s"
+      >
+        {localColorStops.map(({ color, stop }, index) => {
+          const prevStopValue = Number(localColorStops[index - 1]?.stop ?? -Infinity);
+          const nextStopValue = Number(localColorStops[index + 1]?.stop ?? Infinity);
 
-                  <EuiFlexItem
-                    data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_color_${index}`}
+          // TODO: Commented out the below error message code because 1) the individual color stops no longer use an `EuiFormRow` element and 2) I don't think such error message are needed, as the `EuiColorPicker` dropdown already has the hex field displaying such an error in the case of an invalid hex value. Instead of having a redundant error message, can we instead change it so that if an invalid hex value remains on blur of the `EuiColorPicker`, we simply revert to last known good hex value?
+          // const errorMessages = [];
+          // // do not show color error messages if number field is already in error
+          // if (!isValidColor(color) && errorMessages.length === 0) {
+          //   errorMessages.push(
+          //     i18n.translate('xpack.lens.dynamicColoring.customPalette.hexWarningLabel', {
+          //       defaultMessage: 'Color must provide a valid hex value',
+          //     })
+          //   );
+          // }
+
+          return (
+            <EuiFlexItem
+              key={index}
+              // TODO: Commented out the below props, as they no longer apply to this component (as it has changed to an `EuiFlexItem`). Please see above comment for an alternative to adding a duplicative error message.
+              // isInvalid={Boolean(errorMessages.length)}
+              // error={errorMessages[0]}
+              data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_row_${index}`}
+              onBlur={(e: FocusEvent<HTMLDivElement>) => {
+                // sort the stops when the focus leaves the row container
+                const shouldSort = Number(stop) > nextStopValue || prevStopValue > Number(stop);
+                const isFocusStillInContent =
+                  (e.currentTarget as Node)?.contains(e.relatedTarget as Node) || popoverInFocus;
+                if (shouldSort && !isFocusStillInContent) {
+                  setLocalColorStops(
+                    [...localColorStops].sort(
+                      ({ stop: stopA }, { stop: stopB }) => Number(stopA) - Number(stopB)
+                    )
+                  );
+                }
+              }}
+            >
+              <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
+                <EuiFlexItem>
+                  <EuiFieldNumber
+                    compressed
+                    data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_value_${index}`}
+                    value={stop}
+                    min={-Infinity}
+                    onChange={({ target }) => {
+                      const newStopString = target.value.trim();
+                      const newColorStops = [...localColorStops];
+                      newColorStops[index] = {
+                        color,
+                        stop: newStopString,
+                      };
+                      setLocalColorStops(newColorStops);
+                    }}
+                    append={rangeType === 'percent' ? '%' : undefined}
+                    aria-label={i18n.translate(
+                      'xpack.lens.dynamicColoring.customPalette.stopAriaLabel',
+                      {
+                        defaultMessage: 'Stop {index}',
+                        values: {
+                          index: index + 1,
+                        },
+                      }
+                    )}
+                  />
+                </EuiFlexItem>
+
+                <EuiFlexItem
+                  data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_color_${index}`}
+                >
+                  <EuiColorPicker
+                    key={stop}
+                    onChange={(newColor) => {
+                      const newColorStops = [...localColorStops];
+                      newColorStops[index] = { color: newColor, stop };
+                      setLocalColorStops(newColorStops);
+                    }}
+                    secondaryInputDisplay="top"
+                    color={color}
+                    isInvalid={!isValidColor(color)}
+                    showAlpha
+                    compressed
+                    onFocus={() => setPopoverInFocus(true)}
+                    onBlur={() => setPopoverInFocus(false)}
+                  />
+                </EuiFlexItem>
+
+                <EuiFlexItem grow={false}>
+                  <TooltipWrapper
+                    tooltipContent={i18n.translate(
+                      'xpack.lens.dynamicColoring.customPalette.deleteButtonDisabled',
+                      {
+                        defaultMessage:
+                          'This color stop cannot be deleted, as two or more stops are required',
+                      }
+                    )}
+                    condition={!shouldEnableDelete}
                   >
-                    <EuiColorPicker
-                      key={stop}
-                      onChange={(newColor) => {
-                        const newColorStops = [...localColorStops];
-                        newColorStops[index] = { color: newColor, stop };
-                        setLocalColorStops(newColorStops);
-                      }}
-                      secondaryInputDisplay="top"
-                      color={color}
-                      isInvalid={!isValidColor(color)}
-                      showAlpha
-                      compressed
-                      onFocus={() => setPopoverInFocus(true)}
-                      onBlur={() => setPopoverInFocus(false)}
-                    />
-                  </EuiFlexItem>
-
-                  <EuiFlexItem grow={false}>
-                    <TooltipWrapper
-                      tooltipContent={i18n.translate(
-                        'xpack.lens.dynamicColoring.customPalette.deleteButtonDisabled',
+                    <EuiButtonIcon
+                      iconType="trash"
+                      color="danger"
+                      aria-label={i18n.translate(
+                        'xpack.lens.dynamicColoring.customPalette.deleteButtonAriaLabel',
                         {
-                          defaultMessage:
-                            'This color stop cannot be deleted, as two or more stops are required',
+                          defaultMessage: 'Delete',
                         }
                       )}
-                      condition={!shouldEnableDelete}
-                    >
-                      <EuiButtonIcon
-                        iconType="trash"
-                        color="danger"
-                        aria-label={i18n.translate(
-                          'xpack.lens.dynamicColoring.customPalette.deleteButtonAriaLabel',
-                          {
-                            defaultMessage: 'Delete',
-                          }
-                        )}
-                        title={i18n.translate(
-                          'xpack.lens.dynamicColoring.customPalette.deleteButtonLabel',
-                          {
-                            defaultMessage: 'Delete',
-                          }
-                        )}
-                        onClick={() => {
-                          const newColorStops = localColorStops.filter((_, i) => i !== index);
-                          setLocalColorStops(newColorStops);
-                        }}
-                        data-test-subj={`${dataTestPrefix}_dynamicColoring_removeStop_${index}`}
-                        isDisabled={!shouldEnableDelete}
-                      />
-                    </TooltipWrapper>
-                  </EuiFlexItem>
-                </EuiFlexGroup>
-              </EuiFormRow>
-            );
-          })}
-        </EuiFlexItem>
+                      title={i18n.translate(
+                        'xpack.lens.dynamicColoring.customPalette.deleteButtonLabel',
+                        {
+                          defaultMessage: 'Delete',
+                        }
+                      )}
+                      onClick={() => {
+                        const newColorStops = localColorStops.filter((_, i) => i !== index);
+                        setLocalColorStops(newColorStops);
+                      }}
+                      data-test-subj={`${dataTestPrefix}_dynamicColoring_removeStop_${index}`}
+                      isDisabled={!shouldEnableDelete}
+                    />
+                  </TooltipWrapper>
+                </EuiFlexItem>
+              </EuiFlexGroup>
+            </EuiFlexItem>
+          );
+        })}
       </EuiFlexGroup>
 
       <EuiSpacer size="s" />

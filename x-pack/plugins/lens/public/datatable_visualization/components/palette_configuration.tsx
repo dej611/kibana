@@ -277,6 +277,7 @@ export function CustomizablePalette({
           />
         </EuiFormRow>
         <EuiFormRow
+          display="rowCompressed"
           label={i18n.translate('xpack.lens.table.dynamicColoring.customPalette.colorStopsLabel', {
             defaultMessage: 'Color stops',
           })}
