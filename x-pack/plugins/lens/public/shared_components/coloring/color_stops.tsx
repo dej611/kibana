@@ -15,6 +15,7 @@ import {
   EuiFlexItem,
   EuiFlexGroup,
   EuiButtonEmpty,
+  EuiSpacer,
 } from '@elastic/eui';
 import { DEFAULT_COLOR } from './constants';
 import { getDataMinMax, getStepValue, isValidColor } from './utils';
@@ -192,40 +193,40 @@ export const CustomStops = ({
           })}
         </EuiFlexItem>
       </EuiFlexGroup>
-      <EuiFlexGroup>
-        <EuiFlexItem grow={false}>
-          <EuiButtonEmpty
-            data-test-subj={`${dataTestPrefix}_dynamicColoring_addStop`}
-            iconType="plusInCircle"
-            color="primary"
-            aria-label={i18n.translate('xpack.lens.dynamicColoring.customPalette.addColorStop', {
-              defaultMessage: 'Add color stop',
-            })}
-            size="xs"
-            onClick={() => {
-              const newColorStops = [...localColorStops];
-              const length = newColorStops.length;
-              const { max } = getDataMinMax(rangeType, dataBounds);
-              const step = getStepValue(
-                colorStops,
-                newColorStops.map(({ color, stop }) => ({ color, stop: Number(stop) })),
-                max
-              );
-              const prevColor = localColorStops[length - 1].color || DEFAULT_COLOR;
-              const newStop = step + Number(localColorStops[length - 1].stop);
-              newColorStops.push({
-                color: prevColor,
-                stop: String(newStop),
-              });
-              setLocalColorStops(newColorStops);
-            }}
-          >
-            {i18n.translate('xpack.lens.dynamicColoring.customPalette.addColorStop', {
-              defaultMessage: 'Add color stop',
-            })}
-          </EuiButtonEmpty>
-        </EuiFlexItem>
-      </EuiFlexGroup>
+
+      <EuiSpacer size="s" />
+
+      <EuiButtonEmpty
+        data-test-subj={`${dataTestPrefix}_dynamicColoring_addStop`}
+        iconType="plusInCircle"
+        color="primary"
+        aria-label={i18n.translate('xpack.lens.dynamicColoring.customPalette.addColorStop', {
+          defaultMessage: 'Add color stop',
+        })}
+        size="xs"
+        flush="left"
+        onClick={() => {
+          const newColorStops = [...localColorStops];
+          const length = newColorStops.length;
+          const { max } = getDataMinMax(rangeType, dataBounds);
+          const step = getStepValue(
+            colorStops,
+            newColorStops.map(({ color, stop }) => ({ color, stop: Number(stop) })),
+            max
+          );
+          const prevColor = localColorStops[length - 1].color || DEFAULT_COLOR;
+          const newStop = step + Number(localColorStops[length - 1].stop);
+          newColorStops.push({
+            color: prevColor,
+            stop: String(newStop),
+          });
+          setLocalColorStops(newColorStops);
+        }}
+      >
+        {i18n.translate('xpack.lens.dynamicColoring.customPalette.addColorStop', {
+          defaultMessage: 'Add color stop',
+        })}
+      </EuiButtonEmpty>
     </>
   );
 };
