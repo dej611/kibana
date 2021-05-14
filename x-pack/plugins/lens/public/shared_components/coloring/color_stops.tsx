@@ -105,7 +105,7 @@ export const CustomStops = ({
                   }
                 }}
               >
-                <EuiFlexGroup gutterSize="s" responsive={false}>
+                <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
                   <EuiFlexItem>
                     <EuiFieldNumber
                       compressed
@@ -133,6 +133,7 @@ export const CustomStops = ({
                       )}
                     />
                   </EuiFlexItem>
+
                   <EuiFlexItem
                     data-test-subj={`${dataTestPrefix}_dynamicColoring_stop_color_${index}`}
                   >
@@ -152,6 +153,7 @@ export const CustomStops = ({
                       onBlur={() => setPopoverInFocus(false)}
                     />
                   </EuiFlexItem>
+
                   <EuiFlexItem grow={false}>
                     <TooltipWrapper
                       tooltipContent={i18n.translate(
