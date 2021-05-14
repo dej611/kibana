@@ -92,7 +92,7 @@ export const CustomStops = ({
           const prevStopValue = Number(localColorStops[index - 1]?.stop ?? -Infinity);
           const nextStopValue = Number(localColorStops[index + 1]?.stop ?? Infinity);
 
-          // TODO: Commented out the below error message code because 1) the individual color stops no longer use an `EuiFormRow` element and 2) I don't think such error message are needed, as the `EuiColorPicker` dropdown already has the hex field displaying such an error in the case of an invalid hex value. Instead of having a redundant error message, can we instead change it so that if an invalid hex value remains on blur of the `EuiColorPicker`, we simply revert to last known good hex value?
+          // TODO: Commented out the below error message code because 1) the individual color stops no longer use an `EuiFormRow` component and 2) I don't think such error message are needed, as the `EuiColorPicker` dropdown already has the hex field displaying such an error in the case of an invalid hex value. Instead of having a redundant error message, can we instead change it so that if an invalid hex value remains on blur of the `EuiColorPicker`, we simply revert to last known good hex value?
           // const errorMessages = [];
           // // do not show color error messages if number field is already in error
           // if (!isValidColor(color) && errorMessages.length === 0) {
