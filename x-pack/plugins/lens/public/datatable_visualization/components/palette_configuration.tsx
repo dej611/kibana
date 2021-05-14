@@ -12,8 +12,7 @@ import {
   htmlIdGenerator,
   EuiButtonGroup,
   EuiSuperSelect,
-  EuiToolTip,
-  EuiIcon,
+  EuiIconTip,
   EuiButtonEmpty,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
@@ -184,22 +183,22 @@ export function CustomizablePalette({
         </EuiFormRow>
         <EuiFormRow
           label={
-            <EuiToolTip
-              content={i18n.translate(
-                'xpack.lens.table.dynamicColoring.customPalette.colorStopsHelpPercentage',
-                {
-                  defaultMessage:
-                    'Percent value types are relative to the full range of available data values.',
-                }
-              )}
-            >
-              <span>
-                {i18n.translate('xpack.lens.table.dynamicColoring.rangeType.label', {
-                  defaultMessage: 'Value type',
-                })}{' '}
-                <EuiIcon type="questionInCircle" color="subdued" />
-              </span>
-            </EuiToolTip>
+            <>
+              {i18n.translate('xpack.lens.table.dynamicColoring.rangeType.label', {
+                defaultMessage: 'Value type',
+              })}{' '}
+              <EuiIconTip
+                content={i18n.translate(
+                  'xpack.lens.table.dynamicColoring.customPalette.colorStopsHelpPercentage',
+                  {
+                    defaultMessage:
+                      'Percent value types are relative to the full range of available data values.',
+                  }
+                )}
+                position="top"
+                size="s"
+              />
+            </>
           }
           display="rowCompressed"
         >
