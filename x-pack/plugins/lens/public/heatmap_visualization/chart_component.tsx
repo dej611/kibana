@@ -23,6 +23,8 @@ import './index.scss';
 import { LensBrushEvent, LensFilterEvent } from '../types';
 import { desanitizeFilterContext } from '../utils';
 import { search } from '../../../../../src/plugins/data/public';
+import { CustomPaletteState } from '../../../../../src/plugins/charts/public';
+import { findMinMaxByColumnId } from './shared_utils';
 
 declare global {
   interface Window {
@@ -33,6 +35,39 @@ declare global {
   }
 }
 
+function getStops(
+  { colors, stops, range, rangeMin, rangeMax }: CustomPaletteState,
+  { min, max }: { min: number; max: number }
+) {
+  if (stops.length) {
+    return stops.slice(0);
+  }
+  const step = (rangeMax - rangeMin) / colors.length;
+  return colors.map((_, i) => rangeMin + ((1 + i) * step * (max - min)) / colors.length);
+}
+
+/**
+ * Heatmaps use a different convention than palettes (same convention as EuiColorStops)
+ * so stops need to be left shifted.
+ * Values normalization provides a percent => absolute array of values
+ */
+function shiftAndNormalizeStops(
+  params: CustomPaletteState,
+  { min, max }: { min: number; max: number }
+) {
+  return [params.rangeMin, ...getStops(params, { min, max })].map((value) => {
+    let result = value;
+    if (params.range === 'percent') {
+      result = (100 * (value - min)) / (max - min);
+    }
+    // for a range of 1 value the formulas above will divide by 0, so here's a safety guard
+    if (Number.isNaN(result)) {
+      return 1;
+    }
+    return result;
+  });
+}
+
 export const HeatmapComponent: FC<HeatmapRenderProps> = ({
   data,
   args,
@@ -40,12 +75,21 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = ({
   formatFactory,
   onClickValue,
   onSelectRange,
+  ...rest
 }) => {
   const isDarkTheme = false;
 
   const table = Object.values(data.tables)[0];
 
   const chartData = table.rows;
+  const minMaxByColumnId = findMinMaxByColumnId([args.valueAccessor!], table);
+  const colors = (args.palette?.params as CustomPaletteState)?.colors ?? undefined;
+  const ranges = (args.palette?.params as CustomPaletteState)
+    ? shiftAndNormalizeStops(
+        args.palette?.params as CustomPaletteState,
+        minMaxByColumnId[args.valueAccessor!]
+      )
+    : undefined;
 
   const xAxisColumnIndex = table.columns.findIndex((v) => v.id === args.xAccessor);
   const yAxisColumnIndex = table.columns.findIndex((v) => v.id === args.yAccessor);
@@ -228,7 +272,13 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = ({
       <Heatmap
         id={'heatmap'}
         name={valueColumn.name}
-        colorScale={ScaleType.Linear}
+        colorScale={
+          (args.palette?.params as CustomPaletteState)?.stops.length
+            ? ScaleType.Threshold
+            : ScaleType.Linear
+        }
+        colors={colors}
+        ranges={ranges}
         data={chartData}
         xAccessor={args.xAccessor}
         yAccessor={args.yAccessor || 'unifiedY'}

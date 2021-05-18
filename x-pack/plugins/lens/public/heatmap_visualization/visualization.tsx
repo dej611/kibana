@@ -26,13 +26,15 @@ import {
 } from './constants';
 import { HeatmapToolbar } from './toolbar_component';
 import { LensIconChartHeatmap } from '../assets/chart_heatmap';
+import { HeatmapDimensionEditor } from './dimension_editor';
+import { CustomPaletteParams, CUSTOM_PALETTE } from '../shared_components';
 
 const groupLabelForBar = i18n.translate('xpack.lens.heatmapVisualization.heatmapGroupLabel', {
   defaultMessage: 'Heatmap',
 });
 
 interface HeatmapVisualizationDeps {
-  paletteService?: PaletteRegistry;
+  paletteService: PaletteRegistry;
 }
 
 function getAxisName(axis: 'x' | 'y') {
@@ -167,6 +169,7 @@ export const getHeatmapVisualization = ({
           supportsMoreColumns: !state.valueAccessor,
           required: true,
           dataTestSubj: 'lnsHeatmap_cellPanel',
+          enableDimensionEditor: true,
         },
       ],
     };
@@ -205,6 +208,15 @@ export const getHeatmapVisualization = ({
     return update;
   },
 
+  renderDimensionEditor(domElement, props) {
+    render(
+      <I18nProvider>
+        <HeatmapDimensionEditor {...props} paletteService={paletteService} />
+      </I18nProvider>,
+      domElement
+    );
+  },
+
   renderToolbar(domElement, props) {
     render(
       <I18nProvider>
@@ -224,6 +236,19 @@ export const getHeatmapVisualization = ({
       return null;
     }
 
+    const paletteCurrentParams = (state.palette?.params || {}) as CustomPaletteParams;
+
+    const paletteParams = {
+      ...paletteCurrentParams,
+      // rewrite colors and stops as two distinct arguments
+      colors: (paletteCurrentParams?.stops || []).map(({ color }) => color),
+      stops:
+        paletteCurrentParams?.name === 'custom'
+          ? (paletteCurrentParams?.stops || []).map(({ stop }) => stop)
+          : [],
+      reverse: false, // managed at UI level
+    };
+
     return {
       type: 'expression',
       chain: [
@@ -236,6 +261,9 @@ export const getHeatmapVisualization = ({
             xAccessor: [state.xAccessor ?? ''],
             yAccessor: [state.yAccessor ?? ''],
             valueAccessor: [state.valueAccessor ?? ''],
+            palette: state.palette?.params
+              ? [paletteService.get(CUSTOM_PALETTE).toExpression(paletteParams)]
+              : [paletteService.get('default').toExpression()],
             legend: [
               {
                 type: 'expression',
