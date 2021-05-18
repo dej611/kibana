@@ -53,3 +53,10 @@ export function getTimeZone(uiSettings: IUiSettingsClient) {
 
   return configuredTimeZone;
 }
+
+export function getVisualizeGeoFieldMessage(fieldType: string) {
+  return i18n.translate('xpack.lens.visualizeGeoFieldMessage', {
+    defaultMessage: `Lens cannot visualize {fieldType} fields`,
+    values: { fieldType },
+  });
+}

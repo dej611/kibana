@@ -176,6 +176,7 @@ describe('XY Config panels', () => {
           state={{ ...state, layers: [{ ...state.layers[0], seriesType: 'bar_horizontal' }] }}
           formatFactory={jest.fn()}
           paletteService={chartPluginMock.createPaletteRegistry()}
+          panelRef={React.createRef()}
         />
       );
 
@@ -199,6 +200,7 @@ describe('XY Config panels', () => {
           state={state}
           formatFactory={jest.fn()}
           paletteService={chartPluginMock.createPaletteRegistry()}
+          panelRef={React.createRef()}
         />
       );
 
@@ -242,6 +244,7 @@ describe('XY Config panels', () => {
           }}
           formatFactory={jest.fn()}
           paletteService={chartPluginMock.createPaletteRegistry()}
+          panelRef={React.createRef()}
         />
       );
 
@@ -281,6 +284,7 @@ describe('XY Config panels', () => {
           }}
           formatFactory={jest.fn()}
           paletteService={chartPluginMock.createPaletteRegistry()}
+          panelRef={React.createRef()}
         />
       );
 
