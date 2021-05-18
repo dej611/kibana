@@ -70,7 +70,7 @@ function shiftAndNormalizeStops(
     if (Number.isNaN(result)) {
       return 1;
     }
-    return result;
+    return Number(result.toFixed(2));
   });
 }
 
@@ -90,22 +90,6 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = ({
   const paletteParams = args.palette?.params as CustomPaletteState;
 
   const chartData = table.rows;
-  const minMaxByColumnId = findMinMaxByColumnId([args.valueAccessor!], table);
-  // Heatmaps picks the first color for those values below the first stop threshold
-  const colors = paletteParams?.colors
-    ? ['#ffffff', ...paletteParams.colors]
-    : [
-        '#fffffff',
-        ...applyPaletteParams(
-          paletteService,
-          { type: 'palette', name: 'positive' },
-          minMaxByColumnId[args.valueAccessor!]
-        ).map(({ color }) => color),
-      ];
-  const ranges = shiftAndNormalizeStops(
-    { ...(paletteParams || defaultPaletteParams), colors: colors.slice(1) },
-    minMaxByColumnId[args.valueAccessor!]
-  );
 
   const xAxisColumnIndex = table.columns.findIndex((v) => v.id === args.xAccessor);
   const yAxisColumnIndex = table.columns.findIndex((v) => v.id === args.yAccessor);
@@ -133,6 +117,23 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = ({
 
   const xValuesFormatter = formatFactory(xAxisMeta.params);
   const valueFormatter = formatFactory(valueColumn.meta.params);
+
+  const minMaxByColumnId = findMinMaxByColumnId([args.valueAccessor!], table);
+  // Heatmaps picks the first color for those values below the first stop threshold
+  const colors = paletteParams?.colors
+    ? ['#fff', ...paletteParams.colors]
+    : [
+        '#fff',
+        ...applyPaletteParams(
+          paletteService,
+          { type: 'palette', name: 'positive' },
+          minMaxByColumnId[args.valueAccessor!]
+        ).map(({ color }) => color),
+      ];
+  const ranges = shiftAndNormalizeStops(
+    { ...(paletteParams || defaultPaletteParams), colors: colors.slice(1) },
+    minMaxByColumnId[args.valueAccessor!]
+  );
 
   const xDomain = (() => {
     if (!isTimeBasedSwimLane) return null;
@@ -283,7 +284,7 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = ({
         showLegend={args.legend.isVisible}
         legendPosition={args.legend.position}
         debugState={window._echDebugStateFlag ?? false}
-        {...(xDomain ? { xDomain } : {})}
+        {...(xDomain || {})}
       />
       <Heatmap
         id={'heatmap'}
