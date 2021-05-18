@@ -6,6 +6,7 @@
  */
 
 import { Position } from '@elastic/charts';
+import { PaletteRegistry } from 'src/plugins/charts/public';
 import { PaletteOutput } from '../../../../../src/plugins/charts/common';
 import { FormatFactory, LensBrushEvent, LensFilterEvent, LensMultiTable } from '../types';
 import {
@@ -56,6 +57,7 @@ export type HeatmapRenderProps = HeatmapExpressionProps & {
   formatFactory: FormatFactory;
   onClickValue: (data: LensFilterEvent['data']) => void;
   onSelectRange: (data: LensBrushEvent['data']) => void;
+  paletteService: PaletteRegistry;
 };
 
 export interface HeatmapLegendConfig {

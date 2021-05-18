@@ -195,7 +195,6 @@ export const heatmap: ExpressionFunctionDefinition<
       help: '',
     },
     palette: {
-      default: `{theme "palette" default={system_palette name="default"} }`,
       help: '',
       types: ['palette'],
     },
@@ -260,6 +259,7 @@ export const getHeatmapRenderer = (dependencies: {
             onSelectRange={onSelectRange}
             timeZone={dependencies.timeZone}
             formatFactory={formatFactory}
+            paletteService={dependencies.paletteService}
           />
         }
       </I18nProvider>,

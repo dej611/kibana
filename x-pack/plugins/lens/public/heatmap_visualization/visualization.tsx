@@ -263,7 +263,7 @@ export const getHeatmapVisualization = ({
             valueAccessor: [state.valueAccessor ?? ''],
             palette: state.palette?.params
               ? [paletteService.get(CUSTOM_PALETTE).toExpression(paletteParams)]
-              : [paletteService.get('default').toExpression()],
+              : [paletteService.get('positive').toExpression()],
             legend: [
               {
                 type: 'expression',

@@ -22,6 +22,7 @@ import {
   applyPaletteParams,
   FIXED_PROGRESSION,
   CustomPaletteParams,
+  defaultPaletteParams,
 } from '../shared_components/';
 import { PalettePanelContainer } from './palette_panel_container';
 import { findMinMaxByColumnId } from './shared_utils';
@@ -44,7 +45,7 @@ export function HeatmapDimensionEditor(
 
   const activePalette = state?.palette || {
     type: 'palette',
-    name: 'default',
+    name: defaultPaletteParams.name,
   };
   // need to tell the helper that the colorStops are required to display
   const displayStops = applyPaletteParams(
