@@ -44,6 +44,7 @@ import {
 import { findMinMaxByColumnId } from './shared_utils';
 import { CUSTOM_PALETTE } from '../../shared_components/coloring/constants';
 import { getFinalSummaryConfiguration } from '../summary';
+import { isNumericField } from '../utils';
 
 export const DataContext = React.createContext<DataContextType>({});
 
@@ -208,10 +209,10 @@ export const DatatableComponent = (props: DatatableRenderProps) => {
     ]
   );
 
-  const isNumericMap: Record<string, boolean> = useMemo(() => {
-    const numericMap: Record<string, boolean> = {};
+  const isNumericMap: Record<string, ReturnType<typeof isNumericField>> = useMemo(() => {
+    const numericMap: Record<string, ReturnType<typeof isNumericField>> = {};
     for (const column of firstLocalTable.columns) {
-      numericMap[column.id] = column.meta.type === 'number';
+      numericMap[column.id] = isNumericField(firstLocalTable, column.id);
     }
     return numericMap;
   }, [firstLocalTable]);
@@ -222,7 +223,7 @@ export const DatatableComponent = (props: DatatableRenderProps) => {
       if (column.alignment) {
         alignmentMap[column.columnId] = column.alignment;
       } else {
-        alignmentMap[column.columnId] = isNumericMap[column.columnId] ? 'right' : 'left';
+        alignmentMap[column.columnId] = isNumericMap[column.columnId]?.isNumeric ? 'right' : 'left';
       }
     });
     return alignmentMap;
@@ -231,7 +232,7 @@ export const DatatableComponent = (props: DatatableRenderProps) => {
   const minMaxByColumnId: Record<string, { min: number; max: number }> = useMemo(() => {
     return findMinMaxByColumnId(
       columnConfig.columns
-        .filter(({ columnId }) => isNumericMap[columnId])
+        .filter(({ columnId }) => isNumericMap[columnId].hasNumberValues)
         .map(({ columnId }) => columnId),
       firstTable
     );

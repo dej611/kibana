@@ -89,7 +89,7 @@ export function TableDimensionEditor(
   const currentData = frame.activeData?.[state.layerId];
 
   // either read config state or use same logic as chart itself
-  const { isNumeric, hasNumericValues } = isNumericField(currentData, accessor);
+  const { isNumeric, hasNumericValues, hasNumberValues } = isNumericField(currentData, accessor);
   const currentAlignment = column?.alignment || (isNumeric ? 'right' : 'left');
   const currentColorMode = column?.colorMode || 'none';
   const hasDynamicColoring = currentColorMode !== 'none';
@@ -244,7 +244,7 @@ export function TableDimensionEditor(
           )}
         </>
       )}
-      {isNumeric && (
+      {hasNumberValues && (
         <>
           <EuiFormRow
             display="columnCompressed"
