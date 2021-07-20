@@ -21,6 +21,90 @@ export default function ({
       to: '2015-09-22T00:00:00Z',
     };
     describe('correctly runs on the server', () => {
+      it('returns an error for an invalid expression', async () => {
+        const expressions = [
+          // missing index pattern
+          {
+            content: `
+            kibana_context timeRange={timerange from='${timeRange.from}' to='${timeRange.to}'}
+            | lens_merge_tables layerIds=\"myLayerId\"
+                tables={
+                    esaggs index={indexPatternLoad id=\"no-index-pattern-id\"} 
+                    aggs={aggDateHistogram id=\"0\" enabled=true schema=\"segment\" field=\"@timestamp\" useNormalizedEsInterval=true interval="1h" drop_partials=false min_doc_count=0 extended_bounds=\"{}\"}
+                    aggs={aggMax id=\"1\" enabled=true schema=\"metric\" field=\"bytes\"} 
+                    metricsAtAllLevels=false partialRows=false timeFields=\"@timestamp\"
+                    | lens_rename_columns 
+                        idMap=\"{\\\"col-0-0\\\":{\\\"label\\\":\\\"@timestamp\\\",\\\"dataType\\\":\\\"date\\\",\\\"operationType\\\":\\\"date_histogram\\\",\\\"sourceField\\\":\\\"@timestamp\\\",\\\"isBucketed\\\":true,\\\"scale\\\":\\\"interval\\\",\\\"params\\\":{\\\"interval\\\":\\\"1h\\\"},\\\"id\\\":\\\"timeColumnId\\\"},\\\"col-1-1\\\":{\\\"label\\\":\\\"Maximum of bytes\\\",\\\"dataType\\\":\\\"number\\\",\\\"operationType\\\":\\\"max\\\",\\\"sourceField\\\":\\\"bytes\\\",\\\"isBucketed\\\":false,\\\"scale\\\":\\\"ratio\\\",\\\"id\\\":\\\"maxColumnId\\\"}}\"
+                    | lens_counter_rate  inputColumnId=\"maxColumnId\" outputColumnId=\"counterRateColumnId\"
+                        outputColumnName=\"Counter rate of bytes per second\"
+                    | lens_time_scale dateColumnId=\"timeColumnId\" inputColumnId=\"counterRateColumnId\"
+                        outputColumnId=\"counterRateColumnId\" outputColumnName=\"Counter rate of bytes per second\" targetUnit=\"s\"
+                    | lens_format_column format=\"\" columnId=\"counterRateColumnId\"
+                        parentFormat=\"{\\\"id\\\":\\\"suffix\\\",\\\"params\\\":{\\\"unit\\\":\\\"s\\\"}}\"
+                }
+            `,
+            httpCode: 200,
+            testFn: (body: any) => expect(body.type).to.be('error'),
+          },
+          // wrong column id for lens_format_column
+          {
+            content: `
+            kibana_context timeRange={timerange from='${timeRange.from}' to='${timeRange.to}'}
+            | lens_merge_tables layerIds=\"myLayerId\"
+                tables={
+                    esaggs index={indexPatternLoad id=\"logstash-*\"} 
+                    aggs={aggDateHistogram id=\"0\" enabled=true schema=\"segment\" field=\"missing-timestamp\" useNormalizedEsInterval=true interval="1h" drop_partials=false min_doc_count=0 extended_bounds=\"{}\"}
+                    aggs={aggMax id=\"1\" enabled=true schema=\"metric\" field=\"bytes\"} 
+                    metricsAtAllLevels=false partialRows=false timeFields=\"@timestamp\"
+                    | lens_rename_columns 
+                        idMap=\"{\\\"col-0-0\\\":{\\\"label\\\":\\\"@timestamp\\\",\\\"dataType\\\":\\\"date\\\",\\\"operationType\\\":\\\"date_histogram\\\",\\\"sourceField\\\":\\\"@timestamp\\\",\\\"isBucketed\\\":true,\\\"scale\\\":\\\"interval\\\",\\\"params\\\":{\\\"interval\\\":\\\"1h\\\"},\\\"id\\\":\\\"timeColumnId\\\"},\\\"col-1-1\\\":{\\\"label\\\":\\\"Maximum of bytes\\\",\\\"dataType\\\":\\\"number\\\",\\\"operationType\\\":\\\"max\\\",\\\"sourceField\\\":\\\"bytes\\\",\\\"isBucketed\\\":false,\\\"scale\\\":\\\"ratio\\\",\\\"id\\\":\\\"maxColumnId\\\"}}\"
+                    | lens_counter_rate  inputColumnId=\"maxColumnId\" outputColumnId=\"counterRateColumnId\"
+                        outputColumnName=\"Counter rate of bytes per second\"
+                    | lens_time_scale dateColumnId=\"timeColumnId\" inputColumnId=\"counterRateColumnId\"
+                        outputColumnId=\"counterRateColumnId\" outputColumnName=\"Counter rate of bytes per second\" targetUnit=\"s\"
+                    | lens_format_column format=\"\" columnId=\"counterRateColumnId\"
+                        parentFormat=\"{\\\"id\\\":\\\"suffix\\\",\\\"params\\\":{\\\"unit\\\":\\\"s\\\"}}\"
+                }
+            `,
+            httpCode: 200,
+            testFn: (body: any) => expect(body.type).to.be('error'),
+          },
+          // wrong expression syntax (too many closing brakets)
+          {
+            content: `
+            kibana_context timeRange={timerange from='${timeRange.from}' to='${timeRange.to}'}
+            | lens_merge_tables layerIds=\"myLayerId\"
+                tables={
+                    esaggs index={indexPatternLoad id=\"logstash-*\"} 
+                    aggs={aggDateHistogram id=\"0\" enabled=true schema=\"segment\" field=\"@timestamp\" useNormalizedEsInterval=true interval="1h" drop_partials=false min_doc_count=0 extended_bounds=\"{}\"}
+                    aggs={aggMax id=\"1\" enabled=true schema=\"metric\" field=\"bytes\"} 
+                    metricsAtAllLevels=false partialRows=false timeFields=\"@timestamp\"
+                    | lens_rename_columns 
+                        idMap=\"{\\\"col-0-0\\\":{\\\"label\\\":\\\"@timestamp\\\",\\\"dataType\\\":\\\"date\\\",\\\"operationType\\\":\\\"date_histogram\\\",\\\"sourceField\\\":\\\"@timestamp\\\",\\\"isBucketed\\\":true,\\\"scale\\\":\\\"interval\\\",\\\"params\\\":{\\\"interval\\\":\\\"1h\\\"},\\\"id\\\":\\\"timeColumnId\\\"},\\\"col-1-1\\\":{\\\"label\\\":\\\"Maximum of bytes\\\",\\\"dataType\\\":\\\"number\\\",\\\"operationType\\\":\\\"max\\\",\\\"sourceField\\\":\\\"bytes\\\",\\\"isBucketed\\\":false,\\\"scale\\\":\\\"ratio\\\",\\\"id\\\":\\\"maxColumnId\\\"}}\"
+                    | lens_counter_rate  inputColumnId=\"maxColumnId\" outputColumnId=\"counterRateColumnId\"
+                        outputColumnName=\"Counter rate of bytes per second\"
+                    | lens_time_scale dateColumnId=\"timeColumnId\" inputColumnId=\"counterRateColumnId\"
+                        outputColumnId=\"counterRateColumnId\" outputColumnName=\"Counter rate of bytes per second\" targetUnit=\"s\"
+                    | lens_format_column format=\"\" columnId=\"counterRateColumnId\"
+                        parentFormat=\"{\\\"id\\\":\\\"suffix\\\",\\\"params\\\":{\\\"unit\\\":\\\"s\\\"}}\"
+                }}}}
+            `,
+            httpCode: 500,
+            testFn: (body: any) => expect(body.error).to.be('Internal Server Error'),
+          },
+        ];
+        for await (const { content: expression, httpCode, testFn } of expressions) {
+          await supertest
+            .post('/api/interpreter_functional/run_expression')
+            .set('kbn-xsrf', 'anything')
+            .send({ expression, input: undefined })
+            .expect(httpCode)
+            .expect(({ body }) => {
+              testFn(body);
+            });
+        }
+      });
+
       it('runs the provided lens expression on the server', async () => {
         const expression = `
         kibana_context timeRange={timerange from='${timeRange.from}' to='${timeRange.to}'}
