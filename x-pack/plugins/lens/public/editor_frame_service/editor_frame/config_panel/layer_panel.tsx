@@ -52,6 +52,7 @@ export function LayerPanel(
     registerNewLayerRef: (layerId: string, instance: HTMLDivElement | null) => void;
     toggleFullscreen: () => void;
     isFullscreen: boolean;
+    onEmptyDimensionAdd: (columnId: string, group: { groupId: string }) => void;
   }
 ) {
   const [activeDimension, setActiveDimension] = useState<ActiveDimensionState>(
@@ -469,6 +470,7 @@ export function LayerPanel(
                       layerDatasource={layerDatasource}
                       layerDatasourceDropProps={layerDatasourceDropProps}
                       onClick={(id) => {
+                        props.onEmptyDimensionAdd(id, group);
                         setActiveDimension({
                           activeGroup: group,
                           activeId: id,
@@ -529,6 +531,7 @@ export function LayerPanel(
                   toggleFullscreen,
                   isFullscreen,
                   setState: updateDataLayerState,
+                  supportStaticValue: Boolean(supportStaticValue),
                   layerType: activeVisualization.getLayerType(layerId, visualizationState),
                 }}
               />
