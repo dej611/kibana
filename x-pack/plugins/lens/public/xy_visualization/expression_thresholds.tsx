@@ -130,13 +130,10 @@ function getMarkerBody(label: string | undefined, isHorizontal: boolean) {
   if (!label) {
     return;
   }
-  const Label = (
+  return isHorizontal ? (
     <div className="eui-textTruncate" style={{ maxWidth: THRESHOLD_MARKER_SIZE * 3 }}>
       {label}
     </div>
-  );
-  return isHorizontal ? (
-    Label
   ) : (
     <div
       style={{
@@ -147,14 +144,16 @@ function getMarkerBody(label: string | undefined, isHorizontal: boolean) {
       }}
     >
       <div
+        className="eui-textTruncate"
         style={{
           display: 'inline-block',
           whiteSpace: 'nowrap',
           transform: 'translate(0, 100%) rotate(-90deg)',
           transformOrigin: '0 0',
+          maxWidth: THRESHOLD_MARKER_SIZE * 3,
         }}
       >
-        {Label}
+        {label}
         <div
           style={{
             float: 'left',
