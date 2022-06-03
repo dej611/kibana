@@ -248,6 +248,7 @@ export const buildExpression = (
           emphasizeFitting: [state.emphasizeFitting || false],
           curveType: [state.curveType || 'LINEAR'],
           fillOpacity: [state.fillOpacity || 0.3],
+          xExtent: [axisExtentConfigToExpression(state.xExtent, validDataLayers)],
           yLeftExtent: [axisExtentConfigToExpression(state.yLeftExtent, validDataLayers)],
           yRightExtent: [axisExtentConfigToExpression(state.yRightExtent, validDataLayers)],
           yLeftScale: [state.yLeftScale || 'linear'],

@@ -31,6 +31,28 @@ export function isFormatterCompatible(
   return formatter1.id === formatter2.id;
 }
 
+export function getXDomain(layers: XYDataLayerConfig[] = [], tables?: Record<string, Datatable>) {
+  const dataBounds = layers.reduce(
+    (bounds, layer) => {
+      const table = tables?.[layer.layerId];
+      if (layer.xAccessor && table) {
+        const sortedRows = table.rows
+          .map(({ [layer.xAccessor!]: xValue }) => xValue)
+          .sort((a, b) => a - b);
+        return {
+          min: Math.min(bounds.min, sortedRows[0]),
+          max: Math.max(bounds.max, sortedRows[sortedRows.length - 1]),
+        };
+      }
+      return bounds;
+    },
+    { min: Infinity, max: -Infinity }
+  );
+  if (isFinite(dataBounds.min) && isFinite(dataBounds.max)) {
+    return dataBounds;
+  }
+}
+
 export function groupAxesByType(layers: XYDataLayerConfig[], tables?: Record<string, Datatable>) {
   const series: {
     auto: FormattedMetric[];
