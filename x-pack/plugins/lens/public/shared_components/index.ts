@@ -10,7 +10,13 @@ export { ToolbarPopover } from './toolbar_popover';
 export { LegendSettingsPopover } from './legend_settings_popover';
 export { PalettePicker } from './palette_picker';
 export { RangeInputField } from './range_input_field';
-export { BucketAxisBoundsControl } from './axis_extent_settings';
+export {
+  BucketAxisBoundsControl,
+  validateBucketAxisDomain,
+  hasNumericHistogramDimension,
+  getDataBounds,
+  axisExtentConfigToExpression,
+} from './axis_extent';
 export { TooltipWrapper } from './tooltip_wrapper';
 export * from './coloring';
 export { useDebouncedValue } from './debounced_value';

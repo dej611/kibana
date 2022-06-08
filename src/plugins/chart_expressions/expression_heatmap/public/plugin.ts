@@ -9,7 +9,12 @@ import { ChartsPluginSetup } from '@kbn/charts-plugin/public';
 import { CoreSetup, CoreStart } from '@kbn/core/public';
 import { Plugin as ExpressionsPublicPlugin } from '@kbn/expressions-plugin/public';
 import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
-import { heatmapFunction, heatmapLegendConfig, heatmapGridConfig } from '../common';
+import {
+  heatmapFunction,
+  heatmapLegendConfig,
+  heatmapGridConfig,
+  heatmapAxisExtentConfig,
+} from '../common';
 import { setFormatService, setPaletteService, setUISettings, setThemeService } from './services';
 import { heatmapRenderer } from './expression_renderers';
 
@@ -35,6 +40,7 @@ export class ExpressionHeatmapPlugin {
     expressions.registerFunction(heatmapFunction);
     expressions.registerFunction(heatmapLegendConfig);
     expressions.registerFunction(heatmapGridConfig);
+    expressions.registerFunction(heatmapAxisExtentConfig);
     expressions.registerRenderer(heatmapRenderer({ theme: core.theme }));
   }
 

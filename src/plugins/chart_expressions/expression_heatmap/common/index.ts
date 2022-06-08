@@ -17,9 +17,16 @@ export type {
   HeatmapRenderProps,
   HeatmapLegendConfigResult,
   HeatmapGridConfigResult,
+  HeatmapAxisExtentConfig,
+  HeatmapAxisExtentConfigResult,
   HeatmapArguments,
 } from './types';
 
-export { heatmapFunction, heatmapLegendConfig, heatmapGridConfig } from './expression_functions';
+export {
+  heatmapFunction,
+  heatmapLegendConfig,
+  heatmapGridConfig,
+  heatmapAxisExtentConfig,
+} from './expression_functions';
 
 export { EXPRESSION_HEATMAP_NAME } from './constants';

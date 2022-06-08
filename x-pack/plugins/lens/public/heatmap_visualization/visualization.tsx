@@ -32,6 +32,7 @@ import { HeatmapToolbar } from './toolbar_component';
 import { HeatmapDimensionEditor } from './dimension_editor';
 import { getSafePaletteParams } from './utils';
 import { layerTypes } from '../../common';
+import { axisExtentConfigToExpression, hasNumericHistogramDimension } from '../shared_components';
 
 const groupLabelForHeatmap = i18n.translate('xpack.lens.heatmapVisualization.heatmapGroupLabel', {
   defaultMessage: 'Magnitude',
@@ -311,6 +312,8 @@ export const getHeatmapVisualization = ({
       return null;
     }
 
+    const hasNumberHistogram = hasNumericHistogramDimension(datasource, state.xAccessor);
+
     return {
       type: 'expression',
       chain: [
@@ -322,6 +325,14 @@ export const getHeatmapVisualization = ({
             xAccessor: [state.xAccessor ?? ''],
             yAccessor: [state.yAccessor ?? ''],
             valueAccessor: [state.valueAccessor ?? ''],
+            xExtent:
+              state.xExtent && hasNumberHistogram
+                ? [axisExtentConfigToExpression(state.xExtent, 'heatmap')]
+                : [],
+            yExtent:
+              state.yExtent && hasNumberHistogram
+                ? [axisExtentConfigToExpression(state.yExtent, 'heatmap')]
+                : [],
             lastRangeIsRightOpen: [
               state.palette?.params?.continuity
                 ? ['above', 'all'].includes(state.palette.params.continuity)

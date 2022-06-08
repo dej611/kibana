@@ -8,33 +8,20 @@
 import React from 'react';
 import { EuiFormRow, EuiButtonGroup, htmlIdGenerator } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
-import { RangeInputField } from './range_input_field';
-
-function validateBucketAxisDomain(extents: { lowerBound?: number; upperBound?: number }) {
-  return (
-    extents &&
-    extents.lowerBound != null &&
-    extents.upperBound != null &&
-    extents.upperBound < extents.lowerBound
-  );
-}
-
-interface AxisExtentConfig {
-  mode: 'full' | 'dataBounds' | 'custom';
-  lowerBound?: number;
-  upperBound?: number;
-}
+import { RangeInputField } from '../range_input_field';
+import { validateBucketAxisDomain } from './helpers';
+import { UnifiedAxisExtentConfig } from './types';
 
 const idPrefix = htmlIdGenerator()();
-export function BucketAxisBoundsControl({
+export function BucketAxisBoundsControl<T extends UnifiedAxisExtentConfig>({
   testSubjPrefix,
   extent,
   setExtent,
   dataBounds,
 }: {
   testSubjPrefix: string;
-  extent: AxisExtentConfig;
-  setExtent: (newExtent: AxisExtentConfig | undefined) => void;
+  extent: T;
+  setExtent: (newExtent: T | undefined) => void;
   dataBounds: { min: number; max: number } | undefined;
 }) {
   const boundaryError = validateBucketAxisDomain(extent);
@@ -73,7 +60,7 @@ export function BucketAxisBoundsControl({
           ]}
           idSelected={`${idPrefix}${extent.mode ?? 'dataBounds'}`}
           onChange={(id) => {
-            const newMode = id.replace(idPrefix, '') as AxisExtentConfig['mode'];
+            const newMode = id.replace(idPrefix, '') as UnifiedAxisExtentConfig['mode'];
             setExtent({
               ...extent,
               mode: newMode,

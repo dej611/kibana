@@ -19,6 +19,7 @@ import {
   EXPRESSION_HEATMAP_NAME,
   EXPRESSION_HEATMAP_GRID_NAME,
   EXPRESSION_HEATMAP_LEGEND_NAME,
+  EXPRESSION_HEATMAP_AXIS_EXTENT_NAME,
 } from '../constants';
 
 const convertToVisDimension = (
@@ -150,6 +151,16 @@ export const heatmapFunction = (): HeatmapExpressionFunctionDefinition => ({
       help: i18n.translate('expressionHeatmap.functions.args.ariaLabelHelpText', {
         defaultMessage: 'Specifies the aria label of the heat map',
       }),
+      required: false,
+    },
+    xExtent: {
+      types: [EXPRESSION_HEATMAP_AXIS_EXTENT_NAME],
+      help: '',
+      required: false,
+    },
+    yExtent: {
+      types: [EXPRESSION_HEATMAP_AXIS_EXTENT_NAME],
+      help: '',
       required: false,
     },
   },

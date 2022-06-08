@@ -5,11 +5,13 @@
  * 2.0.
  */
 
-import React, { memo, useState } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { EuiFlexGroup, EuiFlexItem, IconType } from '@elastic/eui';
 import { Position } from '@elastic/charts';
 import { i18n } from '@kbn/i18n';
 import { LegendSize } from '@kbn/visualizations-plugin/public';
+import { isEqual } from 'lodash';
+import type { HeatmapAxisExtentConfig } from '@kbn/expression-heatmap-plugin/common';
 import type { VisualizationToolbarProps } from '../types';
 import {
   LegendSettingsPopover,
@@ -17,11 +19,19 @@ import {
   ValueLabelsSettings,
   AxisTitleSettings,
   TooltipWrapper,
+  BucketAxisBoundsControl,
+  useDebouncedValue,
 } from '../shared_components';
 import { EuiIconAxisLeft } from '../assets/axis_left';
 import { EuiIconAxisBottom } from '../assets/axis_bottom';
 import type { HeatmapVisualizationState } from './types';
 import { getDefaultVisualValuesForLayer } from '../shared_components/datasource_default_values';
+import {
+  getDataBounds,
+  hasNumericHistogramDimension,
+  validateBucketAxisDomain,
+} from '../shared_components/axis_extent';
+
 import './toolbar_component.scss';
 
 const legendOptions: Array<{ id: string; value: 'auto' | 'show' | 'hide'; label: string }> = [
@@ -54,6 +64,11 @@ export const HeatmapToolbar = memo(
     const legendSize = state?.legend.legendSize;
 
     const [hadAutoLegendSize] = useState(() => legendSize === LegendSize.AUTO);
+
+    const [xAxisMetadata, yAxisMetadata] = [state.xAccessor, state.yAccessor].map((accessorId) => ({
+      isHistogram: hasNumericHistogramDimension(frame.datasourceLayers[state.layerId], accessorId),
+      dataBounds: getDataBounds(state.layerId, frame.activeData, accessorId),
+    }));
 
     return (
       <EuiFlexGroup alignItems="center" gutterSize="s" responsive={false}>
@@ -168,6 +183,18 @@ export const HeatmapToolbar = memo(
                     })
                   }
                 />
+                {yAxisMetadata.isHistogram ? (
+                  <AxisExtentConfigSettings
+                    extent={state.yExtent || { mode: 'dataBounds' }}
+                    setExtent={(newExtent) =>
+                      setState({
+                        ...state,
+                        yExtent: { type: 'heatmap_axis_extent', ...state.yExtent, ...newExtent },
+                      })
+                    }
+                    dataBounds={yAxisMetadata.dataBounds}
+                  />
+                ) : null}
               </ToolbarPopover>
             </TooltipWrapper>
 
@@ -203,6 +230,18 @@ export const HeatmapToolbar = memo(
                     })
                   }
                 />
+                {xAxisMetadata.isHistogram ? (
+                  <AxisExtentConfigSettings
+                    extent={state.xExtent || { mode: 'dataBounds' }}
+                    setExtent={(newExtent) =>
+                      setState({
+                        ...state,
+                        xExtent: { type: 'heatmap_axis_extent', ...state.xExtent, ...newExtent },
+                      })
+                    }
+                    dataBounds={xAxisMetadata.dataBounds}
+                  />
+                ) : null}
               </ToolbarPopover>
             </TooltipWrapper>
           </EuiFlexGroup>
@@ -211,3 +250,39 @@ export const HeatmapToolbar = memo(
     );
   }
 );
+
+function AxisExtentConfigSettings({
+  extent,
+  setExtent,
+  dataBounds,
+}: {
+  extent: HeatmapAxisExtentConfig;
+  setExtent: (extent: HeatmapAxisExtentConfig) => void;
+  dataBounds: { min: number; max: number } | undefined;
+}) {
+  const onExtentChange = useCallback(
+    (newExtent) => {
+      const boundaryError = validateBucketAxisDomain(newExtent);
+      if (newExtent && !boundaryError && !isEqual(newExtent, extent)) {
+        setExtent(newExtent);
+      }
+    },
+    [extent, setExtent]
+  );
+
+  const { inputValue: localExtent, handleInputChange: setLocalExtent } = useDebouncedValue<
+    HeatmapAxisExtentConfig | undefined
+  >({
+    value: extent,
+    onChange: onExtentChange,
+  });
+
+  return localExtent && setLocalExtent ? (
+    <BucketAxisBoundsControl<HeatmapAxisExtentConfig>
+      extent={localExtent}
+      setExtent={setLocalExtent}
+      dataBounds={dataBounds}
+      testSubjPrefix="lnsHeatmap"
+    />
+  ) : null;
+}

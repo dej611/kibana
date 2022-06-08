@@ -21,6 +21,7 @@ import {
   EXPRESSION_HEATMAP_LEGEND_NAME,
   EXPRESSION_HEATMAP_GRID_NAME,
   HEATMAP_FUNCTION_RENDERER_NAME,
+  EXPRESSION_HEATMAP_AXIS_EXTENT_NAME,
 } from '../constants';
 
 export interface HeatmapLegendConfig {
@@ -71,6 +72,16 @@ export type HeatmapGridConfigResult = HeatmapGridConfig & {
   type: typeof EXPRESSION_HEATMAP_GRID_NAME;
 };
 
+export interface HeatmapAxisExtentConfig {
+  mode: 'dataBounds' | 'custom';
+  lowerBound?: number;
+  upperBound?: number;
+}
+
+export type HeatmapAxisExtentConfigResult = HeatmapAxisExtentConfig & {
+  type: typeof EXPRESSION_HEATMAP_AXIS_EXTENT_NAME;
+};
+
 export interface HeatmapArguments {
   percentageMode?: boolean;
   lastRangeIsRightOpen?: boolean;
@@ -85,6 +96,8 @@ export interface HeatmapArguments {
   legend: HeatmapLegendConfigResult;
   gridConfig: HeatmapGridConfigResult;
   ariaLabel?: string;
+  xExtent?: HeatmapAxisExtentConfigResult;
+  yExtent?: HeatmapAxisExtentConfigResult;
 }
 
 export type HeatmapInput = Datatable;

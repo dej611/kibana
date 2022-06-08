@@ -494,15 +494,16 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
               debugState={window._echDebugStateFlag ?? false}
               tooltip={tooltip}
               theme={[themeOverrides, chartTheme]}
+              // TODO: make it work for X and Y domains
               xDomain={{
                 min:
                   dateHistogramMeta && dateHistogramMeta.timeRange
                     ? new Date(dateHistogramMeta.timeRange.from).getTime()
-                    : NaN,
+                    : args.xExtent?.lowerBound ?? NaN,
                 max:
                   dateHistogramMeta && dateHistogramMeta.timeRange
                     ? new Date(dateHistogramMeta.timeRange.to).getTime()
-                    : NaN,
+                    : args.xExtent?.upperBound ?? NaN,
               }}
               onBrushEnd={interactive ? (onBrushEnd as BrushEndListener) : undefined}
               ariaLabel={args.ariaLabel}

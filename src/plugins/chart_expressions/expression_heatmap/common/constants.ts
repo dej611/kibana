@@ -9,4 +9,10 @@
 export const EXPRESSION_HEATMAP_NAME = 'heatmap';
 export const EXPRESSION_HEATMAP_LEGEND_NAME = 'heatmap_legend';
 export const EXPRESSION_HEATMAP_GRID_NAME = 'heatmap_grid';
+export const EXPRESSION_HEATMAP_AXIS_EXTENT_NAME = 'heatmap_axis_extent';
 export const HEATMAP_FUNCTION_RENDERER_NAME = 'heatmap_renderer';
+
+export const AxisExtentModes = {
+  CUSTOM: 'custom',
+  DATA_BOUNDS: 'dataBounds',
+} as const;
