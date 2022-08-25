@@ -644,12 +644,10 @@ export interface VisualizationConfigProps<T = unknown> {
 
 export type VisualizationLayerWidgetProps<T = unknown> = VisualizationConfigProps<T> & {
   setState: (newState: T) => void;
-  onChangeIndexPattern: (indexPatternId: string, layerId: string) => void;
+  onChangeIndexPattern: (indexPatternId: string) => void;
 };
 
-export type VisualizationLayerHeaderContentProps<T = unknown> = VisualizationLayerWidgetProps<T> & {
-  defaultIndexPatternId: string;
-};
+export type VisualizationLayerHeaderContentProps<T = unknown> = VisualizationLayerWidgetProps<T>;
 
 export interface VisualizationToolbarProps<T = unknown> {
   setState: (newState: T) => void;
@@ -864,7 +862,7 @@ export interface VisualizationDisplayOptions {
   noPadding?: boolean;
 }
 
-export interface Visualization<T = unknown> {
+export interface Visualization<T = unknown, P = unknown> {
   /** Plugin ID, such as "lnsXY" */
   id: string;
 
@@ -875,6 +873,15 @@ export interface Visualization<T = unknown> {
    * - When using suggestions, the suggested state is passed in
    */
   initialize: (addNewLayer: () => string, state?: T, mainPalette?: PaletteOutput) => T;
+
+  /**
+   * Retrieve the used indexpatterns in the visualization
+   */
+  getUsedIndexPatterns?: (
+    state?: T,
+    indexPatternRefs?: IndexPatternRef[],
+    savedObjectReferences?: SavedObjectReference[]
+  ) => { usedPatterns: string[] };
 
   getMainPalette?: (state: T) => undefined | PaletteOutput;
 
@@ -898,15 +905,17 @@ export interface Visualization<T = unknown> {
   switchVisualizationType?: (visualizationTypeId: string, state: T) => T;
   /** Description is displayed as the clickable text in the chart switcher */
   getDescription: (state: T) => { icon?: IconType; label: string };
+  /** Visualizations can have references as well */
+  getPersistableState?: (state: T) => { state: P; savedObjectReferences: SavedObjectReference[] };
 
   /** Frame needs to know which layers the visualization is currently using */
   getLayerIds: (state: T) => string[];
   /** Reset button on each layer triggers this */
-  clearLayer: (state: T, layerId: string) => T;
+  clearLayer: (state: T, layerId: string, indexPatternId: string) => T;
   /** Optional, if the visualization supports multiple layers */
   removeLayer?: (state: T, layerId: string) => T;
   /** Track added layers in internal state */
-  appendLayer?: (state: T, layerId: string, type: LayerType) => T;
+  appendLayer?: (state: T, layerId: string, type: LayerType, indexPatternId: string) => T;
 
   /** Retrieve a list of supported layer types with initialization data */
   getSupportedLayers: (

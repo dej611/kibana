@@ -28,86 +28,88 @@ const isRangeAnnotation = (
 
 export function getEventAnnotationService(): EventAnnotationServiceType {
   return {
-    toExpression: (annotation) => {
-      if (isRangeAnnotation(annotation)) {
-        const { label, isHidden, color, key, outside } = annotation;
-        const { timestamp: time, endTimestamp: endTime } = key;
-        return {
-          type: 'expression',
-          chain: [
-            {
-              type: 'function',
-              function: 'manual_range_event_annotation',
-              arguments: {
-                time: [time],
-                endTime: [endTime],
-                label: [label || defaultAnnotationLabel],
-                color: [color || defaultAnnotationRangeColor],
-                outside: [Boolean(outside)],
-                isHidden: [Boolean(isHidden)],
+    toExpression: (annotations) => {
+      return annotations.map((annotation) => {
+        if (isRangeAnnotation(annotation)) {
+          const { label, isHidden, color, key, outside } = annotation;
+          const { timestamp: time, endTimestamp: endTime } = key;
+          return {
+            type: 'expression',
+            chain: [
+              {
+                type: 'function',
+                function: 'manual_range_event_annotation',
+                arguments: {
+                  time: [time],
+                  endTime: [endTime],
+                  label: [label || defaultAnnotationLabel],
+                  color: [color || defaultAnnotationRangeColor],
+                  outside: [Boolean(outside)],
+                  isHidden: [Boolean(isHidden)],
+                },
               },
-            },
-          ],
-        };
-      } else if ('filter' in annotation) {
-        const {
-          extraFields,
-          label,
-          isHidden,
-          color,
-          lineStyle,
-          lineWidth,
-          icon,
-          filter,
-          textVisibility,
-          timeField,
-          textField,
-        } = annotation;
-        return {
-          type: 'expression',
-          chain: [
-            {
-              type: 'function',
-              function: 'query_point_event_annotation',
-              arguments: {
-                filter: filter ? [queryToAst(filter)] : [],
-                timeField: [timeField],
-                textField: [textField],
-                label: [label || defaultAnnotationLabel],
-                color: [color || defaultAnnotationColor],
-                lineWidth: [lineWidth || 1],
-                lineStyle: [lineStyle || 'solid'],
-                icon: hasIcon(icon) ? [icon] : ['triangle'],
-                textVisibility: [textVisibility || false],
-                isHidden: [Boolean(isHidden)],
-                extraFields: extraFields ? [...extraFields] : [],
+            ],
+          };
+        } else if ('filter' in annotation) {
+          const {
+            extraFields,
+            label,
+            isHidden,
+            color,
+            lineStyle,
+            lineWidth,
+            icon,
+            filter,
+            textVisibility,
+            timeField,
+            textField,
+          } = annotation;
+          return {
+            type: 'expression',
+            chain: [
+              {
+                type: 'function',
+                function: 'query_point_event_annotation',
+                arguments: {
+                  filter: filter ? [queryToAst(filter)] : [],
+                  timeField: [timeField],
+                  textField: textField ? [textField] : [],
+                  label: [label || defaultAnnotationLabel],
+                  color: [color || defaultAnnotationColor],
+                  lineWidth: [lineWidth || 1],
+                  lineStyle: [lineStyle || 'solid'],
+                  icon: hasIcon(icon) ? [icon] : ['triangle'],
+                  textVisibility: [textVisibility || false],
+                  isHidden: [Boolean(isHidden)],
+                  extraFields: extraFields ?? [],
+                },
               },
-            },
-          ],
-        };
-      } else {
-        const { label, isHidden, color, lineStyle, lineWidth, icon, key, textVisibility } =
-          annotation;
-        return {
-          type: 'expression',
-          chain: [
-            {
-              type: 'function',
-              function: 'manual_point_event_annotation',
-              arguments: {
-                time: [key.timestamp],
-                label: [label || defaultAnnotationLabel],
-                color: [color || defaultAnnotationColor],
-                lineWidth: [lineWidth || 1],
-                lineStyle: [lineStyle || 'solid'],
-                icon: hasIcon(icon) ? [icon] : ['triangle'],
-                textVisibility: [textVisibility || 'false'],
-                isHidden: [Boolean(isHidden)],
+            ],
+          };
+        } else {
+          const { label, isHidden, color, lineStyle, lineWidth, icon, key, textVisibility } =
+            annotation;
+          return {
+            type: 'expression',
+            chain: [
+              {
+                type: 'function',
+                function: 'manual_point_event_annotation',
+                arguments: {
+                  time: [key.timestamp],
+                  label: [label || defaultAnnotationLabel],
+                  color: [color || defaultAnnotationColor],
+                  lineWidth: [lineWidth || 1],
+                  lineStyle: [lineStyle || 'solid'],
+                  icon: hasIcon(icon) ? [icon] : ['triangle'],
+                  textVisibility: [textVisibility || 'false'],
+                  isHidden: [Boolean(isHidden)],
+                },
               },
-            },
-          ],
-        };
-      }
+            ],
+          };
+        }
+      });
     },
   };
 }

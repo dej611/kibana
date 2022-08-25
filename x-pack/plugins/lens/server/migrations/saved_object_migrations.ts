@@ -33,7 +33,9 @@ import {
   XYVisualizationState830,
   VisState810,
   VisState820,
+  XYVisStatePre840,
   LensDocShape840,
+  VisState840,
 } from './types';
 import {
   commonRenameOperationsForFormula,
@@ -51,6 +53,7 @@ import {
   commonFixValueLabelsInXY,
   commonLockOldMetricVisSettings,
   commonPreserveOldLegendSizeDefault,
+  commonExplicitAnnotationType,
   commonMigrateMetricIds,
 } from './common_migrations';
 
@@ -512,6 +515,14 @@ const preserveOldLegendSizeDefault: SavedObjectMigrationFn<LensDocShape810, Lens
   doc
 ) => ({ ...doc, attributes: commonPreserveOldLegendSizeDefault(doc.attributes) });
 
+const addEventAnnotationType: SavedObjectMigrationFn<
+  LensDocShape840<XYVisStatePre840>,
+  LensDocShape840<VisState840>
+> = (doc) => {
+  const newDoc = cloneDeep(doc);
+  return { ...newDoc, attributes: commonExplicitAnnotationType(newDoc.attributes) };
+};
+
 const migrateMetricIds: SavedObjectMigrationFn<LensDocShape840, LensDocShape840> = (doc) => ({
   ...doc,
   attributes: commonMigrateMetricIds(doc.attributes),
@@ -537,7 +548,7 @@ const lensMigrations: SavedObjectMigrationMap = {
     enhanceTableRowHeight
   ),
   '8.3.0': flow(lockOldMetricVisSettings, preserveOldLegendSizeDefault, fixValueLabelsInXY),
-  '8.5.0': flow(migrateMetricIds),
+  '8.5.0': flow(migrateMetricIds, addEventAnnotationType),
 };
 
 export const getAllMigrations = (

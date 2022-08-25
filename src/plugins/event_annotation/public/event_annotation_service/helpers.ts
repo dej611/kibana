@@ -6,14 +6,18 @@
  * Side Public License, v 1.
  */
 import { i18n } from '@kbn/i18n';
+import { transparentize } from '@elastic/eui';
 import { euiLightVars } from '@kbn/ui-theme';
+import Color from 'color';
 import {
   EventAnnotationConfig,
   RangeEventAnnotationConfig,
   PointInTimeEventAnnotationConfig,
 } from '../../common';
 export const defaultAnnotationColor = euiLightVars.euiColorAccent;
-export const defaultAnnotationRangeColor = `#F04E981A`; // defaultAnnotationColor with opacity 0.1
+export const defaultAnnotationRangeColor = new Color(
+  transparentize(defaultAnnotationColor, 0.1)
+).hexa();
 
 export const defaultAnnotationLabel = i18n.translate(
   'eventAnnotation.manualAnnotation.defaultAnnotationLabel',
@@ -25,11 +29,11 @@ export const defaultAnnotationLabel = i18n.translate(
 export const isRangeAnnotationConfig = (
   annotation?: EventAnnotationConfig
 ): annotation is RangeEventAnnotationConfig => {
-  return Boolean(annotation && annotation?.key.type === 'range');
+  return Boolean(annotation && annotation.key.type === 'range');
 };
 
 export const isManualPointAnnotationConfig = (
   annotation?: EventAnnotationConfig
 ): annotation is PointInTimeEventAnnotationConfig => {
-  return Boolean(annotation && 'timestamp' in annotation?.key);
+  return Boolean(annotation && annotation.type === 'manual' && 'timestamp' in annotation.key);
 };

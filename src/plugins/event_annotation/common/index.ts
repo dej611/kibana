@@ -16,7 +16,7 @@ export type {
   QueryPointEventAnnotationArgs,
   QueryPointEventAnnotationOutput,
 } from './query_point_event_annotation/types';
-export type { EventAnnotationArgs, EventAnnotationOutput } from './types';
+export type { EventAnnotationArgs } from './types';
 export { manualPointEventAnnotation, manualRangeEventAnnotation } from './manual_event_annotation';
 export { queryPointEventAnnotation } from './query_point_event_annotation';
 export { eventAnnotationGroup } from './event_annotation_group';
@@ -28,4 +28,5 @@ export type {
   RangeEventAnnotationConfig,
   PointInTimeEventAnnotationConfig,
   AvailableAnnotationIcon,
+  EventAnnotationOutput,
 } from './types';

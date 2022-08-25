@@ -30,6 +30,7 @@ import {
   defaultAnnotationColor,
   defaultAnnotationRangeColor,
 } from '@kbn/event-annotation-plugin/public';
+import { ManualEventAnnotationOutput } from '@kbn/event-annotation-plugin/common/manual_event_annotation/types';
 import type {
   AnnotationLayerArgs,
   CommonXYAnnotationLayerConfig,
@@ -69,6 +70,7 @@ const groupVisibleConfigsByInterval = (
           !a.isHidden && a.type === 'manual_point_event_annotation'
       )
     )
+    .filter((a): a is ManualEventAnnotationOutput => a.type !== 'query_point_event_annotation')
     .sort((a, b) => moment(a.time).valueOf() - moment(b.time).valueOf())
     .reduce<Record<string, ManualPointEventAnnotationArgs[]>>((acc, current) => {
       const roundedTimestamp = getRoundedTimestamp(
