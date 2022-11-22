@@ -25,6 +25,7 @@ import { filtersOperation } from './filters';
 import { cardinalityOperation } from './cardinality';
 import { percentileOperation } from './percentile';
 import { percentileRanksOperation } from './percentile_ranks';
+import { rateOperation } from './rate';
 import {
   minOperation,
   averageOperation,
@@ -128,6 +129,7 @@ const internalOperationDefinitions = [
   rangeOperation,
   cumulativeSumOperation,
   counterRateOperation,
+  rateOperation,
   derivativeOperation,
   movingAverageOperation,
   mathOperation,
@@ -168,6 +170,7 @@ export {
 } from './calculations';
 export { formulaOperation } from './formula/formula';
 export { staticValueOperation } from './static_value';
+export { rateOperation } from './rate';
 
 /**
  * Properties passed to the operation-specific part of the popover editor
@@ -645,7 +648,11 @@ interface FullReferenceOperationDefinition<C extends BaseIndexPatternColumn> {
    * Returns the meta data of the operation if applied. Undefined
    * if the operation can't be added with these fields.
    */
-  getPossibleOperation: (indexPattern: IndexPattern) => OperationMetadata | undefined;
+  getPossibleOperation: (
+    indexPattern: IndexPattern
+    // layer: FormBasedLayer,
+    // references: string[]
+  ) => OperationMetadata | undefined;
   /**
    * A chain of expression functions which will transform the table
    */

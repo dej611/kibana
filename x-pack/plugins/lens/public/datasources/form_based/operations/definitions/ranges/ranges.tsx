@@ -84,9 +84,15 @@ export const rangeOperation: OperationDefinition<
   input: 'field',
   getErrorMessage: (layer, columnId, indexPattern) =>
     getInvalidFieldMessage(layer.columns[columnId] as FieldBasedIndexPatternColumn, indexPattern),
-  getPossibleOperationForField: ({ aggregationRestrictions, aggregatable, type }) => {
+  getPossibleOperationForField: ({
+    aggregationRestrictions,
+    aggregatable,
+    type,
+    timeSeriesMetricType,
+  }) => {
     if (
       type === 'number' &&
+      timeSeriesMetricType !== 'counter' &&
       aggregatable &&
       (!aggregationRestrictions || aggregationRestrictions.range)
     ) {

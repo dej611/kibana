@@ -410,7 +410,11 @@ export function insertNewColumn({
       [tempLayer, referenceIds] = [result.layer, result.referenceIds];
     }
 
-    const possibleOperation = operationDefinition.getPossibleOperation(indexPattern);
+    const possibleOperation = operationDefinition.getPossibleOperation(
+      indexPattern
+      // layer,
+      // referenceIds
+    );
     if (!possibleOperation) {
       throw new Error(`Can't create operation ${op} because it's incompatible with the data view`);
     }

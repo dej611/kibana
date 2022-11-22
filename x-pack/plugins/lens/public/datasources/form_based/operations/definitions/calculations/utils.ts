@@ -14,7 +14,10 @@ import { LayerType } from '../../../../../../common';
 import type { TimeScaleUnit } from '../../../../../../common/expressions';
 import type { FormBasedLayer } from '../../../types';
 import { adjustTimeScaleLabelSuffix } from '../../time_scale_utils';
-import type { ReferenceBasedIndexPatternColumn } from '../column_types';
+import type {
+  FieldBasedIndexPatternColumn,
+  ReferenceBasedIndexPatternColumn,
+} from '../column_types';
 import { getManagedColumnsFrom, isColumnValidAsReference } from '../../layer_helpers';
 import { operationDefinitionMap } from '..';
 
@@ -126,6 +129,48 @@ export function checkReferences(layer: FormBasedLayer, columnId: string) {
     }
   });
   return errors.length ? errors : undefined;
+}
+
+function isMetricCounterField(indexPattern: IndexPattern, field: string) {
+  return indexPattern.getFieldByName(field)?.timeSeriesMetricType === 'counter';
+}
+
+function checkReferencedColumnMetric(
+  layer: FormBasedLayer,
+  columnId: string,
+  indexPattern: IndexPattern
+) {
+  const column = layer.columns[columnId] as ReferenceBasedIndexPatternColumn;
+  return column.references
+    .filter((referencedId) => 'sourceField' in layer.columns[referencedId])
+    .map((referencedId) => {
+      const fieldName = (layer.columns[referencedId] as FieldBasedIndexPatternColumn).sourceField;
+      if (!isMetricCounterField(indexPattern, fieldName)) {
+        return i18n.translate('xpack.lens.indexPattern.invalidReferenceConfiguration', {
+          defaultMessage: 'Dimension "{dimensionLabel}" is configured incorrectly',
+          values: {
+            dimensionLabel: layer.columns[referencedId].label,
+          },
+        });
+      }
+    });
+}
+
+export function getErrorForRateReference(
+  layer: FormBasedLayer,
+  columnId: string,
+  name: string,
+  indexPattern: IndexPattern
+) {
+  const dateErrors = checkForDateHistogram(layer, name) ?? [];
+  const referenceErrors = checkReferences(layer, columnId) ?? [];
+  const metricCounterErrors = checkReferencedColumnMetric(layer, columnId, indexPattern) ?? [];
+  if (metricCounterErrors.length) {
+    return metricCounterErrors.concat(referenceErrors);
+  }
+  if (dateErrors.length) {
+    return dateErrors.concat(referenceErrors);
+  }
 }
 
 export function getErrorsForDateReference(layer: FormBasedLayer, columnId: string, name: string) {

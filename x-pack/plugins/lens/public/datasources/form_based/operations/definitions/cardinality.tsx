@@ -81,10 +81,16 @@ export const cardinalityOperation: OperationDefinition<
   }),
   allowAsReference: true,
   input: 'field',
-  getPossibleOperationForField: ({ aggregationRestrictions, aggregatable, type }) => {
+  getPossibleOperationForField: ({
+    aggregationRestrictions,
+    aggregatable,
+    type,
+    timeSeriesMetricType,
+  }) => {
     if (
       supportedTypes.has(type) &&
       aggregatable &&
+      timeSeriesMetricType !== 'counter' &&
       (!aggregationRestrictions || aggregationRestrictions.cardinality)
     ) {
       return { dataType: 'number', isBucketed: IS_BUCKETED, scale: SCALE };

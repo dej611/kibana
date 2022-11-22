@@ -95,10 +95,16 @@ function buildMetricOperation<T extends MetricColumn<string>>({
     description,
     input: 'field',
     timeScalingMode: optionalTimeScaling ? 'optional' : undefined,
-    getPossibleOperationForField: ({ aggregationRestrictions, aggregatable, type: fieldType }) => {
+    getPossibleOperationForField: ({
+      aggregationRestrictions,
+      aggregatable,
+      type: fieldType,
+      timeSeriesMetricType,
+    }) => {
       if (
         (supportedTypes.includes(fieldType) || (supportsDate && fieldType === 'date')) &&
         aggregatable &&
+        timeSeriesMetricType !== 'counter' &&
         (!aggregationRestrictions || aggregationRestrictions[type])
       ) {
         return {

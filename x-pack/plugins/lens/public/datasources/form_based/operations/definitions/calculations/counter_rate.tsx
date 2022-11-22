@@ -7,14 +7,14 @@
 
 import { i18n } from '@kbn/i18n';
 import { FormattedIndexPatternColumn, ReferenceBasedIndexPatternColumn } from '../column_types';
-import { FormBasedLayer } from '../../../types';
 import {
   buildLabelFunction,
-  getErrorsForDateReference,
   checkForDateHistogram,
   dateBasedOperationToExpression,
   hasDateField,
   checkForDataLayerType,
+  // getErrorForRateReference,
+  getErrorsForDateReference,
 } from './utils';
 import { DEFAULT_TIME_SCALE } from '../../time_scale_utils';
 import { OperationDefinition } from '..';
@@ -39,15 +39,17 @@ export type CounterRateIndexPatternColumn = FormattedIndexPatternColumn &
     operationType: 'counter_rate';
   };
 
+const opName = i18n.translate('xpack.lens.indexPattern.counterRate', {
+  defaultMessage: 'Counter rate',
+});
+
 export const counterRateOperation: OperationDefinition<
   CounterRateIndexPatternColumn,
   'fullReference'
 > = {
   type: 'counter_rate',
   priority: 1,
-  displayName: i18n.translate('xpack.lens.indexPattern.counterRate', {
-    defaultMessage: 'Counter rate',
-  }),
+  displayName: opName,
   input: 'fullReference',
   selectionStyle: 'field',
   requiredReferences: [
@@ -106,22 +108,14 @@ export const counterRateOperation: OperationDefinition<
   isTransferable: (column, newIndexPattern) => {
     return hasDateField(newIndexPattern);
   },
-  getErrorMessage: (layer: FormBasedLayer, columnId: string) => {
+  getErrorMessage: (layer, columnId, indexPattern) => {
     return combineErrorMessages([
-      getErrorsForDateReference(
-        layer,
-        columnId,
-        i18n.translate('xpack.lens.indexPattern.counterRate', {
-          defaultMessage: 'Counter rate',
-        })
-      ),
+      getErrorsForDateReference(layer, columnId, opName),
+      // getErrorForRateReference(layer, columnId, opName, indexPattern),
       getDisallowedPreviousShiftMessage(layer, columnId),
     ]);
   },
   getDisabledStatus(indexPattern, layer, layerType) {
-    const opName = i18n.translate('xpack.lens.indexPattern.counterRate', {
-      defaultMessage: 'Counter rate',
-    });
     if (layerType) {
       const dataLayerErrors = checkForDataLayerType(layerType, opName);
       if (dataLayerErrors) {

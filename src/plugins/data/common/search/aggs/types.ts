@@ -114,6 +114,7 @@ import { AggParamsSampler } from './buckets/sampler';
 import { AggParamsDiversifiedSampler } from './buckets/diversified_sampler';
 import { AggParamsSignificantText } from './buckets/significant_text';
 import { aggTopMetrics } from './metrics/top_metrics_fn';
+import { aggTSDBRate } from './metrics/tsdb_rate_fn';
 
 export type { IAggConfig, AggConfigSerialized } from './agg_config';
 export type { CreateAggConfigParams, IAggConfigs, AggConfigsOptions } from './agg_configs';
@@ -212,6 +213,7 @@ interface SerializedAggParamsMapping {
   [METRIC_TYPES.SERIAL_DIFF]: AggParamsSerialDiffSerialized;
   [METRIC_TYPES.TOP_HITS]: AggParamsTopHitSerialized;
   [METRIC_TYPES.TOP_METRICS]: AggParamsTopMetricsSerialized;
+  [METRIC_TYPES.TSDB_RATE]: AggParamsTSDBRateSerialized;
 }
 
 export interface AggParamsMapping {
@@ -296,6 +298,7 @@ export interface AggFunctionsMapping {
   aggMovingAvg: ReturnType<typeof aggMovingAvg>;
   aggPercentileRanks: ReturnType<typeof aggPercentileRanks>;
   aggPercentiles: ReturnType<typeof aggPercentiles>;
+  aggTSDBRate: ReturnType<typeof aggTSDBRate>;
   aggSerialDiff: ReturnType<typeof aggSerialDiff>;
   aggStdDeviation: ReturnType<typeof aggStdDeviation>;
   aggSum: ReturnType<typeof aggSum>;
