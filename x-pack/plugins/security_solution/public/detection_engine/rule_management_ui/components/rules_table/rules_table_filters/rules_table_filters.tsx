@@ -5,13 +5,7 @@
  * 2.0.
  */
 
-import {
-  EuiFieldSearch,
-  EuiFilterButton,
-  EuiFilterGroup,
-  EuiFlexGroup,
-  EuiFlexItem,
-} from '@elastic/eui';
+import { EuiFilterButton, EuiFilterGroup, EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { isEqual } from 'lodash/fp';
 import React, { useCallback } from 'react';
 import styled from 'styled-components';
@@ -22,19 +16,10 @@ import * as i18n from '../../../../../detections/pages/detection_engine/rules/tr
 import { useRulesTableContext } from '../rules_table/rules_table_context';
 import { TagsFilterPopover } from './tags_filter_popover';
 import { useTags } from '../../../../rule_management/logic/use_tags';
-import { SEARCH_FIRST_RULE_ANCHOR } from '../../guided_onboarding/rules_management_tour';
+import { RuleSearchField } from './rule_search_field';
 
 const FilterWrapper = styled(EuiFlexGroup)`
   margin-bottom: ${({ theme }) => theme.eui.euiSizeXS};
-`;
-
-const SearchBarWrapper = styled(EuiFlexItem)`
-  & .euiPopover,
-  & .euiPopover__anchor {
-    // This is needed to "cancel" styles passed down from EuiTourStep that
-    // interfere with EuiFieldSearch and don't allow it to take the full width
-    display: block;
-  }
 `;
 
 /**
@@ -84,16 +69,7 @@ const RulesTableFiltersComponent = () => {
 
   return (
     <FilterWrapper gutterSize="m" justifyContent="flexEnd">
-      <SearchBarWrapper grow>
-        <EuiFieldSearch
-          id={SEARCH_FIRST_RULE_ANCHOR}
-          aria-label={i18n.SEARCH_RULES}
-          fullWidth
-          incremental={false}
-          placeholder={i18n.SEARCH_PLACEHOLDER}
-          onSearch={handleOnSearch}
-        />
-      </SearchBarWrapper>
+      <RuleSearchField initialValue={filterOptions.filter} onSearch={handleOnSearch} />
       <EuiFlexItem grow={false}>
         <EuiFilterGroup>
           <TagsFilterPopover
