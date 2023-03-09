@@ -74,7 +74,7 @@ const getIconFromAccessorConfig = (accessorConfig: AccessorConfig) => (
     {accessorConfig.triggerIconType === 'custom' && accessorConfig.customIcon && (
       <EuiIcon
         {...baseIconProps}
-        type={accessorConfig.customIcon}
+        type={accessorConfig.customIcon === 'alert' ? 'warning' : accessorConfig.customIcon}
         color={accessorConfig.color}
         aria-label={i18n.translate('xpack.lens.editorFrame.customIconIndicatorLabel', {
           defaultMessage: 'This dimension is using a custom icon',

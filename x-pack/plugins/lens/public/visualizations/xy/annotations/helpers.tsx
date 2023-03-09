@@ -449,8 +449,9 @@ export const getSingleColorAnnotationConfig = (
   annotation: EventAnnotationConfig
 ): AccessorConfig => {
   const annotationIcon = !isRangeAnnotationConfig(annotation)
-    ? annotationsIconSet.find((option) => option.value === annotation?.icon) ||
-      annotationsIconSet.find((option) => option.value === 'triangle')
+    ? annotationsIconSet.find(
+        (option) => option.value === (annotation.icon === 'alert' ? 'warning' : annotation.icon)
+      ) || annotationsIconSet.find((option) => option.value === 'triangle')
     : undefined;
   const icon = annotationIcon?.icon ?? annotationIcon?.value;
   return {

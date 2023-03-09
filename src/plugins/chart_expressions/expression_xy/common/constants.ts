@@ -126,6 +126,7 @@ export const AvailableReferenceLineIcons = {
   STAR_FILLED: 'starFilled',
   TAG: 'tag',
   TRIANGLE: 'triangle',
+  WARNING: 'warning',
 } as const;
 
 export const AxisModes = {

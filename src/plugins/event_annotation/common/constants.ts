@@ -22,4 +22,5 @@ export const AvailableAnnotationIcons = {
   STAR_FILLED: 'starFilled',
   TAG: 'tag',
   TRIANGLE: 'triangle',
+  WARNING: 'warning',
 } as const;

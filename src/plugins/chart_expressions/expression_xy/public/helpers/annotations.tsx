@@ -179,7 +179,7 @@ export const AnnotationIcon = ({
     <EuiIcon
       {...rest}
       data-test-subj="xyVisAnnotationIcon"
-      type={iconConfig.icon || type}
+      type={iconConfig.icon || (type === 'alert' ? 'warning' : type)}
       className={classnames(
         { [rotateClassName]: iconConfig.shouldRotate },
         {

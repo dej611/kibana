@@ -47,7 +47,7 @@ export const referenceLineIconsSet: IconSet<AvailableReferenceLineIcon> = [
     }),
   },
   {
-    value: 'alert',
+    value: 'warning',
     label: i18n.translate('xpack.lens.xyChart.iconSelect.alertIconLabel', {
       defaultMessage: 'Alert',
     }),

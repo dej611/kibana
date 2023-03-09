@@ -44,8 +44,9 @@ export function IconSelect<Icon extends string = AvailableReferenceLineIcon>({
   customIconSet: IconSet<Icon>;
   defaultIcon?: string;
 }) {
+  const correctValue = value === 'alert' ? 'warning' : value;
   const selectedIcon =
-    customIconSet.find((option) => value === option.value) ||
+    customIconSet.find((option) => correctValue === option.value) ||
     customIconSet.find((option) => option.value === defaultIcon)!;
 
   return (
