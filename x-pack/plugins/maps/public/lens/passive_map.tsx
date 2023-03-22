@@ -17,6 +17,7 @@ import { createBasemapLayerDescriptor } from '../classes/layers/create_basemap_l
 interface Props {
   factory: EmbeddableFactory<MapEmbeddableInput, MapEmbeddableOutput>;
   passiveLayer: LayerDescriptor;
+  renderComplete: () => void;
 }
 
 interface State {
@@ -88,6 +89,7 @@ export class PassiveMap extends Component<Props, State> {
       this.setState({ mapEmbeddable: mapEmbeddable as MapEmbeddable }, () => {
         if (this.state.mapEmbeddable && this._embeddableRef.current) {
           this.state.mapEmbeddable.render(this._embeddableRef.current);
+          this.props.renderComplete();
         }
       });
     }
