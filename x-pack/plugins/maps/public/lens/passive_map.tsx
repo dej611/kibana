@@ -89,7 +89,8 @@ export class PassiveMap extends Component<Props, State> {
       this.setState({ mapEmbeddable: mapEmbeddable as MapEmbeddable }, () => {
         if (this.state.mapEmbeddable && this._embeddableRef.current) {
           this.state.mapEmbeddable.render(this._embeddableRef.current);
-          this.props.renderComplete();
+          // replicate the logic in connected_../components/map_container/map_container.tsx
+          setTimeout(() => this.props.renderComplete(), 5000);
         }
       });
     }
