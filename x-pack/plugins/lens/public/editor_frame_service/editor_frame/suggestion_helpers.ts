@@ -41,31 +41,34 @@ import {
  * Each suggestion represents a valid state of the editor and can be applied by creating an
  * action with `toSwitchAction` and dispatching it
  */
-export function getSuggestions({
-  datasourceMap,
-  datasourceStates,
-  visualizationMap,
-  activeVisualization,
-  subVisualizationId,
-  visualizationState,
-  field,
-  visualizeTriggerFieldContext,
-  activeData,
-  dataViews,
-  mainPalette,
-}: {
-  datasourceMap: DatasourceMap;
-  datasourceStates: DatasourceStates;
-  visualizationMap: VisualizationMap;
-  activeVisualization?: Visualization;
-  subVisualizationId?: string;
-  visualizationState: unknown;
-  field?: unknown;
-  visualizeTriggerFieldContext?: VisualizeFieldContext | VisualizeEditorContext;
-  activeData?: Record<string, Datatable>;
-  dataViews: DataViewsState;
-  mainPalette?: PaletteOutput;
-}): Suggestion[] {
+export function getSuggestions(
+  {
+    datasourceMap,
+    datasourceStates,
+    visualizationMap,
+    activeVisualization,
+    subVisualizationId,
+    visualizationState,
+    field,
+    visualizeTriggerFieldContext,
+    activeData,
+    dataViews,
+    mainPalette,
+  }: {
+    datasourceMap: DatasourceMap;
+    datasourceStates: DatasourceStates;
+    visualizationMap: VisualizationMap;
+    activeVisualization?: Visualization;
+    subVisualizationId?: string;
+    visualizationState: unknown;
+    field?: unknown;
+    visualizeTriggerFieldContext?: VisualizeFieldContext | VisualizeEditorContext;
+    activeData?: Record<string, Datatable>;
+    dataViews: DataViewsState;
+    mainPalette?: PaletteOutput;
+  },
+  options: { exclude: string[] } = { exclude: [] }
+): Suggestion[] {
   const datasources = Object.entries(datasourceMap).filter(
     ([datasourceId]) => datasourceStates[datasourceId] && !datasourceStates[datasourceId].isLoading
   );
@@ -133,6 +136,7 @@ export function getSuggestions({
   // Pass all table suggestions to all visualization extensions to get visualization suggestions
   // and rank them by score
   return Object.entries(visualizationMap)
+    .filter(([visualizationId]) => !options.exclude.includes(visualizationId))
     .flatMap(([visualizationId, visualization]) => {
       const supportedLayerTypes = visualization.getSupportedLayers().map(({ type }) => type);
       return datasourceTableSuggestions
