@@ -15,15 +15,30 @@ import {
   EuiFieldText,
   EuiSwitch,
   EuiCode,
+  useEuiTheme,
 } from '@elastic/eui';
 import { useDebouncedValue } from '@kbn/visualization-ui-components/public';
 import { useKibana } from '@kbn/kibana-react-plugin/public';
 import { FORMATS_UI_SETTINGS } from '@kbn/field-formats-plugin/common';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { css } from '@emotion/react';
 import { LensAppServices } from '../../../app_plugin/types';
 import { GenericIndexPatternColumn } from '../form_based';
 import { isColumnFormatted } from '../operations/definitions/helpers';
 import { ValueFormatConfig } from '../operations/definitions/column_types';
+
+const createContext = () =>
+  document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D;
+
+// extracted from getTextWidth for performance
+const context = createContext();
+
+const getTextWidth = (text: string, font: string) => {
+  const ctx = context ?? createContext();
+  ctx.font = font;
+  const metrics = ctx.measureText(text);
+  return metrics.width;
+};
 
 const supportedFormats: Record<
   string,
@@ -131,8 +146,24 @@ function useDebouncedInputforParam<T extends FormatParamsKeys>(
   return { setter, value };
 }
 
+function getFixedWidthLabel(prependLabel: string, paddingWidth: number, padding: string) {
+  if (paddingWidth === 0) {
+    return prependLabel;
+  }
+  return [
+    prependLabel,
+    <span
+      css={css`
+        display: block;
+        width: calc(${padding} + ${Math.round(paddingWidth) + 'px'});
+      `}
+    />,
+  ];
+}
+
 export function FormatSelector(props: FormatSelectorProps) {
-  const { docLinks, uiSettings } = useKibana<LensAppServices>().services;
+  const { uiSettings } = useKibana<LensAppServices>().services;
+  const { euiTheme } = useEuiTheme();
   const { selectedColumn, onChange } = props;
   const currentFormat = isColumnFormatted(selectedColumn)
     ? selectedColumn.params?.format
@@ -210,6 +241,14 @@ export function FormatSelector(props: FormatSelectorProps) {
     [currentFormat, selectedFormat?.title]
   );
 
+  const fontStyle = `${euiTheme.font.weight.semiBold} ${euiTheme.font.scale.xs} ${euiTheme.font.family}`;
+
+  const prependLabelWidth: Record<string, number> = {
+    [decimalsLabel]: getTextWidth(decimalsLabel, fontStyle),
+    [suffixLabel]: getTextWidth(suffixLabel, fontStyle),
+  };
+  const prependFixedWidth = Math.max(...Object.values(prependLabelWidth));
+
   return (
     <>
       <EuiFormRow
@@ -263,7 +302,11 @@ export function FormatSelector(props: FormatSelectorProps) {
                 data-test-subj="indexPattern-dimension-formatDecimals"
                 compressed
                 fullWidth
-                prepend={decimalsLabel}
+                prepend={getFixedWidthLabel(
+                  decimalsLabel,
+                  prependFixedWidth - prependLabelWidth[decimalsLabel],
+                  euiTheme.size.s
+                )}
                 aria-label={decimalsLabel}
               />
 
@@ -276,7 +319,11 @@ export function FormatSelector(props: FormatSelectorProps) {
                 data-test-subj="indexPattern-dimension-formatSuffix"
                 compressed
                 fullWidth
-                prepend={suffixLabel}
+                prepend={getFixedWidthLabel(
+                  suffixLabel,
+                  prependFixedWidth - prependLabelWidth[suffixLabel],
+                  euiTheme.size.s
+                )}
                 aria-label={suffixLabel}
               />
             </>
