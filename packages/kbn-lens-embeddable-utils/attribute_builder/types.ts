@@ -80,7 +80,8 @@ export interface ChartConfig<
 // Formula
 type LensFormula = Parameters<FormulaPublicApi['insertOrReplaceFormulaColumn']>[1];
 export type FormulaConfig = Omit<LensFormula, 'format' | 'formula'> & {
+  type: 'formula';
   color?: string;
-  format: NonNullable<LensFormula['format']>;
+  format?: NonNullable<LensFormula['format']>;
   value: string;
 };

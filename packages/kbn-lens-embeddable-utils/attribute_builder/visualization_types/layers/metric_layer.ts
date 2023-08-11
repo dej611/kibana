@@ -21,7 +21,6 @@ import { FormulaColumn } from './columns/formula';
 const HISTOGRAM_COLUMN_NAME = 'x_date_histogram';
 
 export interface MetricLayerOptions {
-  backgroundColor?: string;
   showTitle?: boolean;
   showTrendLine?: boolean;
   subtitle?: string;
@@ -89,13 +88,13 @@ export class MetricLayer implements ChartLayer<MetricVisualizationState> {
   }
 
   getLayerConfig(layerId: string, accessorId: string): MetricVisualizationState {
-    const { subtitle, backgroundColor, showTrendLine } = this.layerConfig.options ?? {};
+    const { subtitle, showTrendLine } = this.layerConfig.options ?? {};
 
     return {
       layerId,
       layerType: 'data',
       metricAccessor: accessorId,
-      color: backgroundColor,
+      color: this.layerConfig.data.color,
       subtitle,
       showBar: false,
       ...(showTrendLine

@@ -19,6 +19,10 @@ export const DEFAULT_AD_HOC_DATA_VIEW_ID = 'infra_lens_ad_hoc_default';
 
 const DEFAULT_BREAKDOWN_SIZE = 10;
 
+export function nonNullable<T>(v: T): v is NonNullable<T> {
+  return v != null;
+}
+
 export const getHistogramColumn = ({
   columnName,
   overrides,
@@ -45,21 +49,20 @@ export const getTopValuesColumn = ({
   overrides,
 }: {
   columnName: string;
-  overrides?: Partial<Pick<TermsIndexPatternColumn, 'sourceField'>> & {
-    breakdownSize?: number;
-  };
+  overrides?: Partial<Pick<TermsIndexPatternColumn, 'sourceField'>> &
+    Partial<TermsIndexPatternColumn['params']>;
 }): PersistedIndexPatternLayer['columns'] => {
-  const { breakdownSize = DEFAULT_BREAKDOWN_SIZE, sourceField } = overrides ?? {};
+  const { size = DEFAULT_BREAKDOWN_SIZE, sourceField } = overrides ?? {};
   return {
     [columnName]: {
-      label: `Top ${breakdownSize} values of ${sourceField}`,
+      label: `Top ${size} values of ${sourceField}`,
       dataType: 'string',
       operationType: 'terms',
       scale: 'ordinal',
       sourceField,
       isBucketed: true,
       params: {
-        size: breakdownSize,
+        size,
         orderBy: {
           type: 'alphabetical',
           fallback: false,
