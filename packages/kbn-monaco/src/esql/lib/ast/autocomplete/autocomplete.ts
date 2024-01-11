@@ -709,7 +709,14 @@ async function getExpressionSuggestionsByType(
   }
   // Due to some logic overlapping functions can be repeated
   // so dedupe here based on insertText string (it can differ from name)
-  return uniqBy(suggestions, (suggestion) => suggestion.insertText);
+  return uniqBy(suggestions, (suggestion) =>
+    // sometimes the string is quoted as they are quoted in some places (i.e. fields) and not on others (i.e. variables)
+    // it can happen when not defined a variable for a function
+    // i.e. ... | STATS fn( ... ) | EVAL `fn( ... )` <= now it's quoted in EVAL
+    /^\`/.test(suggestion.insertText)
+      ? suggestion.insertText.substring(1, suggestion.insertText.length - 1)
+      : suggestion.insertText
+  );
 }
 
 async function getBuiltinFunctionNextArgument(
