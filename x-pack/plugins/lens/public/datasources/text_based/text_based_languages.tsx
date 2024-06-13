@@ -16,15 +16,11 @@ import type { DataViewsPublicPluginStart, DataView } from '@kbn/data-views-plugi
 import type { DataPublicPluginStart } from '@kbn/data-plugin/public';
 import memoizeOne from 'memoize-one';
 import { isEqual } from 'lodash';
-<<<<<<< HEAD
+import { nonNullable } from '../../../common/utils';
 import { TextBasedDatasourceCommon } from '../../../common/datasources/text_based/text_based_languages';
-import { TextBasedDataPanel } from './datapanel';
-=======
 import { TextBasedDataPanel } from './components/datapanel';
 import { TextBasedDimensionEditor } from './components/dimension_editor';
 import { TextBasedDimensionTrigger } from './components/dimension_trigger';
-import { toExpression } from './to_expression';
->>>>>>> upstream/main
 import {
   DatasourceDimensionEditorProps,
   DatasourceDataPanelProps,
@@ -45,7 +41,7 @@ import type {
   TextBasedField,
 } from './types';
 import type { Datasource, DatasourceSuggestion } from '../../types';
-import { getUniqueLabelGenerator, nonNullable } from '../../utils';
+import { getUniqueLabelGenerator } from '../../utils';
 import { onDrop, getDropProps } from './dnd';
 import { removeColumn } from './remove_column';
 import {
@@ -59,7 +55,7 @@ import {
   addColumnsToCache,
   retrieveLayerColumnsFromCache,
 } from './fieldlist_cache';
-import { TEXT_BASED_LANGUAGE_ERROR } from '../../user_messages_ids';
+import { TEXT_BASED_LANGUAGE_ERROR } from '../../../common/user_messages_ids';
 
 function getLayerReferenceName(layerId: string) {
   return `textBasedLanguages-datasource-layer-${layerId}`;
@@ -408,18 +404,16 @@ export function getTextBasedDatasource({
         },
       };
     },
-<<<<<<< HEAD
     // there are cases where a query can return a big amount of columns
     // at this case we don't suggest all columns in a table but the first
     // MAX_NUM_OF_COLUMNS
     suggestsLimitedColumns(state: TextBasedPrivateState) {
       const fieldsList = state?.fieldList ?? [];
       return fieldsList.length >= MAX_NUM_OF_COLUMNS;
-=======
+    },
 
     getLayers(state: TextBasedPrivateState) {
       return state && state.layers ? Object.keys(state?.layers) : [];
->>>>>>> upstream/main
     },
     isTimeBased: (state, indexPatterns) => {
       if (!state) return false;

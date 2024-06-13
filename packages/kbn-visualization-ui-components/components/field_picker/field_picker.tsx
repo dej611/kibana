@@ -6,7 +6,7 @@
  * Side Public License, v 1.
  */
 
-import './field_picker.scss';
+// import './field_picker.scss';
 import React from 'react';
 import { i18n } from '@kbn/i18n';
 import classNames from 'classnames';

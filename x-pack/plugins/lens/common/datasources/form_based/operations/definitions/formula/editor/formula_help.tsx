@@ -14,12 +14,7 @@ import {
   sections as formulasSections,
 } from '@kbn/lens-formula-docs';
 import { groupBy } from 'lodash';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/formula/editor/formula_help.tsx
-import type { IndexPattern } from '../../../../../../../public/types';
-import { tinymathFunctions } from '../util';
-=======
-import type { IndexPattern } from '../../../../../../types';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/formula/editor/formula_help.tsx
+import { IndexPattern } from '../../../../../../types';
 import { getPossibleFunctions } from './math_completion';
 import { hasFunctionFieldArgument } from '../validation';
 

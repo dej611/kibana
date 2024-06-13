@@ -60,7 +60,7 @@ import {
   XYPersistedLinkedByValueAnnotationLayerConfig,
   XYPersistedState,
 } from './persistence';
-import { LAYER_SETTINGS_IGNORE_GLOBAL_FILTERS } from '../../user_messages_ids';
+import { LAYER_SETTINGS_IGNORE_GLOBAL_FILTERS } from '../../../common/user_messages_ids';
 
 const DATE_HISTORGRAM_COLUMN_ID = 'date_histogram_column';
 const exampleAnnotation: EventAnnotationConfig = {

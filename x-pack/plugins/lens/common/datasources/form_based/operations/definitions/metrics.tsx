@@ -7,12 +7,9 @@
 
 import { i18n } from '@kbn/i18n';
 import React from 'react';
-import { EuiSwitch, EuiText } from '@elastic/eui';
-import { euiThemeVars } from '@kbn/ui-theme';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/metrics.tsx
+// import { EuiSwitch, EuiText } from '@elastic/eui';
+// import { euiThemeVars } from '@kbn/ui-theme';
 import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
-=======
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
 import {
   AVG_ID,
   AVG_NAME,
@@ -27,7 +24,7 @@ import {
   SUM_ID,
   SUM_NAME,
 } from '@kbn/lens-formula-docs';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/metrics.tsx
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
 import { LayerSettingsFeatures, OperationDefinition, ParamEditorProps } from '.';
 import {
   getFormatFromPreviousColumn,
@@ -42,7 +39,7 @@ import {
   ValueFormatConfig,
 } from './column_types';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
-import { updateColumnParam } from '../layer_helpers';
+// import { updateColumnParam } from '../layer_helpers';
 // import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
 import { getGroupByKey } from '../../get_group_by_key';
 
@@ -187,32 +184,33 @@ function buildMetricOperation<T extends MetricColumn<string>>({
         {
           dataTestSubj: 'hide-zero-values',
           inlineElement: (
-            <EuiSwitch
-              label={
-                <EuiText size="xs">
-                  {i18n.translate('xpack.lens.indexPattern.hideZero', {
-                    defaultMessage: 'Hide zero values',
-                  })}
-                </EuiText>
-              }
-              labelProps={{
-                style: {
-                  fontWeight: euiThemeVars.euiFontWeightMedium,
-                },
-              }}
-              checked={Boolean(currentColumn.params?.emptyAsNull)}
-              onChange={() => {
-                paramEditorUpdater(
-                  updateColumnParam({
-                    layer,
-                    columnId,
-                    paramName: 'emptyAsNull',
-                    value: !currentColumn.params?.emptyAsNull,
-                  })
-                );
-              }}
-              compressed
-            />
+            <div>Advanced stuff</div>
+            // <EuiSwitch
+            //   label={
+            //     <EuiText size="xs">
+            //       {i18n.translate('xpack.lens.indexPattern.hideZero', {
+            //         defaultMessage: 'Hide zero values',
+            //       })}
+            //     </EuiText>
+            //   }
+            //   labelProps={{
+            //     style: {
+            //       fontWeight: euiThemeVars.euiFontWeightMedium,
+            //     },
+            //   }}
+            //   checked={Boolean(currentColumn.params?.emptyAsNull)}
+            //   onChange={() => {
+            //     paramEditorUpdater(
+            //       updateColumnParam({
+            //         layer,
+            //         columnId,
+            //         paramName: 'emptyAsNull',
+            //         value: !currentColumn.params?.emptyAsNull,
+            //       })
+            //     );
+            //   }}
+            //   compressed
+            // />
           ),
         },
       ];

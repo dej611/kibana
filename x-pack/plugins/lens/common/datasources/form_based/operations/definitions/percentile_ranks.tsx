@@ -5,12 +5,12 @@
  * 2.0.
  */
 
-import { EuiFieldNumberProps, EuiFieldNumber } from '@elastic/eui';
+// import { EuiFieldNumberProps, EuiFieldNumber } from '@elastic/eui';
 import React, { useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
-import { AggFunctionsMapping } from '@kbn/data-plugin/public';
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
-import { useDebouncedValue } from '@kbn/visualization-ui-components';
+import { AggFunctionsMapping } from '@kbn/data-plugin/common';
+import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
+// import { useDebouncedValue } from '@kbn/visualization-ui-components';
 import { PERCENTILE_RANK_ID, PERCENTILE_RANK_NAME } from '@kbn/lens-formula-docs';
 import { OperationDefinition } from '.';
 import {
@@ -23,8 +23,8 @@ import {
 } from './helpers';
 import { FieldBasedIndexPatternColumn } from './column_types';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
-import { FormRow } from './shared_components';
-import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
+// import { FormRow } from './shared_components';
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
 
 export interface PercentileRanksIndexPatternColumn extends FieldBasedIndexPatternColumn {
   operationType: typeof PERCENTILE_RANK_ID;
@@ -208,49 +208,50 @@ export const percentileRanksOperation: OperationDefinition<
       },
       [isInline, currentColumn, paramEditorUpdater, indexPattern]
     );
-    const { inputValue, handleInputChange: handleInputChangeWithoutValidation } = useDebouncedValue<
-      string | undefined
-    >(
-      {
-        onChange,
-        value: String(currentColumn.params.value),
-      },
-      { allowFalsyValue: true }
-    );
-    const inputValueIsValid = isValidNumber(inputValue, isInline);
+    // const { inputValue, handleInputChange: handleInputChangeWithoutValidation } = useDebouncedValue<
+    //   string | undefined
+    // >(
+    //   {
+    //     onChange,
+    //     value: String(currentColumn.params.value),
+    //   },
+    //   { allowFalsyValue: true }
+    // );
+    // const inputValueIsValid = isValidNumber(inputValue, isInline);
 
-    const handleInputChange: EuiFieldNumberProps['onChange'] = useCallback(
-      (e) => {
-        handleInputChangeWithoutValidation(e.currentTarget.value);
-      },
-      [handleInputChangeWithoutValidation]
-    );
+    // const handleInputChange = useCallback(
+    //   (e) => {
+    //     handleInputChangeWithoutValidation(e.currentTarget.value);
+    //   },
+    //   [handleInputChangeWithoutValidation]
+    // );
 
     return (
-      <FormRow
-        isInline={isInline}
-        label={percentileRanksLabel}
-        data-test-subj="lns-indexPattern-percentile_ranks-form"
-        display="rowCompressed"
-        fullWidth
-        isInvalid={!inputValueIsValid}
-        error={
-          !inputValueIsValid &&
-          i18n.translate('xpack.lens.indexPattern.percentileRanks.errorMessage', {
-            defaultMessage: 'Percentile ranks value must be a number',
-          })
-        }
-      >
-        <EuiFieldNumber
-          fullWidth
-          data-test-subj="lns-indexPattern-percentile_ranks-input"
-          compressed
-          value={inputValue ?? ''}
-          onChange={handleInputChange}
-          step={isInline ? 1 : 'any'}
-          aria-label={percentileRanksLabel}
-        />
-      </FormRow>
+      <div>Stuff</div>
+      // <FormRow
+      //   isInline={isInline}
+      //   label={percentileRanksLabel}
+      //   data-test-subj="lns-indexPattern-percentile_ranks-form"
+      //   display="rowCompressed"
+      //   fullWidth
+      //   isInvalid={!inputValueIsValid}
+      //   error={
+      //     !inputValueIsValid &&
+      //     i18n.translate('xpack.lens.indexPattern.percentileRanks.errorMessage', {
+      //       defaultMessage: 'Percentile ranks value must be a number',
+      //     })
+      //   }
+      // >
+      //   <EuiFieldNumber
+      //     fullWidth
+      //     data-test-subj="lns-indexPattern-percentile_ranks-input"
+      //     compressed
+      //     value={inputValue ?? ''}
+      //     onChange={handleInputChange}
+      //     step={isInline ? 1 : 'any'}
+      //     aria-label={percentileRanksLabel}
+      //   />
+      // </FormRow>
     );
   },
   quickFunctionDocumentation: i18n.translate(

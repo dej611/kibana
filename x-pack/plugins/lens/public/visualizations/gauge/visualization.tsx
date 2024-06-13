@@ -55,7 +55,7 @@ import {
   GAUGE_MIN_GT_MAX,
   GAUGE_MIN_GT_METRIC,
   GAUGE_MIN_NE_MAX,
-} from '../../user_messages_ids';
+} from '../../../common/user_messages_ids';
 
 const groupLabelForGauge = i18n.translate('xpack.lens.metric.groupLabel', {
   defaultMessage: 'Goal and single value',

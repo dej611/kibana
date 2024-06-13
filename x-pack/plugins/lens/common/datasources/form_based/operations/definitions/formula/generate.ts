@@ -13,7 +13,7 @@ import {
   GenericIndexPatternColumn,
 } from '..';
 import { BaseIndexPatternColumn, ReferenceBasedIndexPatternColumn } from '../column_types';
-import { FormBasedLayer } from '../../../../../../public/datasources/form_based/types';
+import type { FormBasedLayer } from '../../../../../../public/datasources/form_based/types';
 import { unquotedStringRegex } from './util';
 import { isColumnOfType } from '../helpers';
 import { StaticValueIndexPatternColumn } from '../static_value';

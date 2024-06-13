@@ -38,7 +38,10 @@ import { HeatmapToolbar } from './toolbar_component';
 import { HeatmapDimensionEditor } from './dimension_editor';
 import { getSafePaletteParams } from './utils';
 import { FormBasedPersistedState } from '../..';
-import { HEATMAP_RENDER_ARRAY_VALUES, HEATMAP_X_MISSING_AXIS } from '../../user_messages_ids';
+import {
+  HEATMAP_RENDER_ARRAY_VALUES,
+  HEATMAP_X_MISSING_AXIS,
+} from '../../../common/user_messages_ids';
 
 const groupLabelForHeatmap = i18n.translate('xpack.lens.heatmapVisualization.heatmapGroupLabel', {
   defaultMessage: 'Magnitude',

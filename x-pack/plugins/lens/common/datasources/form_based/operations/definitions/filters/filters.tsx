@@ -5,30 +5,31 @@
  * 2.0.
  */
 
-import './filters.scss';
-import React, { useState } from 'react';
-import { omit } from 'lodash';
+// import './filters.scss';
+import React from 'react';
+// import { omit } from 'lodash';
 import { i18n } from '@kbn/i18n';
-import { EuiFormRow, EuiLink, htmlIdGenerator } from '@elastic/eui';
+// import { htmlIdGenerator } from '@elastic/eui';
 import type { Query } from '@kbn/es-query';
-import type { AggFunctionsMapping } from '@kbn/data-plugin/public';
+import type { AggFunctionsMapping } from '@kbn/data-plugin/common';
 import { queryFilterToAst } from '@kbn/data-plugin/common';
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
-import {
-  NewBucketButton,
-  DragDropBuckets,
-  DraggableBucketContainer,
-  isQueryValid,
-} from '@kbn/visualization-ui-components';
-import { IndexPattern } from '../../../../../../public/types';
+import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
+// import {
+//   NewBucketButton,
+//   DragDropBuckets,
+//   DraggableBucketContainer,
+//   isQueryValid,
+// } from '@kbn/visualization-ui-components';
+// import { isQueryValid } from '@kbn/visualization-ui-components';
+import { IndexPattern } from '../../../../../types';
 import { updateColumnParam } from '../../layer_helpers';
 import type { OperationDefinition } from '..';
 import type { BaseIndexPatternColumn } from '../column_types';
-import { FilterPopover } from './filter_popover';
+// import { FilterPopover } from './filter_popover';
 import { TermsIndexPatternColumn } from '../terms';
 import { isColumnOfType } from '../helpers';
 
-const generateId = htmlIdGenerator();
+const generateId = 1; // htmlIdGenerator();
 const OPERATION_NAME = 'filters';
 
 // references types from src/plugins/data/common/search/aggs/buckets/filters.ts
@@ -123,8 +124,9 @@ export const filtersOperation: OperationDefinition<
   },
 
   toEsAggsFn: (column, columnId, indexPattern) => {
-    const validFilters = column.params.filters?.filter((f: Filter) =>
-      isQueryValid(f.input, indexPattern)
+    const validFilters = column.params.filters?.filter(
+      (f: Filter) => true
+      // isQueryValid(f.input, indexPattern)
     );
     return buildExpressionFunction<AggFunctionsMapping['aggFilters']>('aggFilters', {
       id: columnId,
@@ -148,14 +150,15 @@ export const filtersOperation: OperationDefinition<
       );
 
     return (
-      <EuiFormRow fullWidth>
-        <FilterList
-          filters={filters}
-          setFilters={setFilters}
-          indexPattern={indexPattern}
-          defaultQuery={defaultFilter}
-        />
-      </EuiFormRow>
+      <div>Filters</div>
+      // <EuiFormRow fullWidth>
+      //   <FilterList
+      //     filters={filters}
+      //     setFilters={setFilters}
+      //     indexPattern={indexPattern}
+      //     defaultQuery={defaultFilter}
+      //   />
+      // </EuiFormRow>
     );
   },
 
@@ -181,117 +184,118 @@ export const FilterList = ({
   indexPattern: IndexPattern;
   defaultQuery: Filter;
 }) => {
-  const [activeFilterId, setActiveFilterId] = useState('');
-  const [localFilters, setLocalFilters] = useState(() =>
-    filters.map((filter) => ({ ...filter, id: generateId() }))
-  );
+  // const [activeFilterId, setActiveFilterId] = useState('');
+  // const [localFilters, setLocalFilters] = useState(() =>
+  //   filters.map((filter) => ({ ...filter, id: generateId() }))
+  // );
 
-  const updateFilters = (updatedFilters: FilterValue[]) => {
-    // do not set internal id parameter into saved object
-    setFilters(updatedFilters.map((filter) => omit(filter, 'id')));
-    setLocalFilters(updatedFilters);
-  };
+  // const updateFilters = (updatedFilters: FilterValue[]) => {
+  //   // do not set internal id parameter into saved object
+  //   setFilters(updatedFilters.map((filter) => omit(filter, 'id')));
+  //   setLocalFilters(updatedFilters);
+  // };
 
-  const onAddFilter = () => {
-    const newFilterId = generateId();
+  // const onAddFilter = () => {
+  //   const newFilterId = generateId();
 
-    updateFilters([
-      ...localFilters,
-      {
-        ...defaultQuery,
-        id: newFilterId,
-      },
-    ]);
+  //   updateFilters([
+  //     ...localFilters,
+  //     {
+  //       ...defaultQuery,
+  //       id: newFilterId,
+  //     },
+  //   ]);
 
-    setActiveFilterId(newFilterId);
-  };
-  const onRemoveFilter = (id: string) =>
-    updateFilters(localFilters.filter((filter) => filter.id !== id));
+  //   setActiveFilterId(newFilterId);
+  // };
+  // const onRemoveFilter = (id: string) =>
+  //   updateFilters(localFilters.filter((filter) => filter.id !== id));
 
-  const onChangeValue = (id: string, query: Query, label: string) =>
-    updateFilters(
-      localFilters.map((filter) =>
-        filter.id === id
-          ? {
-              ...filter,
-              input: query,
-              label,
-            }
-          : filter
-      )
-    );
+  // const onChangeValue = (id: string, query: Query, label: string) =>
+  //   updateFilters(
+  //     localFilters.map((filter) =>
+  //       filter.id === id
+  //         ? {
+  //             ...filter,
+  //             input: query,
+  //             label,
+  //           }
+  //         : filter
+  //     )
+  //   );
 
-  const changeActiveFilter = (filterId: string) => {
-    let newActiveFilterId = filterId;
-    if (activeFilterId === filterId) {
-      newActiveFilterId = ''; // toggle off
-    }
-    setActiveFilterId(newActiveFilterId);
-  };
+  // const changeActiveFilter = (filterId: string) => {
+  //   let newActiveFilterId = filterId;
+  //   if (activeFilterId === filterId) {
+  //     newActiveFilterId = ''; // toggle off
+  //   }
+  //   setActiveFilterId(newActiveFilterId);
+  // };
 
   return (
-    <>
-      <DragDropBuckets
-        onDragEnd={updateFilters}
-        onDragStart={() => {}}
-        droppableId="FILTERS_DROPPABLE_AREA"
-        items={localFilters}
-      >
-        {localFilters?.map((filter, idx, arrayRef) => {
-          const isInvalid = !isQueryValid(filter.input, indexPattern);
-          const id = filter.id;
+    <div>Filters</div>
+    // <>
+    //   <DragDropBuckets
+    //     onDragEnd={updateFilters}
+    //     onDragStart={() => {}}
+    //     droppableId="FILTERS_DROPPABLE_AREA"
+    //     items={localFilters}
+    //   >
+    //     {localFilters?.map((filter, idx, arrayRef) => {
+    //       const isInvalid = !isQueryValid(filter.input, indexPattern);
+    //       const id = filter.id;
 
-          return (
-            <DraggableBucketContainer
-              id={id}
-              key={id}
-              idx={idx}
-              isInvalid={isInvalid}
-              invalidMessage={i18n.translate('xpack.lens.indexPattern.filters.isInvalid', {
-                defaultMessage: 'This query is invalid',
-              })}
-              onRemoveClick={() => onRemoveFilter(filter.id)}
-              removeTitle={i18n.translate('xpack.lens.indexPattern.filters.removeFilter', {
-                defaultMessage: 'Remove a filter',
-              })}
-              isNotRemovable={arrayRef.length === 1}
-              isNotDraggable={arrayRef.length === 1}
-            >
-              <FilterPopover
-                data-test-subj="indexPattern-filters-existingFilterContainer"
-                isOpen={filter.id === activeFilterId}
-                triggerClose={() => changeActiveFilter('')}
-                indexPattern={indexPattern}
-                filter={filter}
-                setFilter={(f: FilterValue) => {
-                  onChangeValue(f.id, f.input, f.label);
-                }}
-                button={
-                  <EuiLink
-                    className="lnsFiltersOperation__popoverButton"
-                    data-test-subj="indexPattern-filters-existingFilterTrigger"
-                    onClick={() => changeActiveFilter(filter.id)}
-                    color={isInvalid ? 'danger' : 'text'}
-                    title={i18n.translate('xpack.lens.indexPattern.filters.clickToEdit', {
-                      defaultMessage: 'Click to edit',
-                    })}
-                  >
-                    {filter.label || filter.input.query || defaultLabel}
-                  </EuiLink>
-                }
-              />
-            </DraggableBucketContainer>
-          );
-        })}
-      </DragDropBuckets>
-      <NewBucketButton
-        onClick={() => {
-          onAddFilter();
-        }}
-        label={i18n.translate('xpack.lens.indexPattern.filters.addaFilter', {
-          defaultMessage: 'Add a filter',
-        })}
-      />
-    </>
+    //       return (
+    //         <DraggableBucketContainer
+    //           id={id}
+    //           key={id}
+    //           idx={idx}
+    //           isInvalid={isInvalid}
+    //           invalidMessage={i18n.translate('xpack.lens.indexPattern.filters.isInvalid', {
+    //             defaultMessage: 'This query is invalid',
+    //           })}
+    //           onRemoveClick={() => onRemoveFilter(filter.id)}
+    //           removeTitle={i18n.translate('xpack.lens.indexPattern.filters.removeFilter', {
+    //             defaultMessage: 'Remove a filter',
+    //           })}
+    //           isNotRemovable={arrayRef.length === 1}
+    //           isNotDraggable={arrayRef.length === 1}
+    //         >
+    //           <FilterPopover
+    //             data-test-subj="indexPattern-filters-existingFilterContainer"
+    //             isOpen={filter.id === activeFilterId}
+    //             triggerClose={() => changeActiveFilter('')}
+    //             indexPattern={indexPattern}
+    //             filter={filter}
+    //             setFilter={(f: FilterValue) => {
+    //               onChangeValue(f.id, f.input, f.label);
+    //             }}
+    //             button={
+    //               <EuiLink
+    //                 className="lnsFiltersOperation__popoverButton"
+    //                 data-test-subj="indexPattern-filters-existingFilterTrigger"
+    //                 onClick={() => changeActiveFilter(filter.id)}
+    //                 color={isInvalid ? 'danger' : 'text'}
+    //                 title={i18n.translate('xpack.lens.indexPattern.filters.clickToEdit', {
+    //                   defaultMessage: 'Click to edit',
+    //                 })}
+    //               >
+    //                 {filter.label || filter.input.query || defaultLabel}
+    //               </EuiLink>
+    //             }
+    //           />
+    //         </DraggableBucketContainer>
+    //       );
+    //     })}
+    //   </DragDropBuckets>
+    //   <NewBucketButton
+    //     onClick={() => {
+    //       onAddFilter();
+    //     }}
+    //     label={i18n.translate('xpack.lens.indexPattern.filters.addaFilter', {
+    //       defaultMessage: 'Add a filter',
+    //     })}
+    //   />
+    // </>
   );
 };

@@ -51,8 +51,7 @@ export function getCommonFormBasedDatasource({
       return Object.keys(state?.layers);
     },
 
-    toExpression: (state, layerId, indexPatterns, dateRange, nowInstant, searchSessionId) =>
-      toExpression(state, layerId, indexPatterns, dateRange, nowInstant, searchSessionId),
+    toExpression,
   };
 
   return formBasedDatasource;

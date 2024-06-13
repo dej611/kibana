@@ -8,19 +8,14 @@
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import React, { useState } from 'react';
-import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/calculations/moving_average.tsx
-import { useDebounceWithOptions } from '../../../../../../public/shared_components';
-=======
+// import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
 import {
   MOVING_AVERAGE_NAME,
   MOVING_AVERAGE_ID,
   MOVING_AVERAGE_WINDOW_DEFAULT_VALUE,
 } from '@kbn/lens-formula-docs';
-import { useDebounceWithOptions } from '../../../../../shared_components';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/calculations/moving_average.tsx
+import { useDebounceWithOptions } from '../../../../../utils';
 import { FormattedIndexPatternColumn, ReferenceBasedIndexPatternColumn } from '../column_types';
-import { FormBasedLayer } from '../../../../../../public/datasources/form_based/types';
 import {
   buildLabelFunction,
   checkForDateHistogram,
@@ -32,6 +27,7 @@ import {
 import { updateColumnParam } from '../../layer_helpers';
 import { getFormatFromPreviousColumn, isValidNumber, getFilter } from '../helpers';
 import type { OperationDefinition, ParamEditorProps } from '..';
+import { FormBasedLayer } from '../../../types';
 
 const ofName = buildLabelFunction((name?: string) => {
   return i18n.translate('xpack.lens.indexPattern.movingAverageOf', {
@@ -185,24 +181,25 @@ function MovingAverageParamEditor({
   );
 
   return (
-    <EuiFormRow
-      label={i18n.translate('xpack.lens.indexPattern.movingAverage.window', {
-        defaultMessage: 'Window size',
-      })}
-      display="rowCompressed"
-      fullWidth
-      isInvalid={!isValidNumber(inputValue)}
-    >
-      <EuiFieldNumber
-        fullWidth
-        compressed
-        value={inputValue}
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
-        min={1}
-        step={1}
-        isInvalid={!isValidNumber(inputValue)}
-      />
-    </EuiFormRow>
+    <div>Stuff</div>
+    // <EuiFormRow
+    //   label={i18n.translate('xpack.lens.indexPattern.movingAverage.window', {
+    //     defaultMessage: 'Window size',
+    //   })}
+    //   display="rowCompressed"
+    //   fullWidth
+    //   isInvalid={!isValidNumber(inputValue)}
+    // >
+    //   <EuiFieldNumber
+    //     fullWidth
+    //     compressed
+    //     value={inputValue}
+    //     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInputValue(e.target.value)}
+    //     min={1}
+    //     step={1}
+    //     isInvalid={!isValidNumber(inputValue)}
+    //   />
+    // </EuiFormRow>
   );
 }
 

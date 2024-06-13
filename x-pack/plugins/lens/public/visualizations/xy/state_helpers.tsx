@@ -38,7 +38,7 @@ import {
   ANNOTATION_MISSING_TOOLTIP_FIELD,
   ANNOTATION_TEXT_FIELD_NOT_FOUND,
   ANNOTATION_TIME_FIELD_NOT_FOUND,
-} from '../../user_messages_ids';
+} from '../../../common/user_messages_ids';
 
 export function isHorizontalSeries(seriesType: SeriesType) {
   return (

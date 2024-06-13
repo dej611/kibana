@@ -44,7 +44,7 @@ import { CellValueContext } from '@kbn/embeddable-plugin/public';
 import { EventAnnotationGroupConfig } from '@kbn/event-annotation-common';
 import type { DraggingIdentifier, DragDropIdentifier, DropType } from '@kbn/dom-drag-drop';
 import type { AccessorConfig } from '@kbn/visualization-ui-components';
-<<<<<<< HEAD
+import type { ChartSizeEvent } from '@kbn/chart-expressions-common';
 import type {
   DatasourceCommon,
   DateRange,
@@ -54,10 +54,6 @@ import type {
   LayerType,
   SortingHint,
 } from '../common/types';
-=======
-import type { ChartSizeEvent } from '@kbn/chart-expressions-common';
-import type { DateRange, LayerType, SortingHint } from '../common/types';
->>>>>>> upstream/main
 import type {
   LensSortActionData,
   LensResizeActionData,
@@ -76,57 +72,6 @@ import type { DataViewsState } from './state_management/types';
 import type { IndexPatternServiceAPI } from '../common/data_views_service/service';
 import type { Document } from './persistence/saved_object_store';
 
-<<<<<<< HEAD
-=======
-export type StartServices = Pick<
-  CoreStart,
-  // used extensively in lens
-  | 'overlays'
-  // used for react rendering utilities
-  | 'analytics'
-  | 'i18n'
-  | 'theme'
->;
-
-export interface IndexPatternRef {
-  id: string;
-  title: string;
-  name?: string;
-}
-
-export interface IndexPattern {
-  id: string;
-  fields: IndexPatternField[];
-  getFieldByName(name: string): IndexPatternField | undefined;
-  title: string;
-  name?: string;
-  timeFieldName?: string;
-  fieldFormatMap?: Record<
-    string,
-    {
-      id: string;
-      params: FieldFormatParams;
-    }
-  >;
-  hasRestrictions: boolean;
-  spec: DataViewSpec;
-  isPersisted: boolean;
-}
-
-export type IndexPatternField = FieldSpec & {
-  displayName: string;
-  aggregationRestrictions?: Partial<IndexPatternAggRestrictions>;
-  /**
-   * Map of fields which can be used, but may fail partially (ranked lower than others)
-   */
-  partiallyApplicableFunctions?: Partial<Record<string, boolean>>;
-  timeSeriesMetric?: 'histogram' | 'summary' | 'gauge' | 'counter' | 'position';
-  timeSeriesRollup?: boolean;
-  meta?: boolean;
-  runtime?: boolean;
-};
-
->>>>>>> upstream/main
 export interface PublicAPIProps<T> {
   state: T;
   layerId: string;

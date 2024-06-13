@@ -13,12 +13,8 @@ import type {
   TinymathVariable,
 } from '@kbn/tinymath';
 import type { Query } from '@kbn/es-query';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/formula/util.ts
-import { nonNullable } from '../../../../../../public/utils';
-=======
 import { tinymathFunctions } from '@kbn/lens-formula-docs';
 import { nonNullable } from '../../../../../utils';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/formula/util.ts
 import type {
   OperationDefinition,
   GenericIndexPatternColumn,

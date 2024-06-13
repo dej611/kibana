@@ -18,8 +18,8 @@ import {
   REASON_IDS,
   validateAbsoluteTimeShift,
 } from '@kbn/data-plugin/common';
-import { nonNullable } from '../../../../../../public/utils';
-import { DateRange } from '../../../../../types';
+import { nonNullable } from '../../../../../utils';
+import { DateRange, IndexPattern } from '../../../../../types';
 import {
   findMathNodes,
   findVariables,
@@ -35,7 +35,6 @@ import type {
   GenericOperationDefinition,
 } from '..';
 import type { FormBasedLayer } from '../../../../../../public/datasources/form_based/types';
-import type { IndexPattern } from '../../../../../../public/types';
 import type { TinymathNodeTypes } from './types';
 import { InvalidQueryError, ValidationErrors } from './validation_errors';
 

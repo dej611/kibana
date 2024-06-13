@@ -31,7 +31,7 @@ import {
 import { isHorizontalChart } from './state_helpers';
 import { layerTypes } from '../..';
 import type { ExtraAppendLayerArg } from './visualization';
-import { XY_BREAKDOWN_MISSING_AXIS, XY_Y_MISSING_AXIS } from '../../user_messages_ids';
+import { XY_BREAKDOWN_MISSING_AXIS, XY_Y_MISSING_AXIS } from '../../../common/user_messages_ids';
 
 export function getAxisName(
   axis: 'x' | 'y' | 'yLeft' | 'yRight',

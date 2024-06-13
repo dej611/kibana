@@ -7,17 +7,13 @@
 
 import { i18n } from '@kbn/i18n';
 import { uniqBy } from 'lodash';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/formula/formula.tsx
-import { nonNullable } from '../../../../../../public/utils';
-=======
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/formula/formula.tsx
+import { IndexPattern } from '../../../../../types';
 import type {
   BaseIndexPatternColumn,
   FieldBasedOperationErrorMessage,
   OperationDefinition,
 } from '..';
 import type { ReferenceBasedIndexPatternColumn } from '../column_types';
-import type { IndexPattern } from '../../../../../../public/types';
 import { runASTValidation, tryToParse } from './validation';
 import { WrappedFormulaEditor } from './editor';
 import { insertOrReplaceFormulaColumn } from './parse';

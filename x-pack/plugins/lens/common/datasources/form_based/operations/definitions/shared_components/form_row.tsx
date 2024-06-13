@@ -6,25 +6,29 @@
  */
 
 import React from 'react';
-import { EuiFormLabel, EuiFormRow, EuiFormRowProps } from '@elastic/eui';
-import './form_row.scss';
+// import { EuiFormLabel, EuiFormRow, EuiFormRowProps } from '@elastic/eui';
+// import './form_row.scss';
 
-type FormRowProps = EuiFormRowProps & { isInline?: boolean };
+// type FormRowProps = EuiFormRowProps & { isInline?: boolean };
 
-export const FormRow = ({ children, label, isInline, ...props }: FormRowProps) => {
-  return !isInline ? (
-    <EuiFormRow {...props} label={label}>
-      {children}
-    </EuiFormRow>
-  ) : (
-    <div data-test-subj={props['data-test-subj']}>
-      {React.cloneElement(children, {
-        prepend: (
-          <EuiFormLabel className="lnsIndexPatternDimensionEditor__labelCustomRank">
-            {label}
-          </EuiFormLabel>
-        ),
-      })}
-    </div>
-  );
-};
+// export const FormRow = ({ children, label, isInline, ...props }: FormRowProps) => {
+//   return !isInline ? (
+//     <EuiFormRow {...props} label={label}>
+//       {children}
+//     </EuiFormRow>
+//   ) : (
+//     <div data-test-subj={props['data-test-subj']}>
+//       {React.cloneElement(children, {
+//         prepend: (
+//           <EuiFormLabel className="lnsIndexPatternDimensionEditor__labelCustomRank">
+//             {label}
+//           </EuiFormLabel>
+//         ),
+//       })}
+//     </div>
+//   );
+// };
+
+export function FormRow() {
+  return <div>Form</div>;
+}

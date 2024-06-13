@@ -5,43 +5,39 @@
  * 2.0.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React from 'react';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 
+// import {
+//   EuiBasicTable,
+//   EuiCode,
+//   EuiComboBox,
+//   EuiFormRow,
+//   EuiIconTip,
+//   EuiSwitch,
+//   EuiSwitchEvent,
+//   EuiSpacer,
+//   EuiText,
+// } from '@elastic/eui';
 import {
-  EuiBasicTable,
-  EuiCode,
-  EuiComboBox,
-  EuiFormRow,
-  EuiIconTip,
-  EuiSwitch,
-  EuiSwitchEvent,
-  EuiSpacer,
-  EuiText,
-} from '@elastic/eui';
-import {
-  AggFunctionsMapping,
-  AggParamOption,
-  IndexPatternAggRestrictions,
-  search,
+  type AggFunctionsMapping,
+  // type AggParamOption,
+  // type IndexPatternAggRestrictions,
+  // search,
   UI_SETTINGS,
-} from '@kbn/data-plugin/public';
-import { extendedBoundsToAst, intervalOptions } from '@kbn/data-plugin/common';
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
-import { TooltipWrapper } from '@kbn/visualization-utils';
-import { updateColumnParam } from '../layer_helpers';
+} from '@kbn/data-plugin/common';
+import { extendedBoundsToAst } from '@kbn/data-plugin/common';
+import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
+// import { TooltipWrapper } from '@kbn/visualization-utils';
+// import { updateColumnParam } from '../layer_helpers';
 import { FieldBasedOperationErrorMessage, OperationDefinition, ParamEditorProps } from '.';
 import { FieldBasedIndexPatternColumn } from './column_types';
 import { getInvalidFieldMessage, getSafeName } from './helpers';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/date_histogram.tsx
-import { FormBasedLayer } from '../../../../../public/datasources/form_based/types';
-=======
-import { FormBasedLayer } from '../../types';
 import { TIME_SHIFT_MULTIPLE_DATE_HISTOGRAMS } from '../../../../user_messages_ids';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/date_histogram.tsx
+import { FormBasedLayer } from '../../types';
 
-const { isValidInterval } = search.aggs;
+// const { isValidInterval } = search.aggs;
 const autoInterval = 'auto';
 const calendarOnlyIntervals = new Set(['w', 'M', 'q', 'y']);
 
@@ -150,7 +146,7 @@ export const dateHistogramOperation: OperationDefinition<
   toEsAggsFn: (column, columnId, indexPattern) => {
     const usedField = indexPattern.getFieldByName(column.sourceField);
     let timeZone: string | undefined;
-    let interval = column.params?.interval ?? autoInterval;
+    const interval = column.params?.interval ?? autoInterval;
     const dropPartials = Boolean(
       column.params?.dropPartials &&
         // set to false when detached from time picker
@@ -161,7 +157,7 @@ export const dateHistogramOperation: OperationDefinition<
       usedField.aggregationRestrictions &&
       usedField.aggregationRestrictions.date_histogram
     ) {
-      interval = restrictedInterval(usedField.aggregationRestrictions) as string;
+      // interval = restrictedInterval(usedField.aggregationRestrictions) as string;
       timeZone = usedField.aggregationRestrictions.date_histogram.time_zone;
     }
     return buildExpressionFunction<AggFunctionsMapping['aggDateHistogram']>('aggDateHistogram', {
@@ -187,282 +183,283 @@ export const dateHistogramOperation: OperationDefinition<
     data,
     indexPattern,
   }: ParamEditorProps<DateHistogramIndexPatternColumn>) {
-    const field = currentColumn && indexPattern.getFieldByName(currentColumn.sourceField);
-    const intervalIsRestricted =
-      field!.aggregationRestrictions && field!.aggregationRestrictions.date_histogram;
+    // const field = currentColumn && indexPattern.getFieldByName(currentColumn.sourceField);
+    // const intervalIsRestricted =
+    //   field!.aggregationRestrictions && field!.aggregationRestrictions.date_histogram;
 
-    const [intervalInput, setIntervalInput] = useState(currentColumn.params.interval);
-    const interval = intervalInput === autoInterval ? autoInterval : parseInterval(intervalInput);
+    // const [intervalInput, setIntervalInput] = useState(currentColumn.params.interval);
+    // const interval = intervalInput === autoInterval ? autoInterval : parseInterval(intervalInput);
 
-    // We force the interval value to 1 if it's empty, since that is the ES behavior,
-    // and the isValidInterval function doesn't handle the empty case properly. Fixing
-    // isValidInterval involves breaking changes in other areas.
-    const isValid =
-      (!currentColumn.params.ignoreTimeRange && intervalInput === autoInterval) ||
-      (interval !== autoInterval &&
-        intervalInput !== '' &&
-        isValidInterval(
-          `${interval.value === '' ? '1' : interval.value}${interval.unit}`,
-          restrictedInterval(field!.aggregationRestrictions)
-        ));
+    // // We force the interval value to 1 if it's empty, since that is the ES behavior,
+    // // and the isValidInterval function doesn't handle the empty case properly. Fixing
+    // // isValidInterval involves breaking changes in other areas.
+    // const isValid =
+    //   (!currentColumn.params.ignoreTimeRange && intervalInput === autoInterval) ||
+    //   (interval !== autoInterval &&
+    //     intervalInput !== '' &&
+    //     isValidInterval(
+    //       `${interval.value === '' ? '1' : interval.value}${interval.unit}`,
+    //       restrictedInterval(field!.aggregationRestrictions)
+    //     ));
 
-    const onChangeDropPartialBuckets = useCallback(
-      (ev: EuiSwitchEvent) => {
-        // updateColumnParam will be called async
-        // store the checked value before the event pooling clears it
-        const value = ev.target.checked;
-        paramEditorUpdater((newLayer) =>
-          updateColumnParam({
-            layer: newLayer,
-            columnId,
-            paramName: 'dropPartials',
-            value,
-          })
-        );
-      },
-      [columnId, paramEditorUpdater]
-    );
+    // const onChangeDropPartialBuckets = useCallback(
+    //   (ev) => {
+    //     // updateColumnParam will be called async
+    //     // store the checked value before the event pooling clears it
+    //     const value = ev.target.checked;
+    //     paramEditorUpdater((newLayer) =>
+    //       updateColumnParam({
+    //         layer: newLayer,
+    //         columnId,
+    //         paramName: 'dropPartials',
+    //         value,
+    //       })
+    //     );
+    //   },
+    //   [columnId, paramEditorUpdater]
+    // );
 
-    const setInterval = useCallback(
-      (newInterval: typeof interval) => {
-        const isCalendarInterval =
-          newInterval !== autoInterval && calendarOnlyIntervals.has(newInterval.unit);
-        const value =
-          newInterval === autoInterval
-            ? autoInterval
-            : `${isCalendarInterval ? '1' : newInterval.value}${newInterval.unit || 'd'}`;
+    // const setInterval = useCallback(
+    //   (newInterval: typeof interval) => {
+    //     const isCalendarInterval =
+    //       newInterval !== autoInterval && calendarOnlyIntervals.has(newInterval.unit);
+    //     const value =
+    //       newInterval === autoInterval
+    //         ? autoInterval
+    //         : `${isCalendarInterval ? '1' : newInterval.value}${newInterval.unit || 'd'}`;
 
-        paramEditorUpdater((newLayer) =>
-          updateColumnParam({ layer: newLayer, columnId, paramName: 'interval', value })
-        );
-      },
-      [columnId, paramEditorUpdater]
-    );
+    //     paramEditorUpdater((newLayer) =>
+    //       updateColumnParam({ layer: newLayer, columnId, paramName: 'interval', value })
+    //     );
+    //   },
+    //   [columnId, paramEditorUpdater]
+    // );
 
-    const options = (intervalOptions || [])
-      .filter((option) => option.val !== autoInterval)
-      .map((option: AggParamOption) => {
-        return { label: option.display, key: option.val };
-      }, []);
+    // const options = (intervalOptions || [])
+    //   .filter((option) => option.val !== autoInterval)
+    //   .map((option: AggParamOption) => {
+    //     return { label: option.display, key: option.val };
+    //   }, []);
 
-    options.unshift({
-      label: i18n.translate('xpack.lens.indexPattern.autoIntervalLabel', {
-        defaultMessage: 'Auto ({interval})',
-        values: {
-          interval:
-            data.search.aggs.calculateAutoTimeExpression({
-              from: dateRange.fromDate,
-              to: dateRange.toDate,
-            }) || '1h',
-        },
-      }),
-      key: autoInterval,
-    });
+    // options.unshift({
+    //   label: i18n.translate('xpack.lens.indexPattern.autoIntervalLabel', {
+    //     defaultMessage: 'Auto ({interval})',
+    //     values: {
+    //       interval:
+    //         data.search.aggs.calculateAutoTimeExpression({
+    //           from: dateRange.fromDate,
+    //           to: dateRange.toDate,
+    //         }) || '1h',
+    //     },
+    //   }),
+    //   key: autoInterval,
+    // });
 
-    const definedOption = options.find((o) => o.key === intervalInput);
-    const selectedOptions = definedOption
-      ? [definedOption]
-      : [{ label: intervalInput, key: intervalInput }];
+    // const definedOption = options.find((o) => o.key === intervalInput);
+    // const selectedOptions = definedOption
+    //   ? [definedOption]
+    //   : [{ label: intervalInput, key: intervalInput }];
 
-    useEffect(() => {
-      if (isValid && intervalInput !== currentColumn.params.interval) {
-        setInterval(parseInterval(intervalInput));
-      }
-    }, [intervalInput, isValid, currentColumn.params.interval, setInterval]);
+    // useEffect(() => {
+    //   if (isValid && intervalInput !== currentColumn.params.interval) {
+    //     setInterval(parseInterval(intervalInput));
+    //   }
+    // }, [intervalInput, isValid, currentColumn.params.interval, setInterval]);
 
-    const bindToGlobalTimePickerValue =
-      indexPattern.timeFieldName === field?.name || !currentColumn.params.ignoreTimeRange;
+    // const bindToGlobalTimePickerValue =
+    //   indexPattern.timeFieldName === field?.name || !currentColumn.params.ignoreTimeRange;
 
     return (
-      <>
-        <EuiSpacer size="s" />
-        <EuiFormRow display="rowCompressed" hasChildLabel={false}>
-          <EuiSwitch
-            label={
-              <EuiText size="xs">
-                {i18n.translate('xpack.lens.indexPattern.dateHistogram.includeEmptyRows', {
-                  defaultMessage: 'Include empty rows',
-                })}
-              </EuiText>
-            }
-            checked={Boolean(currentColumn.params.includeEmptyRows)}
-            data-test-subj="indexPattern-include-empty-rows"
-            onChange={() => {
-              paramEditorUpdater(
-                updateColumnParam({
-                  layer,
-                  columnId,
-                  paramName: 'includeEmptyRows',
-                  value: !currentColumn.params.includeEmptyRows,
-                })
-              );
-            }}
-            compressed
-          />
-        </EuiFormRow>
-        {indexPattern.timeFieldName !== field?.name && (
-          <>
-            <EuiSpacer size="s" />
-            <EuiFormRow display="rowCompressed" hasChildLabel={false}>
-              <EuiSwitch
-                label={
-                  <EuiText size="xs">
-                    {i18n.translate(
-                      'xpack.lens.indexPattern.dateHistogram.bindToGlobalTimePicker',
-                      {
-                        defaultMessage: 'Bind to global time picker',
-                      }
-                    )}{' '}
-                    <EuiIconTip
-                      color="subdued"
-                      content={i18n.translate(
-                        'xpack.lens.indexPattern.dateHistogram.globalTimePickerHelp',
-                        {
-                          defaultMessage:
-                            "Filter the selected field by the global time picker in the top right. This setting can't be turned off for the default time field of the current data view.",
-                        }
-                      )}
-                      iconProps={{
-                        className: 'eui-alignTop',
-                      }}
-                      position="top"
-                      size="s"
-                      type="questionInCircle"
-                    />
-                  </EuiText>
-                }
-                disabled={indexPattern.timeFieldName === field?.name}
-                checked={bindToGlobalTimePickerValue}
-                onChange={() => {
-                  let newLayer = updateColumnParam({
-                    layer,
-                    columnId,
-                    paramName: 'ignoreTimeRange',
-                    value: !currentColumn.params.ignoreTimeRange,
-                  });
-                  if (
-                    !currentColumn.params.ignoreTimeRange &&
-                    currentColumn.params.interval === autoInterval
-                  ) {
-                    const newFixedInterval =
-                      data.search.aggs.calculateAutoTimeExpression({
-                        from: dateRange.fromDate,
-                        to: dateRange.toDate,
-                      }) || '1h';
-                    newLayer = updateColumnParam({
-                      layer: newLayer,
-                      columnId,
-                      paramName: 'interval',
-                      value: newFixedInterval,
-                    });
-                    setIntervalInput(newFixedInterval);
-                  }
-                  paramEditorUpdater(newLayer);
-                }}
-                compressed
-              />
-            </EuiFormRow>
-          </>
-        )}
-        <EuiFormRow
-          label={i18n.translate('xpack.lens.indexPattern.dateHistogram.minimumInterval', {
-            defaultMessage: 'Minimum interval',
-          })}
-          fullWidth
-          display="rowCompressed"
-          helpText={
-            <>
-              {i18n.translate('xpack.lens.indexPattern.dateHistogram.selectOptionHelpText', {
-                defaultMessage: `Select an option or create a custom value.`,
-              })}
-              <br />
-              {i18n.translate(
-                'xpack.lens.indexPattern.dateHistogram.selectOptionExamplesHelpText',
-                {
-                  defaultMessage: `Examples: 30s, 20m, 24h, 2d, 1w, 1M`,
-                }
-              )}
-            </>
-          }
-          isInvalid={!isValid}
-          error={
-            !isValid &&
-            i18n.translate('xpack.lens.indexPattern.dateHistogram.invalidInterval', {
-              defaultMessage:
-                "Please pick a valid interval. It's not possible to use multiple weeks, months or years as interval.",
-            })
-          }
-        >
-          {intervalIsRestricted ? (
-            <FormattedMessage
-              id="xpack.lens.indexPattern.dateHistogram.restrictedInterval"
-              defaultMessage="Interval fixed to {intervalValue} due to aggregation restrictions."
-              values={{
-                intervalValue: restrictedInterval(field!.aggregationRestrictions),
-              }}
-            />
-          ) : (
-            <EuiComboBox
-              compressed
-              fullWidth={true}
-              data-test-subj="lensDateHistogramInterval"
-              isInvalid={!isValid}
-              onChange={(opts) => {
-                const newValue = opts.length ? opts[0].key! : '';
-                setIntervalInput(newValue);
-                if (newValue === autoInterval && currentColumn.params.ignoreTimeRange) {
-                  paramEditorUpdater(
-                    updateColumnParam({
-                      layer,
-                      columnId,
-                      paramName: 'ignoreTimeRange',
-                      value: false,
-                    })
-                  );
-                }
-              }}
-              onCreateOption={(customValue: string) => setIntervalInput(customValue.trim())}
-              options={options}
-              selectedOptions={selectedOptions}
-              singleSelection={{ asPlainText: true }}
-              placeholder={i18n.translate(
-                'xpack.lens.indexPattern.dateHistogram.selectIntervalPlaceholder',
-                {
-                  defaultMessage: 'Select an interval',
-                }
-              )}
-            />
-          )}
-        </EuiFormRow>
-        <EuiSpacer size="s" />
-        <EuiFormRow display="rowCompressed" hasChildLabel={false}>
-          <TooltipWrapper
-            tooltipContent={i18n.translate(
-              'xpack.lens.indexPattern.dateHistogram.dropPartialBucketsHelp',
-              {
-                defaultMessage:
-                  'Drop partial intervals is disabled as these can be computed only for a time field bound to global time picker in the top right.',
-              }
-            )}
-            condition={!bindToGlobalTimePickerValue}
-          >
-            <EuiSwitch
-              label={
-                <EuiText size="xs">
-                  {i18n.translate('xpack.lens.indexPattern.dateHistogram.dropPartialBuckets', {
-                    defaultMessage: 'Drop partial intervals',
-                  })}
-                </EuiText>
-              }
-              data-test-subj="lensDropPartialIntervals"
-              checked={Boolean(currentColumn.params.dropPartials)}
-              onChange={onChangeDropPartialBuckets}
-              compressed
-              disabled={!bindToGlobalTimePickerValue}
-            />
-          </TooltipWrapper>
-        </EuiFormRow>
-      </>
+      <div>Stuff</div>
+      // <>
+      //   <EuiSpacer size="s" />
+      //   <EuiFormRow display="rowCompressed" hasChildLabel={false}>
+      //     <EuiSwitch
+      //       label={
+      //         <EuiText size="xs">
+      //           {i18n.translate('xpack.lens.indexPattern.dateHistogram.includeEmptyRows', {
+      //             defaultMessage: 'Include empty rows',
+      //           })}
+      //         </EuiText>
+      //       }
+      //       checked={Boolean(currentColumn.params.includeEmptyRows)}
+      //       data-test-subj="indexPattern-include-empty-rows"
+      //       onChange={() => {
+      //         paramEditorUpdater(
+      //           updateColumnParam({
+      //             layer,
+      //             columnId,
+      //             paramName: 'includeEmptyRows',
+      //             value: !currentColumn.params.includeEmptyRows,
+      //           })
+      //         );
+      //       }}
+      //       compressed
+      //     />
+      //   </EuiFormRow>
+      //   {indexPattern.timeFieldName !== field?.name && (
+      //     <>
+      //       <EuiSpacer size="s" />
+      //       <EuiFormRow display="rowCompressed" hasChildLabel={false}>
+      //         <EuiSwitch
+      //           label={
+      //             <EuiText size="xs">
+      //               {i18n.translate(
+      //                 'xpack.lens.indexPattern.dateHistogram.bindToGlobalTimePicker',
+      //                 {
+      //                   defaultMessage: 'Bind to global time picker',
+      //                 }
+      //               )}{' '}
+      //               <EuiIconTip
+      //                 color="subdued"
+      //                 content={i18n.translate(
+      //                   'xpack.lens.indexPattern.dateHistogram.globalTimePickerHelp',
+      //                   {
+      //                     defaultMessage:
+      //                       "Filter the selected field by the global time picker in the top right. This setting can't be turned off for the default time field of the current data view.",
+      //                   }
+      //                 )}
+      //                 iconProps={{
+      //                   className: 'eui-alignTop',
+      //                 }}
+      //                 position="top"
+      //                 size="s"
+      //                 type="questionInCircle"
+      //               />
+      //             </EuiText>
+      //           }
+      //           disabled={indexPattern.timeFieldName === field?.name}
+      //           checked={bindToGlobalTimePickerValue}
+      //           onChange={() => {
+      //             let newLayer = updateColumnParam({
+      //               layer,
+      //               columnId,
+      //               paramName: 'ignoreTimeRange',
+      //               value: !currentColumn.params.ignoreTimeRange,
+      //             });
+      //             if (
+      //               !currentColumn.params.ignoreTimeRange &&
+      //               currentColumn.params.interval === autoInterval
+      //             ) {
+      //               const newFixedInterval =
+      //                 data.search.aggs.calculateAutoTimeExpression({
+      //                   from: dateRange.fromDate,
+      //                   to: dateRange.toDate,
+      //                 }) || '1h';
+      //               newLayer = updateColumnParam({
+      //                 layer: newLayer,
+      //                 columnId,
+      //                 paramName: 'interval',
+      //                 value: newFixedInterval,
+      //               });
+      //               setIntervalInput(newFixedInterval);
+      //             }
+      //             paramEditorUpdater(newLayer);
+      //           }}
+      //           compressed
+      //         />
+      //       </EuiFormRow>
+      //     </>
+      //   )}
+      //   <EuiFormRow
+      //     label={i18n.translate('xpack.lens.indexPattern.dateHistogram.minimumInterval', {
+      //       defaultMessage: 'Minimum interval',
+      //     })}
+      //     fullWidth
+      //     display="rowCompressed"
+      //     helpText={
+      //       <>
+      //         {i18n.translate('xpack.lens.indexPattern.dateHistogram.selectOptionHelpText', {
+      //           defaultMessage: `Select an option or create a custom value.`,
+      //         })}
+      //         <br />
+      //         {i18n.translate(
+      //           'xpack.lens.indexPattern.dateHistogram.selectOptionExamplesHelpText',
+      //           {
+      //             defaultMessage: `Examples: 30s, 20m, 24h, 2d, 1w, 1M`,
+      //           }
+      //         )}
+      //       </>
+      //     }
+      //     isInvalid={!isValid}
+      //     error={
+      //       !isValid &&
+      //       i18n.translate('xpack.lens.indexPattern.dateHistogram.invalidInterval', {
+      //         defaultMessage:
+      //           "Please pick a valid interval. It's not possible to use multiple weeks, months or years as interval.",
+      //       })
+      //     }
+      //   >
+      //     {intervalIsRestricted ? (
+      //       <FormattedMessage
+      //         id="xpack.lens.indexPattern.dateHistogram.restrictedInterval"
+      //         defaultMessage="Interval fixed to {intervalValue} due to aggregation restrictions."
+      //         values={{
+      //           intervalValue: restrictedInterval(field!.aggregationRestrictions),
+      //         }}
+      //       />
+      //     ) : (
+      //       <EuiComboBox
+      //         compressed
+      //         fullWidth={true}
+      //         data-test-subj="lensDateHistogramInterval"
+      //         isInvalid={!isValid}
+      //         onChange={(opts) => {
+      //           const newValue = opts.length ? opts[0].key! : '';
+      //           setIntervalInput(newValue);
+      //           if (newValue === autoInterval && currentColumn.params.ignoreTimeRange) {
+      //             paramEditorUpdater(
+      //               updateColumnParam({
+      //                 layer,
+      //                 columnId,
+      //                 paramName: 'ignoreTimeRange',
+      //                 value: false,
+      //               })
+      //             );
+      //           }
+      //         }}
+      //         onCreateOption={(customValue: string) => setIntervalInput(customValue.trim())}
+      //         options={options}
+      //         selectedOptions={selectedOptions}
+      //         singleSelection={{ asPlainText: true }}
+      //         placeholder={i18n.translate(
+      //           'xpack.lens.indexPattern.dateHistogram.selectIntervalPlaceholder',
+      //           {
+      //             defaultMessage: 'Select an interval',
+      //           }
+      //         )}
+      //       />
+      //     )}
+      //   </EuiFormRow>
+      //   <EuiSpacer size="s" />
+      //   <EuiFormRow display="rowCompressed" hasChildLabel={false}>
+      //     <TooltipWrapper
+      //       tooltipContent={i18n.translate(
+      //         'xpack.lens.indexPattern.dateHistogram.dropPartialBucketsHelp',
+      //         {
+      //           defaultMessage:
+      //             'Drop partial intervals is disabled as these can be computed only for a time field bound to global time picker in the top right.',
+      //         }
+      //       )}
+      //       condition={!bindToGlobalTimePickerValue}
+      //     >
+      //       <EuiSwitch
+      //         label={
+      //           <EuiText size="xs">
+      //             {i18n.translate('xpack.lens.indexPattern.dateHistogram.dropPartialBuckets', {
+      //               defaultMessage: 'Drop partial intervals',
+      //             })}
+      //           </EuiText>
+      //         }
+      //         data-test-subj="lensDropPartialIntervals"
+      //         checked={Boolean(currentColumn.params.dropPartials)}
+      //         onChange={onChangeDropPartialBuckets}
+      //         compressed
+      //         disabled={!bindToGlobalTimePickerValue}
+      //       />
+      //     </TooltipWrapper>
+      //   </EuiFormRow>
+      // </>
     );
   },
   helpComponentTitle: i18n.translate('xpack.lens.indexPattern.dateHistogram.titleHelp', {
@@ -489,8 +486,8 @@ export const dateHistogramOperation: OperationDefinition<
             id="xpack.lens.indexPattern.dateHistogram.autoLongerExplanation"
             defaultMessage="To choose the interval, Lens divides the specified time range by the {targetBarSetting} Advanced Setting and calculates the best interval for your data. For example, when the time range is 4 days, the data is divided into hourly buckets. To configure the maximum number of bars, use the {maxBarSetting} Advanced Setting."
             values={{
-              maxBarSetting: <EuiCode>{UI_SETTINGS.HISTOGRAM_MAX_BARS}</EuiCode>,
-              targetBarSetting: <EuiCode>{UI_SETTINGS.HISTOGRAM_BAR_TARGET}</EuiCode>,
+              maxBarSetting: UI_SETTINGS.HISTOGRAM_MAX_BARS,
+              targetBarSetting: UI_SETTINGS.HISTOGRAM_BAR_TARGET,
             }}
           />
         </p>
@@ -501,7 +498,7 @@ export const dateHistogramOperation: OperationDefinition<
           })}
         </p>
 
-        <EuiBasicTable
+        {/* <EuiBasicTable
           items={search.aggs.boundsDescendingRaw.map(({ bound, boundLabel, intervalLabel }) => ({
             bound: typeof bound === 'number' ? infiniteBound : `${upToLabel} ${boundLabel}`,
             interval: intervalLabel,
@@ -520,7 +517,7 @@ export const dateHistogramOperation: OperationDefinition<
               }),
             },
           ]}
-        />
+        /> */}
       </>
     );
   },
@@ -546,13 +543,13 @@ function parseInterval(currentInterval: string) {
   };
 }
 
-function restrictedInterval(aggregationRestrictions?: Partial<IndexPatternAggRestrictions>) {
-  if (!aggregationRestrictions || !aggregationRestrictions.date_histogram) {
-    return;
-  }
+// function restrictedInterval(aggregationRestrictions?: Partial<IndexPatternAggRestrictions>) {
+//   if (!aggregationRestrictions || !aggregationRestrictions.date_histogram) {
+//     return;
+//   }
 
-  return (
-    aggregationRestrictions.date_histogram.calendar_interval ||
-    aggregationRestrictions.date_histogram.fixed_interval
-  );
-}
+//   return (
+//     aggregationRestrictions.date_histogram.calendar_interval ||
+//     aggregationRestrictions.date_histogram.fixed_interval
+//   );
+// }

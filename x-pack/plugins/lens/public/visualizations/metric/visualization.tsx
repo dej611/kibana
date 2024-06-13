@@ -34,7 +34,7 @@ import { Toolbar } from './toolbar';
 import { generateId } from '../../../common/id_generator';
 import { toExpression } from './to_expression';
 import { nonNullable } from '../../utils';
-import { METRIC_NUMERIC_MAX } from '../../user_messages_ids';
+import { METRIC_NUMERIC_MAX } from '../../../common/user_messages_ids';
 
 export const DEFAULT_MAX_COLUMNS = 3;
 

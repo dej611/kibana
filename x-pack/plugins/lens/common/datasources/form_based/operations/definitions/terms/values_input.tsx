@@ -7,8 +7,9 @@
 
 import React, { useState } from 'react';
 import { i18n } from '@kbn/i18n';
-import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
-import { useDebounceWithOptions } from '../../../../../../public/shared_components';
+import { useDebounceWithOptions } from '../../../../../utils';
+// import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
+// import { useDebounceWithOptions } from '../../../../../../public/shared_components';
 
 export const ValuesInput = ({
   value,
@@ -47,55 +48,56 @@ export const ValuesInput = ({
   const isLowerThanMin = !isEmptyString && Number(inputValue) < minValue;
 
   return (
-    <EuiFormRow
-      label={label}
-      display="rowCompressed"
-      fullWidth
-      isInvalid={isHigherThanMax || isLowerThanMin}
-      error={
-        isHigherThanMax
-          ? [
-              i18n.translate('xpack.lens.indexPattern.terms.sizeLimitMax', {
-                defaultMessage:
-                  'Value is higher than the maximum {max}, the maximum value is used instead.',
-                values: {
-                  max: maxValue,
-                },
-              }),
-            ]
-          : isLowerThanMin
-          ? [
-              i18n.translate('xpack.lens.indexPattern.terms.sizeLimitMin', {
-                defaultMessage:
-                  'Value is lower than the minimum {min}, the minimum value is used instead.',
-                values: {
-                  min: minValue,
-                },
-              }),
-            ]
-          : null
-      }
-    >
-      <EuiFieldNumber
-        fullWidth
-        min={minValue}
-        max={maxValue}
-        step={1}
-        value={inputValue}
-        compressed
-        isInvalid={isHigherThanMax || isLowerThanMin}
-        disabled={disabled}
-        onChange={({ currentTarget }) => setInputValue(currentTarget.value)}
-        aria-label={label}
-        onBlur={() => {
-          if (inputValue === '') {
-            return setInputValue(String(value));
-          }
-          const inputNumber = Number(inputValue);
-          setInputValue(String(Math.min(maxValue, Math.max(inputNumber, minValue))));
-        }}
-        data-test-subj={'indexPattern-terms-values'}
-      />
-    </EuiFormRow>
+    <div>Values</div>
+    //   <EuiFormRow
+    //     label={label}
+    //     display="rowCompressed"
+    //     fullWidth
+    //     isInvalid={isHigherThanMax || isLowerThanMin}
+    //     error={
+    //       isHigherThanMax
+    //         ? [
+    //             i18n.translate('xpack.lens.indexPattern.terms.sizeLimitMax', {
+    //               defaultMessage:
+    //                 'Value is higher than the maximum {max}, the maximum value is used instead.',
+    //               values: {
+    //                 max: maxValue,
+    //               },
+    //             }),
+    //           ]
+    //         : isLowerThanMin
+    //         ? [
+    //             i18n.translate('xpack.lens.indexPattern.terms.sizeLimitMin', {
+    //               defaultMessage:
+    //                 'Value is lower than the minimum {min}, the minimum value is used instead.',
+    //               values: {
+    //                 min: minValue,
+    //               },
+    //             }),
+    //           ]
+    //         : null
+    //     }
+    //   >
+    //     <EuiFieldNumber
+    //       fullWidth
+    //       min={minValue}
+    //       max={maxValue}
+    //       step={1}
+    //       value={inputValue}
+    //       compressed
+    //       isInvalid={isHigherThanMax || isLowerThanMin}
+    //       disabled={disabled}
+    //       onChange={({ currentTarget }) => setInputValue(currentTarget.value)}
+    //       aria-label={label}
+    //       onBlur={() => {
+    //         if (inputValue === '') {
+    //           return setInputValue(String(value));
+    //         }
+    //         const inputNumber = Number(inputValue);
+    //         setInputValue(String(Math.min(maxValue, Math.max(inputNumber, minValue))));
+    //       }}
+    //       data-test-subj={'indexPattern-terms-values'}
+    //     />
+    //   </EuiFormRow>
   );
 };

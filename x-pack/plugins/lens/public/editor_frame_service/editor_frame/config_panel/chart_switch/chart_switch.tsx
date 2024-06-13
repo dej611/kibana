@@ -20,6 +20,18 @@ import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { ChartSwitchTrigger } from '@kbn/visualization-ui-components';
 import {
+  useLensDispatch,
+  useLensSelector,
+  selectActiveDatasourceId,
+  selectVisualization,
+  selectDatasourceStates,
+  removeLayers,
+  insertLayer,
+  DatasourceStates,
+  VisualizationState,
+} from '../../../../state_management';
+import { generateId } from '../../../../../common/id_generator';
+import {
   Visualization,
   FramePublicAPI,
   VisualizationType,
@@ -29,24 +41,7 @@ import {
 } from '../../../../types';
 import { getSuggestions, switchToSuggestion } from '../../suggestion_helpers';
 import { showMemoizedErrorNotification } from '../../../../lens_ui_errors';
-import {
-  insertLayer,
-  removeLayers,
-  useLensDispatch,
-  useLensSelector,
-  VisualizationState,
-  DatasourceStates,
-  selectActiveDatasourceId,
-  selectVisualization,
-  selectDatasourceStates,
-<<<<<<< HEAD:x-pack/plugins/lens/public/editor_frame_service/editor_frame/workspace_panel/chart_switch.tsx
-} from '../../../state_management';
-import { generateId } from '../../../../common/id_generator/id_generator';
-=======
-} from '../../../../state_management';
-import { generateId } from '../../../../id_generator/id_generator';
 import { ChartOptionAppend } from './chart_option_append';
->>>>>>> upstream/main:x-pack/plugins/lens/public/editor_frame_service/editor_frame/config_panel/chart_switch/chart_switch.tsx
 
 interface VisualizationSelection {
   visualizationId: string;

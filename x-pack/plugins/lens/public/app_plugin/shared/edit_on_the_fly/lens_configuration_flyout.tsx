@@ -28,7 +28,7 @@ import {
 import type { AggregateQuery, Query } from '@kbn/es-query';
 import { TextBasedLangEditor } from '@kbn/text-based-languages/public';
 import { DefaultInspectorAdapters } from '@kbn/expressions-plugin/common';
-import { buildExpression } from '../../../editor_frame_service/editor_frame/expression_helpers';
+import { getAbsoluteDateRange } from '../../../../common/utils';
 import { MAX_NUM_OF_COLUMNS } from '../../../datasources/text_based/utils';
 import {
   useLensSelector,
@@ -37,11 +37,7 @@ import {
   useLensDispatch,
 } from '../../../state_management';
 import type { TypedLensByValueInput } from '../../../embeddable/embeddable_component';
-import {
-  EXPRESSION_BUILD_ERROR_ID,
-  extractReferencesFromState,
-  getAbsoluteDateRange,
-} from '../../../utils';
+import { EXPRESSION_BUILD_ERROR_ID, extractReferencesFromState } from '../../../utils';
 import { LayerConfiguration } from './layer_configuration_section';
 import type { EditConfigPanelProps } from './types';
 import { FlyoutWrapper } from './flyout_wrapper';
@@ -49,6 +45,7 @@ import { getSuggestions } from './helpers';
 import { SuggestionPanel } from '../../../editor_frame_service/editor_frame/suggestion_panel';
 import { useApplicationUserMessages } from '../../get_application_user_messages';
 import { trackUiCounterEvents } from '../../../lens_ui_telemetry';
+import { buildExpression } from '../../../../common/expression_helpers';
 
 export function LensEditConfigurationFlyout({
   attributes,

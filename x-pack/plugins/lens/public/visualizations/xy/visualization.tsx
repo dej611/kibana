@@ -127,7 +127,7 @@ import {
   XY_RENDER_ARRAY_VALUES,
   XY_X_WRONG_DATA_TYPE,
   XY_Y_WRONG_DATA_TYPE,
-} from '../../user_messages_ids';
+} from '../../../common/user_messages_ids';
 
 const XY_ID = 'lnsXY';
 

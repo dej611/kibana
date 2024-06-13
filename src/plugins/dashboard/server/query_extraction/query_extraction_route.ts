@@ -43,10 +43,12 @@ export const setupQueryExtractionRoute = (
               { unknowns: 'allow' }
             ),
           },
-          response: schema.any(),
+          // @ts-expect-error
+          body: schema.any(),
         },
       },
       async (context, request, response) => {
+        console.log('Hello');
         try {
           const [coreStart] = await getStartServices();
           const client = coreStart.savedObjects.getScopedClient(request);
@@ -95,6 +97,7 @@ export const setupQueryExtractionRoute = (
             },
           });
         } catch (e) {
+          console.log(e);
           const kbnErr = getKbnServerError(e);
           return reportServerError(response, kbnErr);
         }

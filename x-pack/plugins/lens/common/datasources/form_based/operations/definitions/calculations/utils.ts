@@ -8,26 +8,19 @@
 import { i18n } from '@kbn/i18n';
 import type { AstFunction } from '@kbn/interpreter';
 import memoizeOne from 'memoize-one';
-import { LayerTypes } from '@kbn/expression-xy-plugin/public';
-import type { IndexPattern } from '../../../../../../public/types';
-import { LayerType } from '../../../../../types';
+import { LayerTypes } from '@kbn/expression-xy-plugin/common';
+import { IndexPattern, LayerType } from '../../../../../types';
 import type { TimeScaleUnit } from '../../../../../expressions';
 import type { FormBasedLayer } from '../../../../../../public/datasources/form_based/types';
 import { adjustTimeScaleLabelSuffix } from '../../time_scale_utils';
 import type { ReferenceBasedIndexPatternColumn } from '../column_types';
 import { getManagedColumnsFrom, isColumnValidAsReference } from '../../layer_helpers';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/calculations/utils.ts
-import { operationDefinitionMap } from '..';
-import { FieldBasedIndexPatternColumn } from '../../../../../../public/datasources/form_based/types';
-import { IndexPatternField } from '../../../../../../public/types';
-=======
-import { FieldBasedOperationErrorMessage, operationDefinitionMap } from '..';
 import {
   CALCULATIONS_DATE_HISTOGRAM_REQUIRED,
   CALCULATIONS_MISSING_COLUMN_REFERENCE,
   CALCULATIONS_WRONG_DIMENSION_CONFIG,
 } from '../../../../../user_messages_ids';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/calculations/utils.ts
+import { FieldBasedOperationErrorMessage, operationDefinitionMap } from '..';
 
 export const buildLabelFunction =
   (ofName: (name?: string) => string) =>

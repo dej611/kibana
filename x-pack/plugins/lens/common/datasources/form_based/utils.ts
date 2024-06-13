@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import type { FormBasedLayer } from '../../../public';
 import type {
   GenericIndexPatternColumn,
   MaxIndexPatternColumn,
@@ -13,6 +12,7 @@ import type {
 } from './operations';
 import type { ReferenceBasedIndexPatternColumn } from './operations/definitions/column_types';
 import { isColumnOfType } from './operations/definitions/helpers';
+import { FormBasedLayer } from './types';
 
 function isMinOrMaxColumn(
   column?: GenericIndexPatternColumn

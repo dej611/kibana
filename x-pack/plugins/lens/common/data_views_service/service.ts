@@ -14,9 +14,9 @@ import type { UiActionsStart } from '@kbn/ui-actions-plugin/public';
 //   UPDATE_FILTER_REFERENCES_TRIGGER,
 // } from '@kbn/unified-search-plugin/public';
 import type { DataViewsState } from '../../public/state_management';
-import type { IndexPattern, IndexPatternMap } from '../../public/types';
 import { ensureIndexPattern, loadIndexPatterns } from './loader';
 import { generateId } from '../id_generator';
+import { IndexPattern, IndexPatternMap } from '../types';
 
 export interface IndexPatternServiceProps {
   core: Pick<CoreStart, 'http' | 'notifications' | 'uiSettings'>;

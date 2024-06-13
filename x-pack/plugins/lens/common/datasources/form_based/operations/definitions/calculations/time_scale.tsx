@@ -12,15 +12,9 @@ import type {
   ReferenceBasedIndexPatternColumn,
 } from '../column_types';
 import { getErrorsForDateReference } from './utils';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/calculations/time_scale.tsx
-import type { OperationDefinition } from '..';
-import { combineErrorMessages, getFormatFromPreviousColumn } from '../helpers';
-import { FormBasedLayer } from '../../../../../../public/datasources/form_based/types';
-=======
 import type { FieldBasedOperationErrorMessage, OperationDefinition } from '..';
 import { getFormatFromPreviousColumn } from '../helpers';
 import { FormBasedLayer } from '../../../types';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/calculations/time_scale.tsx
 
 export type TimeScaleIndexPatternColumn = FormattedIndexPatternColumn &
   ReferenceBasedIndexPatternColumn & {

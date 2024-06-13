@@ -6,9 +6,6 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import React from 'react';
-import { FormattedMessage } from '@kbn/i18n-react';
-import moment from 'moment';
 import { Datatable } from '@kbn/expressions-plugin/common';
 import {
   calcAutoIntervalNear,
@@ -18,17 +15,13 @@ import {
   parseInterval,
   parseTimeShift,
 } from '@kbn/data-plugin/common';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/time_shift_utils.tsx
-import type { DateRange, IndexPattern } from '../../types';
-import type {
-  FormBasedLayer,
-  FormBasedPrivateState,
-} from '../../../public/datasources/form_based/types';
-import type { FramePublicAPI } from '../../../public/types';
-=======
-import type { DateRange } from '../../../common/types';
+import React from 'react';
+import { FormattedMessage } from '@kbn/i18n-react';
+import moment from 'moment';
+import type { FramePublicAPI, UserMessage } from '../../../public/types';
+import type { DateRange } from '../../types';
 import type { FormBasedLayer, FormBasedPrivateState } from './types';
-import type { FramePublicAPI, IndexPattern, UserMessage } from '../../types';
+import type { IndexPattern } from '../../types';
 import { TIMESHIFT_LT_INTERVAL, TIMESHIFT_NOT_MULTIPLE_INTERVAL } from '../../user_messages_ids';
 
 export function parseTimeShiftWrapper(timeShiftString: string, dateRange: DateRange) {
@@ -40,7 +33,6 @@ export function parseTimeShiftWrapper(timeShiftString: string, dateRange: DateRa
   }
   return parseTimeShift(timeShiftString);
 }
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/time_shift_utils.tsx
 
 export const timeShiftOptions = [
   {
@@ -191,7 +183,7 @@ export function getStateTimeShiftWarningMessages(
   Object.entries(state.layers).forEach(([layerId, layer]) => {
     const layerIndexPattern = dataViews.indexPatterns[layer.indexPatternId];
     if (!layerIndexPattern) {
-      return;
+      return [];
     }
     const dateHistogramInterval = getDateHistogramInterval(
       datatableUtilities,
@@ -201,7 +193,7 @@ export function getStateTimeShiftWarningMessages(
       layerId
     );
     if (!dateHistogramInterval.interval) {
-      return;
+      return [];
     }
     const dateHistogramIntervalExpression = dateHistogramInterval.expression;
     const shiftInterval = dateHistogramInterval.interval.asMilliseconds();
@@ -228,7 +220,7 @@ export function getStateTimeShiftWarningMessages(
     });
 
     if (timeShifts.size < 2) {
-      return;
+      return [];
     }
 
     timeShifts.forEach((timeShift) => {
@@ -320,6 +312,23 @@ function closestMultipleOfInterval(duration: number, interval: number) {
     return duration;
   }
   return Math.ceil(duration / interval) * interval;
+}
+
+function roundAbsoluteInterval(timeShift: string, dateRange: DateRange, targetBars: number) {
+  // workout the interval (most probably matching the ES one)
+  const interval = calcAutoIntervalNear(
+    targetBars,
+    moment(dateRange.toDate).diff(moment(dateRange.fromDate))
+  );
+  const duration = parseTimeShiftWrapper(timeShift, dateRange);
+  if (typeof duration !== 'string') {
+    const roundingOffset = timeShift.startsWith('end') ? interval.asMilliseconds() : 0;
+    return `${
+      (closestMultipleOfInterval(duration.asMilliseconds(), interval.asMilliseconds()) -
+        roundingOffset) /
+      1000
+    }s`;
+  }
 }
 
 export function resolveTimeShift(

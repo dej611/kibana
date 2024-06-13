@@ -7,9 +7,8 @@
 
 import type { DataView } from '@kbn/data-views-plugin/public';
 import { Query } from '@kbn/es-query';
-import type { DateRange } from '../../../../../types';
+import type { DateRange, IndexPattern } from '../../../../../types';
 import { convertDataViewIntoLensIndexPattern } from '../../../../../data_views_service/loader';
-import type { IndexPattern } from '../../../../../../public/types';
 import type { PersistedIndexPatternLayer } from '../../../../../../public/datasources/form_based/types';
 import type { TimeScaleUnit } from '../../../../../expressions';
 

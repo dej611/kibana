@@ -58,7 +58,7 @@ import {
   PIE_RENDER_ARRAY_VALUES,
   PIE_TOO_MANY_DIMENSIONS,
   WAFFLE_SMALL_VALUES,
-} from '../../user_messages_ids';
+} from '../../../common/user_messages_ids';
 
 const metricLabel = i18n.translate('xpack.lens.pie.groupMetricLabelSingular', {
   defaultMessage: 'Metric',

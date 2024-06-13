@@ -7,10 +7,10 @@
 
 import { i18n } from '@kbn/i18n';
 import React from 'react';
-import { EuiSwitch, EuiText } from '@elastic/eui';
-import { euiThemeVars } from '@kbn/ui-theme';
-import { AggFunctionsMapping } from '@kbn/data-plugin/public';
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
+// import { EuiSwitch, EuiText } from '@elastic/eui';
+// import { euiThemeVars } from '@kbn/ui-theme';
+import { AggFunctionsMapping } from '@kbn/data-plugin/common';
+import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
 import { CARDINALITY_ID, CARDINALITY_NAME } from '@kbn/lens-formula-docs';
 import { OperationDefinition, ParamEditorProps } from '.';
 import { FieldBasedIndexPatternColumn, ValueFormatConfig } from './column_types';
@@ -23,8 +23,8 @@ import {
   isColumnOfType,
 } from './helpers';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
-import { updateColumnParam } from '../layer_helpers';
-import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
+// import { updateColumnParam } from '../layer_helpers';
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
 import { getGroupByKey } from '../../get_group_by_key';
 
 const supportedTypes = new Set([
@@ -146,32 +146,33 @@ export const cardinalityOperation: OperationDefinition<
       {
         dataTestSubj: 'hide-zero-values',
         inlineElement: (
-          <EuiSwitch
-            label={
-              <EuiText size="xs">
-                {i18n.translate('xpack.lens.indexPattern.hideZero', {
-                  defaultMessage: 'Hide zero values',
-                })}
-              </EuiText>
-            }
-            labelProps={{
-              style: {
-                fontWeight: euiThemeVars.euiFontWeightMedium,
-              },
-            }}
-            checked={Boolean(currentColumn.params?.emptyAsNull)}
-            onChange={() => {
-              paramEditorUpdater(
-                updateColumnParam({
-                  layer,
-                  columnId,
-                  paramName: 'emptyAsNull',
-                  value: !currentColumn.params?.emptyAsNull,
-                })
-              );
-            }}
-            compressed
-          />
+          <div>Advanced stuff</div>
+          // <EuiSwitch
+          //   label={
+          //     <EuiText size="xs">
+          //       {i18n.translate('xpack.lens.indexPattern.hideZero', {
+          //         defaultMessage: 'Hide zero values',
+          //       })}
+          //     </EuiText>
+          //   }
+          //   labelProps={{
+          //     style: {
+          //       fontWeight: euiThemeVars.euiFontWeightMedium,
+          //     },
+          //   }}
+          //   checked={Boolean(currentColumn.params?.emptyAsNull)}
+          //   onChange={() => {
+          //     paramEditorUpdater(
+          //       updateColumnParam({
+          //         layer,
+          //         columnId,
+          //         paramName: 'emptyAsNull',
+          //         value: !currentColumn.params?.emptyAsNull,
+          //       })
+          //     );
+          //   }}
+          //   compressed
+          // />
         ),
       },
     ];

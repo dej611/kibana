@@ -6,15 +6,15 @@
  */
 import React, { useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
-import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
-import { useDebouncedValue } from '@kbn/visualization-ui-components';
+// import { EuiFieldNumber, EuiFormRow } from '@elastic/eui';
+// import { useDebouncedValue } from '@kbn/visualization-ui-components';
+import { IndexPattern } from '../../../../types';
 import { OperationDefinition } from '.';
 import {
   ReferenceBasedIndexPatternColumn,
   GenericIndexPatternColumn,
   ValueFormatConfig,
 } from './column_types';
-import type { IndexPattern } from '../../../../../public/types';
 import { getFormatFromPreviousColumn, isValidNumber } from './helpers';
 import { getColumnOrder } from '../layer_helpers';
 import { STATIC_VALUE_NOT_VALID_NUMBER } from '../../../../user_messages_ids';
@@ -207,46 +207,47 @@ export const staticValueOperation: OperationDefinition<
         ? activeDataValue
         : String(defaultValue);
 
-    const { inputValue, handleInputChange } = useDebouncedValue<string | undefined>(
-      {
-        value: currentColumn?.params?.value || fallbackValue,
-        onChange,
-      },
-      { allowFalsyValue: true }
-    );
+    // const { inputValue, handleInputChange } = useDebouncedValue<string | undefined>(
+    //   {
+    //     value: currentColumn?.params?.value || fallbackValue,
+    //     onChange,
+    //   },
+    //   { allowFalsyValue: true }
+    // );
 
-    const onChangeHandler = useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.currentTarget.value;
-        handleInputChange(value);
-      },
-      [handleInputChange]
-    );
+    // const onChangeHandler = useCallback(
+    //   (e: React.ChangeEvent<HTMLInputElement>) => {
+    //     const value = e.currentTarget.value;
+    //     handleInputChange(value);
+    //   },
+    //   [handleInputChange]
+    // );
 
-    const inputValueIsValid = isValidNumber(inputValue, false, undefined, undefined, 15);
+    // const inputValueIsValid = isValidNumber(inputValue, false, undefined, undefined, 15);
 
     return (
-      <EuiFormRow
-        label={paramEditorCustomProps?.labels?.[0] || defaultLabel}
-        fullWidth
-        isInvalid={!inputValueIsValid}
-        error={
-          !inputValueIsValid &&
-          i18n.translate('xpack.lens.indexPattern.staticValueError', {
-            defaultMessage: 'The static value of {value} is not a valid number',
-            values: { value: inputValue ?? "''" },
-          })
-        }
-      >
-        <EuiFieldNumber
-          fullWidth
-          data-test-subj="lns-indexPattern-static_value-input"
-          compressed
-          value={inputValue ?? ''}
-          onChange={onChangeHandler}
-          step="any"
-        />
-      </EuiFormRow>
+      <div>Stuff</div>
+      // <EuiFormRow
+      //   label={paramEditorCustomProps?.labels?.[0] || defaultLabel}
+      //   fullWidth
+      //   isInvalid={!inputValueIsValid}
+      //   error={
+      //     !inputValueIsValid &&
+      //     i18n.translate('xpack.lens.indexPattern.staticValueError', {
+      //       defaultMessage: 'The static value of {value} is not a valid number',
+      //       values: { value: inputValue ?? "''" },
+      //     })
+      //   }
+      // >
+      //   <EuiFieldNumber
+      //     fullWidth
+      //     data-test-subj="lns-indexPattern-static_value-input"
+      //     compressed
+      //     value={inputValue ?? ''}
+      //     onChange={onChangeHandler}
+      //     step="any"
+      //   />
+      // </EuiFormRow>
     );
   },
 };

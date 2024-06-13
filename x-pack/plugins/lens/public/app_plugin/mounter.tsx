@@ -22,7 +22,7 @@ import {
 
 import { ACTION_VISUALIZE_LENS_FIELD, VisualizeFieldContext } from '@kbn/ui-actions-plugin/public';
 import { ACTION_CONVERT_TO_LENS } from '@kbn/visualizations-plugin/public';
-import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
+// import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { KibanaRenderContextProvider } from '@kbn/react-kibana-context-render';
 import { EuiLoadingSpinner } from '@elastic/eui';
 import { syncGlobalQueryStateWithUrl } from '@kbn/data-plugin/public';
@@ -415,22 +415,22 @@ export async function mountApp(
 
   render(
     <KibanaRenderContextProvider {...coreStart}>
-      <KibanaContextProvider services={lensServices}>
-        <PresentationUtilContext>
-          <HashRouter>
-            <Routes>
-              <Route exact path="/edit/:id" component={EditorRoute} />
-              <Route
-                exact
-                path={`/${LENS_EDIT_BY_VALUE}`}
-                render={(routeProps) => <EditorRoute {...routeProps} editByValue />}
-              />
-              <Route exact path="/" component={EditorRoute} />
-              <Route path="/" component={NotFound} />
-            </Routes>
-          </HashRouter>
-        </PresentationUtilContext>
-      </KibanaContextProvider>
+      {/* <KibanaContextProvider services={lensServices}> */}
+      <PresentationUtilContext>
+        <HashRouter>
+          <Routes>
+            <Route exact path="/edit/:id" component={EditorRoute} />
+            <Route
+              exact
+              path={`/${LENS_EDIT_BY_VALUE}`}
+              render={(routeProps) => <EditorRoute {...routeProps} editByValue />}
+            />
+            <Route exact path="/" component={EditorRoute} />
+            <Route path="/" component={NotFound} />
+          </Routes>
+        </HashRouter>
+      </PresentationUtilContext>
+      {/* </KibanaContextProvider> */}
     </KibanaRenderContextProvider>,
     params.element
   );

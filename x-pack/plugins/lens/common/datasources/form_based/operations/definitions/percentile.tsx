@@ -5,17 +5,17 @@
  * 2.0.
  */
 
-import { EuiFieldNumber, EuiRange } from '@elastic/eui';
+// import { EuiFieldNumber, EuiRange } from '@elastic/eui';
 import React, { useCallback } from 'react';
 import { i18n } from '@kbn/i18n';
-import { AggFunctionsMapping } from '@kbn/data-plugin/public';
+import { AggFunctionsMapping } from '@kbn/data-plugin/common';
 import {
   buildExpression,
   buildExpressionFunction,
   ExpressionAstExpressionBuilder,
   ExpressionAstFunctionBuilder,
-} from '@kbn/expressions-plugin/public';
-import { useDebouncedValue } from '@kbn/visualization-ui-components';
+} from '@kbn/expressions-plugin/common';
+// import { useDebouncedValue } from '@kbn/visualization-ui-components';
 import { PERCENTILE_ID, PERCENTILE_NAME } from '@kbn/lens-formula-docs';
 import { OperationDefinition } from '.';
 import {
@@ -28,8 +28,8 @@ import {
 } from './helpers';
 import { FieldBasedIndexPatternColumn } from './column_types';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
-import { FormRow } from './shared_components';
-import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
+// import { FormRow } from './shared_components';
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
 import { getGroupByKey, groupByKey } from '../../get_group_by_key';
 
 export interface PercentileIndexPatternColumn extends FieldBasedIndexPatternColumn {
@@ -370,62 +370,63 @@ export const percentileOperation: OperationDefinition<
       },
       [isInline, upperBound, step, currentColumn, paramEditorUpdater, indexPattern]
     );
-    const { inputValue, handleInputChange: handleInputChangeWithoutValidation } = useDebouncedValue<
-      string | undefined
-    >({
-      onChange,
-      value: String(currentColumn.params.percentile),
-    });
-    const inputValueIsValid = isValidNumber(
-      inputValue,
-      isInline,
-      upperBound,
-      step,
-      ALLOWED_DECIMAL_DIGITS
-    );
+    // const { inputValue, handleInputChange: handleInputChangeWithoutValidation } = useDebouncedValue<
+    //   string | undefined
+    // >({
+    //   onChange,
+    //   value: String(currentColumn.params.percentile),
+    // });
+    // const inputValueIsValid = isValidNumber(
+    //   inputValue,
+    //   isInline,
+    //   upperBound,
+    //   step,
+    //   ALLOWED_DECIMAL_DIGITS
+    // );
 
-    const handleInputChange = useCallback(
-      (e) => handleInputChangeWithoutValidation(String(e.currentTarget.value)),
-      [handleInputChangeWithoutValidation]
-    );
+    // const handleInputChange = useCallback(
+    //   (e) => handleInputChangeWithoutValidation(String(e.currentTarget.value)),
+    //   [handleInputChangeWithoutValidation]
+    // );
 
     return (
-      <FormRow
-        isInline={isInline}
-        label={percentileLabel}
-        data-test-subj="lns-indexPattern-percentile-form"
-        display="rowCompressed"
-        fullWidth
-        isInvalid={!inputValueIsValid}
-        error={!inputValueIsValid && getInvalidErrorMessage(inputValue, isInline, upperBound, step)}
-      >
-        {isInline ? (
-          <EuiFieldNumber
-            fullWidth
-            data-test-subj="lns-indexPattern-percentile-input"
-            compressed
-            value={inputValue ?? ''}
-            min={step}
-            max={upperBound}
-            step={step}
-            onChange={handleInputChange}
-            aria-label={percentileLabel}
-          />
-        ) : (
-          <EuiRange
-            fullWidth
-            data-test-subj="lns-indexPattern-percentile-input"
-            compressed
-            value={inputValue ?? ''}
-            min={step}
-            max={upperBound}
-            step={step}
-            onChange={handleInputChange}
-            showInput
-            aria-label={percentileLabel}
-          />
-        )}
-      </FormRow>
+      <div>Stuff</div>
+      // <FormRow
+      //   isInline={isInline}
+      //   label={percentileLabel}
+      //   data-test-subj="lns-indexPattern-percentile-form"
+      //   display="rowCompressed"
+      //   fullWidth
+      //   isInvalid={!inputValueIsValid}
+      //   error={!inputValueIsValid && getInvalidErrorMessage(inputValue, isInline, upperBound, step)}
+      // >
+      //   {isInline ? (
+      //     <EuiFieldNumber
+      //       fullWidth
+      //       data-test-subj="lns-indexPattern-percentile-input"
+      //       compressed
+      //       value={inputValue ?? ''}
+      //       min={step}
+      //       max={upperBound}
+      //       step={step}
+      //       onChange={handleInputChange}
+      //       aria-label={percentileLabel}
+      //     />
+      //   ) : (
+      //     <EuiRange
+      //       fullWidth
+      //       data-test-subj="lns-indexPattern-percentile-input"
+      //       compressed
+      //       value={inputValue ?? ''}
+      //       min={step}
+      //       max={upperBound}
+      //       step={step}
+      //       onChange={handleInputChange}
+      //       showInput
+      //       aria-label={percentileLabel}
+      //     />
+      //   )}
+      // </FormRow>
     );
   },
   quickFunctionDocumentation: i18n.translate(

@@ -69,7 +69,7 @@ import {
   PRECISION_ERROR_ASC_COUNT_PRECISION,
   TSDB_UNSUPPORTED_COUNTER_OP,
   UNSUPPORTED_DOWNSAMPLED_INDEX_AGG_PREFIX,
-} from '../../user_messages_ids';
+} from '../../../common/user_messages_ids';
 
 export function isColumnInvalid(
   layer: FormBasedLayer,

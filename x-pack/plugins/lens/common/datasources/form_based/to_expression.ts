@@ -19,34 +19,22 @@ import {
   ExpressionAstExpression,
   ExpressionAstExpressionBuilder,
   ExpressionAstFunction,
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/to_expression.ts
 } from '@kbn/expressions-plugin/common';
 import type { IUiSettingsClient } from '@kbn/core-ui-settings-browser';
+import { convertToAbsoluteDateRange } from '../../utils';
 import type { DateRange, IndexPattern, IndexPatternMap } from '../../types';
 import type { GenericIndexPatternColumn } from '../../../public/datasources/form_based/form_based';
 import { operationDefinitionMap } from './operations/definitions';
 import type {
-  FormBasedPrivateState,
-  FormBasedLayer,
-} from '../../../public/datasources/form_based/types';
-import type {
   DateHistogramIndexPatternColumn,
   RangeIndexPatternColumn,
 } from './operations/definitions';
-=======
-} from '@kbn/expressions-plugin/public';
-import { convertToAbsoluteDateRange } from '../../utils';
-import type { DateRange } from '../../../common/types';
-import { GenericIndexPatternColumn } from './form_based';
-import { operationDefinitionMap } from './operations';
-import { FormBasedPrivateState, FormBasedLayer } from './types';
-import { DateHistogramIndexPatternColumn, RangeIndexPatternColumn } from './operations/definitions';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/to_expression.ts
 import type { FormattedIndexPatternColumn } from './operations/definitions/column_types';
 import { isColumnFormatted, isColumnOfType } from './operations/definitions/helpers';
 import { dedupeAggs, extractAggId } from './dedupe_aggs';
 import { resolveTimeShift } from './time_shift_utils';
 import { getSamplingValue } from './utils';
+import { FormBasedLayer, FormBasedPrivateState } from './types';
 
 export type OriginalColumn = { id: string } & GenericIndexPatternColumn;
 
@@ -336,7 +324,7 @@ function getExpressionForLayer(
       const matchingEsAggColumnIds = esAggsIds.filter((id) => extractAggId(id) === esAggId);
 
       matchingEsAggColumnIds.forEach((currentId) => {
-        const currentColumn = esAggsIdMap[currentId][0];
+        // const currentColumn = esAggsIdMap[currentId][0];
         // const aggIndex = window.ELASTIC_LENS_DELAY_SECONDS
         //   ? counter + (currentColumn.isBucketed ? 0 : 1)
         //   : counter;

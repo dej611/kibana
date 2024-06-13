@@ -17,27 +17,19 @@ import {
   ExpressionFunctionFormulaInterval,
   ExpressionFunctionFormulaNow,
   ExpressionFunctionFormulaTimeRange,
-} from '../../../../../../common/expressions/formula_context/context_fns';
+} from '../../../../../expressions/formula_context/context_fns';
 import type {
   DateHistogramIndexPatternColumn,
   FormBasedLayer,
   GenericIndexPatternColumn,
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/formula/context_variables.tsx
 } from '../../../../../../public';
-import type { DateRange } from '../../../../../types';
-import type { GenericOperationDefinition, OperationDefinition } from '..';
-import type { ReferenceBasedIndexPatternColumn } from '../column_types';
-import { IndexPattern } from '../../../../../../public/types';
-=======
-} from '../../../../..';
-import type { DateRange } from '../../../../../../common/types';
+import type { DateRange, IndexPattern } from '../../../../../types';
 import type {
   FieldBasedOperationErrorMessage,
   GenericOperationDefinition,
   OperationDefinition,
 } from '..';
 import type { ReferenceBasedIndexPatternColumn } from '../column_types';
-import { IndexPattern } from '../../../../../types';
 import {
   INTERVAL_OP_MISSING_DATE_HISTOGRAM_TO_COMPUTE_INTERVAL,
   INTERVAL_OP_MISSING_TIME_RANGE,
@@ -45,7 +37,6 @@ import {
   TIMERANGE_OP_DATAVIEW_NOT_TIME_BASED,
   TIMERANGE_OP_MISSING_TIME_RANGE,
 } from '../../../../../user_messages_ids';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/formula/context_variables.tsx
 
 // copied over from layer_helpers
 // TODO: split layer_helpers util into pure/non-pure functions to avoid issues with tests

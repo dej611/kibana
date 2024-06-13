@@ -30,15 +30,11 @@ import {
 import { ChartsPluginSetup } from '@kbn/charts-plugin/public';
 import useLatest from 'react-use/lib/useLatest';
 import { isFieldLensCompatible } from '@kbn/visualization-ui-components';
-import { buildIndexPatternField } from '../../data_views_service/loader';
-import type {
-  DatasourceDataPanelProps,
-  FramePublicAPI,
-  IndexPattern,
-  IndexPatternField,
-} from '../../types';
+import { buildIndexPatternField } from '../../../common/data_views_service/loader';
+import { IndexPattern, IndexPatternField } from '../../../common/types';
+import { IndexPatternServiceAPI } from '../../../common/data_views_service/service';
+import type { DatasourceDataPanelProps, FramePublicAPI } from '../../types';
 import type { FormBasedPrivateState } from './types';
-import { IndexPatternServiceAPI } from '../../data_views_service/service';
 import { FieldItem } from '../common/field_item';
 
 export type Props = Omit<

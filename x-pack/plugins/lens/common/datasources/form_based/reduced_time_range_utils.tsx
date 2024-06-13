@@ -6,17 +6,13 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import type { FormBasedLayer } from './types';
-import type { IndexPattern } from '../../types';
-<<<<<<< HEAD
-import type { FieldBasedOperationErrorMessage } from '../../../common/datasources/form_based/operations/definitions';
-=======
 import type { FieldBasedOperationErrorMessage } from './operations/definitions';
 import {
   REDUCED_TIME_RANGE_DEFAULT_DATE_FIELD,
   REDUCED_TIME_RANGE_NO_DATE_HISTOGRAM,
 } from '../../user_messages_ids';
->>>>>>> upstream/main
+import { IndexPattern } from '../../types';
+import { FormBasedLayer } from './types';
 
 export const reducedTimeRangeOptions = [
   {

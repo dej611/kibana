@@ -5,20 +5,20 @@
  * 2.0.
  */
 
-import './filter_popover.scss';
+// import './filter_popover.scss';
 
 import React from 'react';
-import { EuiPopover, EuiSpacer } from '@elastic/eui';
+// import { EuiPopover, EuiSpacer } from '@elastic/eui';
 import type { Query } from '@kbn/es-query';
 // Need to keep it separate to make it work Jest mocks in dimension_panel tests
 // import { QueryInput } from '../../../../shared_components/query_input';
-import { isQueryValid, QueryInput } from '@kbn/visualization-ui-components';
-import { useKibana } from '@kbn/kibana-react-plugin/public';
-import { LENS_APP_NAME } from '../../../../../constants';
-import { IndexPattern } from '../../../../../../public/types';
+// import { isQueryValid, QueryInput } from '@kbn/visualization-ui-components';
+// import { useKibana } from '@kbn/kibana-react-plugin/public';
+// import type { LensAppServices } from '../../../../../../public/app_plugin/types';
+import { IndexPattern } from '../../../../../types';
+// import { LENS_APP_NAME } from '../../../../../constants';
 import { FilterValue, defaultLabel } from '.';
-import { LabelInput } from '../shared_components';
-import { LensAppServices } from '../../../../../../public/app_plugin/types';
+// import { LabelInput } from '../shared_components';
 
 export const FilterPopover = ({
   filter,
@@ -51,39 +51,40 @@ export const FilterPopover = ({
   };
 
   return (
-    <EuiPopover
-      data-test-subj="indexPattern-filters-existingFilterContainer"
-      panelClassName="lnsIndexPatternDimensionEditor__filtersEditor"
-      isOpen={isOpen}
-      ownFocus
-      closePopover={triggerClose}
-      button={button}
-    >
-      <QueryInput
-        isInvalid={!isQueryValid(filter.input, indexPattern)}
-        value={filter.input}
-        dataView={
-          indexPattern.id
-            ? { type: 'id', value: indexPattern.id }
-            : { type: 'title', value: indexPattern.title }
-        }
-        disableAutoFocus
-        onChange={setFilterQuery}
-        onSubmit={() => {
-          if (inputRef.current) inputRef.current.focus();
-        }}
-        appName={LENS_APP_NAME}
-        services={useKibana<LensAppServices>().services}
-      />
-      <EuiSpacer size="s" />
-      <LabelInput
-        value={filter.label || ''}
-        onChange={setFilterLabel}
-        placeholder={getPlaceholder(filter.input.query)}
-        inputRef={inputRef}
-        onSubmit={triggerClose}
-        dataTestSubj="indexPattern-filters-label"
-      />
-    </EuiPopover>
+    <div>Popup</div>
+    // <EuiPopover
+    //   data-test-subj="indexPattern-filters-existingFilterContainer"
+    //   panelClassName="lnsIndexPatternDimensionEditor__filtersEditor"
+    //   isOpen={isOpen}
+    //   ownFocus
+    //   closePopover={triggerClose}
+    //   button={button}
+    // >
+    //   <QueryInput
+    //     isInvalid={!isQueryValid(filter.input, indexPattern)}
+    //     value={filter.input}
+    //     dataView={
+    //       indexPattern.id
+    //         ? { type: 'id', value: indexPattern.id }
+    //         : { type: 'title', value: indexPattern.title }
+    //     }
+    //     disableAutoFocus
+    //     onChange={setFilterQuery}
+    //     onSubmit={() => {
+    //       if (inputRef.current) inputRef.current.focus();
+    //     }}
+    //     appName={LENS_APP_NAME}
+    //     services={useKibana<LensAppServices>().services}
+    //   />
+    //   <EuiSpacer size="s" />
+    //   <LabelInput
+    //     value={filter.label || ''}
+    //     onChange={setFilterLabel}
+    //     placeholder={getPlaceholder(filter.input.query)}
+    //     inputRef={inputRef}
+    //     onSubmit={triggerClose}
+    //     dataTestSubj="indexPattern-filters-label"
+    //   />
+    // </EuiPopover>
   );
 };

@@ -6,7 +6,8 @@
  */
 
 import { memoize } from 'lodash';
-import type { IndexPattern, IndexPatternField, OperationMetadata } from '../../../../public/types';
+import { IndexPatternField, IndexPattern } from '../../../types';
+import type { OperationMetadata } from '../../../../public/types';
 import {
   operationDefinitionMap,
   operationDefinitions,

@@ -7,79 +7,76 @@
 
 import React, { useState } from 'react';
 import { i18n } from '@kbn/i18n';
-import { FormattedMessage } from '@kbn/i18n-react';
-import {
-  EuiButtonEmpty,
-  EuiButtonIcon,
-  EuiCode,
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiFormRow,
-  EuiRange,
-  EuiToolTip,
-  EuiSwitch,
-  EuiSpacer,
-  EuiText,
-} from '@elastic/eui';
+// import { FormattedMessage } from '@kbn/i18n-react';
+// import {
+//   EuiButtonEmpty,
+//   EuiButtonIcon,
+//   EuiCode,
+//   EuiFlexGroup,
+//   EuiFlexItem,
+//   EuiFormRow,
+//   EuiRange,
+//   EuiToolTip,
+//   EuiSwitch,
+//   EuiSpacer,
+//   EuiText,
+// } from '@elastic/eui';
 import type { IFieldFormat } from '@kbn/field-formats-plugin/common';
-import { UI_SETTINGS } from '@kbn/data-plugin/public';
+// import { UI_SETTINGS } from '@kbn/data-plugin/common';
+import { useDebounceWithOptions } from '../../../../../utils';
 import { RangeColumnParams, UpdateParamsFnType, MODES_TYPES } from './ranges';
 import { AdvancedRangeEditor } from './advanced_editor';
-import { TYPING_DEBOUNCE_TIME, MODES, MIN_HISTOGRAM_BARS } from './constants';
-import { useDebounceWithOptions } from '../../../../../../public/shared_components';
-import {
-  HelpPopover,
-  HelpPopoverButton,
-} from '../../../../../../public/datasources/form_based/help_popover';
+import { TYPING_DEBOUNCE_TIME, MODES } from './constants';
 
 const GranularityHelpPopover = () => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
   return (
-    <HelpPopover
-      anchorPosition="upCenter"
-      button={
-        <HelpPopoverButton
-          onClick={() => {
-            setIsPopoverOpen(!isPopoverOpen);
-          }}
-        >
-          {i18n.translate('xpack.lens.indexPattern.ranges.granularityHelpText', {
-            defaultMessage: 'How it works',
-          })}
-        </HelpPopoverButton>
-      }
-      closePopover={() => setIsPopoverOpen(false)}
-      isOpen={isPopoverOpen}
-      title={i18n.translate('xpack.lens.indexPattern.ranges.granularityPopoverTitle', {
-        defaultMessage: 'How granularity interval works',
-      })}
-    >
-      <p>
-        {i18n.translate('xpack.lens.indexPattern.ranges.granularityPopoverBasicExplanation', {
-          defaultMessage:
-            'Interval granularity divides the field into evenly spaced intervals based on the minimum and maximum values for the field.',
-        })}
-      </p>
+    <div>Help!</div>
+    // <HelpPopover
+    //   anchorPosition="upCenter"
+    //   button={
+    //     <HelpPopoverButton
+    //       onClick={() => {
+    //         setIsPopoverOpen(!isPopoverOpen);
+    //       }}
+    //     >
+    //       {i18n.translate('xpack.lens.indexPattern.ranges.granularityHelpText', {
+    //         defaultMessage: 'How it works',
+    //       })}
+    //     </HelpPopoverButton>
+    //   }
+    //   closePopover={() => setIsPopoverOpen(false)}
+    //   isOpen={isPopoverOpen}
+    //   title={i18n.translate('xpack.lens.indexPattern.ranges.granularityPopoverTitle', {
+    //     defaultMessage: 'How granularity interval works',
+    //   })}
+    // >
+    //   <p>
+    //     {i18n.translate('xpack.lens.indexPattern.ranges.granularityPopoverBasicExplanation', {
+    //       defaultMessage:
+    //         'Interval granularity divides the field into evenly spaced intervals based on the minimum and maximum values for the field.',
+    //     })}
+    //   </p>
 
-      <p>
-        <FormattedMessage
-          id="xpack.lens.indexPattern.ranges.granularityPopoverExplanation"
-          defaultMessage='The size of the interval is a "nice" value. When the granularity of the slider changes, the interval stays the same when the “nice” interval is the same. The minimum granularity is 1, and the maximum value is
-            {setting}. To change the maximum granularity, go to Advanced settings.'
-          values={{
-            setting: <EuiCode>{UI_SETTINGS.HISTOGRAM_MAX_BARS}</EuiCode>,
-          }}
-        />
-      </p>
+    //   <p>
+    //     <FormattedMessage
+    //       id="xpack.lens.indexPattern.ranges.granularityPopoverExplanation"
+    //       defaultMessage='The size of the interval is a "nice" value. When the granularity of the slider changes, the interval stays the same when the “nice” interval is the same. The minimum granularity is 1, and the maximum value is
+    //         {setting}. To change the maximum granularity, go to Advanced settings.'
+    //       values={{
+    //         setting: <EuiCode>{UI_SETTINGS.HISTOGRAM_MAX_BARS}</EuiCode>,
+    //       }}
+    //     />
+    //   </p>
 
-      <p>
-        {i18n.translate('xpack.lens.indexPattern.ranges.granularityPopoverAdvancedExplanation', {
-          defaultMessage:
-            'Intervals are incremented by 10, 5 or 2. For example, an interval can be 100 or 0.2 .',
-        })}
-      </p>
-    </HelpPopover>
+    //   <p>
+    //     {i18n.translate('xpack.lens.indexPattern.ranges.granularityPopoverAdvancedExplanation', {
+    //       defaultMessage:
+    //         'Intervals are incremented by 10, 5 or 2. For example, an interval can be 100 or 0.2 .',
+    //     })}
+    //   </p>
+    // </HelpPopover>
   );
 };
 
@@ -123,81 +120,82 @@ const BaseRangeEditor = ({
   });
 
   return (
-    <>
-      <EuiSpacer size="s" />
-      <EuiFormRow display="rowCompressed" hasChildLabel={false}>
-        <EuiSwitch
-          label={
-            <EuiText size="xs">
-              {i18n.translate('xpack.lens.indexPattern.ranges.includeEmptyRows', {
-                defaultMessage: 'Include empty rows',
-              })}
-            </EuiText>
-          }
-          checked={Boolean(includeEmptyRows)}
-          onChange={() => {
-            onChangeIncludeEmptyRows(!includeEmptyRows);
-          }}
-          compressed
-        />
-      </EuiFormRow>
-      <EuiFormRow
-        label={granularityLabel}
-        data-test-subj="indexPattern-ranges-section-label"
-        labelType="legend"
-        fullWidth
-        display="rowCompressed"
-        labelAppend={<GranularityHelpPopover />}
-      >
-        <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
-          <EuiFlexItem grow={false}>
-            <EuiToolTip content={decreaseButtonLabel} delay="long">
-              <EuiButtonIcon
-                iconType="minusInCircle"
-                color="text"
-                data-test-subj="lns-indexPattern-range-maxBars-minus"
-                onClick={() =>
-                  setMaxBarsValue('' + Math.max(Number(maxBarsValue) - step, MIN_HISTOGRAM_BARS))
-                }
-                aria-label={decreaseButtonLabel}
-              />
-            </EuiToolTip>
-          </EuiFlexItem>
-          <EuiFlexItem>
-            <EuiRange
-              compressed
-              fullWidth
-              aria-label={granularityLabel}
-              data-test-subj="lns-indexPattern-range-maxBars-field"
-              min={MIN_HISTOGRAM_BARS}
-              max={maxHistogramBars}
-              step={step}
-              value={maxBarsValue}
-              onChange={({ currentTarget }) => setMaxBarsValue(currentTarget.value)}
-            />
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiToolTip content={increaseButtonLabel} delay="long">
-              <EuiButtonIcon
-                iconType="plusInCircle"
-                color="text"
-                data-test-subj="lns-indexPattern-range-maxBars-plus"
-                onClick={() =>
-                  setMaxBarsValue('' + Math.min(Number(maxBarsValue) + step, maxHistogramBars))
-                }
-                aria-label={increaseButtonLabel}
-              />
-            </EuiToolTip>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiFormRow>
+    <div>Stuff</div>
+    // <>
+    //   <EuiSpacer size="s" />
+    //   <EuiFormRow display="rowCompressed" hasChildLabel={false}>
+    //     <EuiSwitch
+    //       label={
+    //         <EuiText size="xs">
+    //           {i18n.translate('xpack.lens.indexPattern.ranges.includeEmptyRows', {
+    //             defaultMessage: 'Include empty rows',
+    //           })}
+    //         </EuiText>
+    //       }
+    //       checked={Boolean(includeEmptyRows)}
+    //       onChange={() => {
+    //         onChangeIncludeEmptyRows(!includeEmptyRows);
+    //       }}
+    //       compressed
+    //     />
+    //   </EuiFormRow>
+    //   <EuiFormRow
+    //     label={granularityLabel}
+    //     data-test-subj="indexPattern-ranges-section-label"
+    //     labelType="legend"
+    //     fullWidth
+    //     display="rowCompressed"
+    //     labelAppend={<GranularityHelpPopover />}
+    //   >
+    //     <EuiFlexGroup alignItems="center" gutterSize="xs" responsive={false}>
+    //       <EuiFlexItem grow={false}>
+    //         <EuiToolTip content={decreaseButtonLabel} delay="long">
+    //           <EuiButtonIcon
+    //             iconType="minusInCircle"
+    //             color="text"
+    //             data-test-subj="lns-indexPattern-range-maxBars-minus"
+    //             onClick={() =>
+    //               setMaxBarsValue('' + Math.max(Number(maxBarsValue) - step, MIN_HISTOGRAM_BARS))
+    //             }
+    //             aria-label={decreaseButtonLabel}
+    //           />
+    //         </EuiToolTip>
+    //       </EuiFlexItem>
+    //       <EuiFlexItem>
+    //         <EuiRange
+    //           compressed
+    //           fullWidth
+    //           aria-label={granularityLabel}
+    //           data-test-subj="lns-indexPattern-range-maxBars-field"
+    //           min={MIN_HISTOGRAM_BARS}
+    //           max={maxHistogramBars}
+    //           step={step}
+    //           value={maxBarsValue}
+    //           onChange={({ currentTarget }) => setMaxBarsValue(currentTarget.value)}
+    //         />
+    //       </EuiFlexItem>
+    //       <EuiFlexItem grow={false}>
+    //         <EuiToolTip content={increaseButtonLabel} delay="long">
+    //           <EuiButtonIcon
+    //             iconType="plusInCircle"
+    //             color="text"
+    //             data-test-subj="lns-indexPattern-range-maxBars-plus"
+    //             onClick={() =>
+    //               setMaxBarsValue('' + Math.min(Number(maxBarsValue) + step, maxHistogramBars))
+    //             }
+    //             aria-label={increaseButtonLabel}
+    //           />
+    //         </EuiToolTip>
+    //       </EuiFlexItem>
+    //     </EuiFlexGroup>
+    //   </EuiFormRow>
 
-      <EuiButtonEmpty size="xs" iconType="controlsHorizontal" onClick={() => onToggleEditor()}>
-        {i18n.translate('xpack.lens.indexPattern.ranges.customIntervalsToggle', {
-          defaultMessage: 'Create custom ranges',
-        })}
-      </EuiButtonEmpty>
-    </>
+    //   <EuiButtonEmpty size="xs" iconType="controlsHorizontal" onClick={() => onToggleEditor()}>
+    //     {i18n.translate('xpack.lens.indexPattern.ranges.customIntervalsToggle', {
+    //       defaultMessage: 'Create custom ranges',
+    //     })}
+    //   </EuiButtonEmpty>
+    // </>
   );
 };
 

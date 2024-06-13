@@ -7,22 +7,22 @@
 
 import React from 'react';
 import { i18n } from '@kbn/i18n';
-import {
-  EuiFormRow,
-  EuiComboBox,
-  EuiComboBoxOptionOption,
-  EuiSwitch,
-  EuiToolTip,
-  EuiText,
-} from '@elastic/eui';
-import { AggFunctionsMapping } from '@kbn/data-plugin/public';
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
+// import {
+//   EuiFormRow,
+//   EuiComboBox,
+//   EuiComboBoxOptionOption,
+//   EuiSwitch,
+//   EuiToolTip,
+//   EuiText,
+// } from '@elastic/eui';
+import { AggFunctionsMapping } from '@kbn/data-plugin/common';
+import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { LAST_VALUE_ID, LAST_VALUE_NAME } from '@kbn/lens-formula-docs';
+import { IndexPattern, IndexPatternField } from '../../../../types';
 import type { FieldBasedOperationErrorMessage, OperationDefinition } from '.';
 import { FieldBasedIndexPatternColumn, ValueFormatConfig } from './column_types';
-import type { IndexPatternField, IndexPattern } from '../../../../../public/types';
-import { DataType } from '../../../../../public/types';
+import type { DataType } from '../../../../../public/types';
 import {
   getFormatFromPreviousColumn,
   getInvalidFieldMessage,
@@ -33,18 +33,13 @@ import {
 } from './helpers';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
 import { isRuntimeField, isScriptedField } from './terms/helpers';
-import { FormRow } from './shared_components/form_row';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/last_value.tsx
-import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
+// import { FormRow } from './shared_components/form_row';
 import { getGroupByKey } from '../../get_group_by_key';
-=======
-import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
-import { getGroupByKey } from './get_group_by_key';
 import {
   LAST_VALUE_OP_SORT_FIELD_INVALID_TYPE,
   LAST_VALUE_OP_SORT_FIELD_NOT_FOUND,
 } from '../../../../user_messages_ids';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/last_value.tsx
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
 
 function ofName(name: string, timeShift: string | undefined, reducedTimeRange: string | undefined) {
   return adjustTimeScaleLabelSuffix(
@@ -354,101 +349,102 @@ export const lastValueOperation: OperationDefinition<
     };
 
     return (
-      <>
-        {!isReferenced && (
-          <EuiFormRow
-            error={i18n.translate(
-              'xpack.lens.indexPattern.lastValue.showArrayValuesWithTopValuesWarning',
-              {
-                defaultMessage:
-                  'When you show array values, you are unable to use this field to rank top values.',
-              }
-            )}
-            isInvalid={currentColumn.params.showArrayValues && usingTopValues}
-            display="rowCompressed"
-            fullWidth
-            data-test-subj="lns-indexPattern-lastValue-showArrayValues"
-          >
-            <EuiToolTip
-              content={i18n.translate(
-                'xpack.lens.indexPattern.lastValue.showArrayValuesExplanation',
-                {
-                  defaultMessage:
-                    'Displays all values associated with this field in each last document.',
-                }
-              )}
-              position="left"
-            >
-              <EuiSwitch
-                label={
-                  <EuiText size="xs">
-                    {i18n.translate('xpack.lens.indexPattern.lastValue.showArrayValues', {
-                      defaultMessage: 'Show array values',
-                    })}
-                  </EuiText>
-                }
-                compressed={true}
-                checked={Boolean(currentColumn.params.showArrayValues)}
-                disabled={isScriptedField(currentColumn.sourceField, indexPattern)}
-                onChange={() => setShowArrayValues(!currentColumn.params.showArrayValues)}
-              />
-            </EuiToolTip>
-          </EuiFormRow>
-        )}
-        <FormRow
-          isInline={isInline}
-          label={sortByFieldLabel}
-          display="rowCompressed"
-          fullWidth
-          error={i18n.translate('xpack.lens.indexPattern.sortField.invalid', {
-            defaultMessage: 'Invalid field. Check your data view or pick another field.',
-          })}
-          isInvalid={isSortFieldInvalid}
-        >
-          <EuiComboBox
-            placeholder={i18n.translate('xpack.lens.indexPattern.lastValue.sortFieldPlaceholder', {
-              defaultMessage: 'Sort field',
-            })}
-            fullWidth
-            compressed
-            isClearable={false}
-            data-test-subj="lns-indexPattern-lastValue-sortField"
-            isInvalid={isSortFieldInvalid}
-            singleSelection={{ asPlainText: true }}
-            aria-label={sortByFieldLabel}
-            options={dateFields?.map((field: IndexPatternField) => {
-              return {
-                value: field.name,
-                label: field.displayName,
-              };
-            })}
-            onChange={(choices) => {
-              if (choices.length === 0) {
-                return;
-              }
-              return paramEditorUpdater({
-                ...currentColumn,
-                params: {
-                  ...currentColumn.params,
-                  sortField: choices[0].value,
-                },
-              } as LastValueIndexPatternColumn);
-            }}
-            selectedOptions={
-              (currentColumn.params?.sortField
-                ? [
-                    {
-                      label:
-                        indexPattern.getFieldByName(currentColumn.params.sortField)?.displayName ||
-                        currentColumn.params.sortField,
-                      value: currentColumn.params.sortField,
-                    },
-                  ]
-                : []) as unknown as EuiComboBoxOptionOption[]
-            }
-          />
-        </FormRow>
-      </>
+      <div>Stuff</div>
+      // <>
+      //   {!isReferenced && (
+      //     <EuiFormRow
+      //       error={i18n.translate(
+      //         'xpack.lens.indexPattern.lastValue.showArrayValuesWithTopValuesWarning',
+      //         {
+      //           defaultMessage:
+      //             'When you show array values, you are unable to use this field to rank top values.',
+      //         }
+      //       )}
+      //       isInvalid={currentColumn.params.showArrayValues && usingTopValues}
+      //       display="rowCompressed"
+      //       fullWidth
+      //       data-test-subj="lns-indexPattern-lastValue-showArrayValues"
+      //     >
+      //       <EuiToolTip
+      //         content={i18n.translate(
+      //           'xpack.lens.indexPattern.lastValue.showArrayValuesExplanation',
+      //           {
+      //             defaultMessage:
+      //               'Displays all values associated with this field in each last document.',
+      //           }
+      //         )}
+      //         position="left"
+      //       >
+      //         <EuiSwitch
+      //           label={
+      //             <EuiText size="xs">
+      //               {i18n.translate('xpack.lens.indexPattern.lastValue.showArrayValues', {
+      //                 defaultMessage: 'Show array values',
+      //               })}
+      //             </EuiText>
+      //           }
+      //           compressed={true}
+      //           checked={Boolean(currentColumn.params.showArrayValues)}
+      //           disabled={isScriptedField(currentColumn.sourceField, indexPattern)}
+      //           onChange={() => setShowArrayValues(!currentColumn.params.showArrayValues)}
+      //         />
+      //       </EuiToolTip>
+      //     </EuiFormRow>
+      //   )}
+      //   <FormRow
+      //     isInline={isInline}
+      //     label={sortByFieldLabel}
+      //     display="rowCompressed"
+      //     fullWidth
+      //     error={i18n.translate('xpack.lens.indexPattern.sortField.invalid', {
+      //       defaultMessage: 'Invalid field. Check your data view or pick another field.',
+      //     })}
+      //     isInvalid={isSortFieldInvalid}
+      //   >
+      //     <EuiComboBox
+      //       placeholder={i18n.translate('xpack.lens.indexPattern.lastValue.sortFieldPlaceholder', {
+      //         defaultMessage: 'Sort field',
+      //       })}
+      //       fullWidth
+      //       compressed
+      //       isClearable={false}
+      //       data-test-subj="lns-indexPattern-lastValue-sortField"
+      //       isInvalid={isSortFieldInvalid}
+      //       singleSelection={{ asPlainText: true }}
+      //       aria-label={sortByFieldLabel}
+      //       options={dateFields?.map((field: IndexPatternField) => {
+      //         return {
+      //           value: field.name,
+      //           label: field.displayName,
+      //         };
+      //       })}
+      //       onChange={(choices) => {
+      //         if (choices.length === 0) {
+      //           return;
+      //         }
+      //         return paramEditorUpdater({
+      //           ...currentColumn,
+      //           params: {
+      //             ...currentColumn.params,
+      //             sortField: choices[0].value,
+      //           },
+      //         } as LastValueIndexPatternColumn);
+      //       }}
+      //       selectedOptions={
+      //         (currentColumn.params?.sortField
+      //           ? [
+      //               {
+      //                 label:
+      //                   indexPattern.getFieldByName(currentColumn.params.sortField)?.displayName ||
+      //                   currentColumn.params.sortField,
+      //                 value: currentColumn.params.sortField,
+      //               },
+      //             ]
+      //           : []) as unknown as EuiComboBoxOptionOption[]
+      //       }
+      //     />
+      //   </FormRow>
+      // </>
     );
   },
   quickFunctionDocumentation: i18n.translate(

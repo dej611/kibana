@@ -5,31 +5,47 @@
  * 2.0.
  */
 
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { i18n } from '@kbn/i18n';
-import {
-  EuiFormRow,
-  EuiSelect,
-  EuiSwitch,
-  EuiSwitchEvent,
-  EuiSpacer,
-  EuiAccordion,
-  EuiIconTip,
-  htmlIdGenerator,
-  EuiButtonGroup,
-  EuiText,
-  useEuiTheme,
-  EuiTitle,
-  EuiTextColor,
-} from '@elastic/eui';
-import { uniq } from 'lodash';
+// import {
+//   EuiFormRow,
+//   EuiSelect,
+//   EuiSwitch,
+//   EuiSwitchEvent,
+//   EuiSpacer,
+//   EuiAccordion,
+//   EuiIconTip,
+//   htmlIdGenerator,
+//   EuiButtonGroup,
+//   EuiText,
+//   useEuiTheme,
+//   EuiTitle,
+//   EuiTextColor,
+// } from '@elastic/eui';
+// import { uniq } from 'lodash';
 import type { AggFunctionsMapping } from '@kbn/data-plugin/common';
 import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
-import { DOCUMENT_FIELD_NAME } from '../../../../../constants';
-import { insertOrReplaceColumn, updateColumnParam, updateDefaultLabels } from '../../layer_helpers';
-import type { DataType, OperationMetadata } from '../../../../../../public/types';
+// import {
+//   EuiFormRow,
+//   useEuiTheme,
+//   EuiIconTip,
+//   EuiSelect,
+//   EuiSpacer,
+//   EuiButtonGroup,
+//   EuiAccordion,
+//   EuiTitle,
+//   EuiTextColor,
+//   EuiSwitch,
+//   EuiText,
+//   EuiSwitchEvent,
+// } from '@elastic/eui';
+// import { getErrorMessage } from '@kbn/core-elasticsearch-client-server-internal';
+import { IndexPatternField } from '../../../../../types';
+// import { DOCUMENT_FIELD_NAME } from '../../../../../constants';
+// import { insertOrReplaceColumn, updateColumnParam, updateDefaultLabels } from '../../layer_helpers';
+import type { DataType } from '../../../../../../public/types';
 import type { OperationDefinition } from '..';
-import type { GenericIndexPatternColumn, IncompleteColumn } from '../column_types';
+// import type { GenericIndexPatternColumn, IncompleteColumn } from '../column_types';
 // import { ValuesInput } from './values_input';
 // import { getInvalidFieldMessage, isColumn } from '../helpers';
 // import { FieldInputs, getInputFieldErrorMessage, MAX_MULTI_FIELDS_SIZE } from './field_inputs';
@@ -38,7 +54,6 @@ import type { GenericIndexPatternColumn, IncompleteColumn } from '../column_type
 //   getErrorMessage,
 // } from '../../../../../../public/datasources/form_based/dimension_panel/field_input';
 import type { TermsIndexPatternColumn } from './types';
-import type { IndexPatternField } from '../../../../../../public/types';
 // import {
 //   getDisallowedTermsMessage,
 //   getMultiTermsScriptedFieldErrorMessage,
@@ -49,12 +64,23 @@ import type { IndexPatternField } from '../../../../../../public/types';
 //   getOtherBucketSwitchDefault,
 // } from './helpers';
 import {
-  DEFAULT_MAX_DOC_COUNT,
+  // DEFAULT_MAX_DOC_COUNT,
   DEFAULT_SIZE,
-  MAXIMUM_MAX_DOC_COUNT,
+  // MAXIMUM_MAX_DOC_COUNT,
   supportedTypes,
 } from './constants';
-import type { IncludeExcludeRow } from './include_exclude_options';
+// import type { IncludeExcludeRow } from './include_exclude_options';
+import {
+  getDisallowedTermsMessage,
+  getFieldsByValidationState,
+  getMultiTermsScriptedFieldErrorMessage,
+  // getOtherBucketSwitchDefault,
+  isSortableByColumn,
+} from './helpers';
+// import { shouldShowTimeSeriesOption } from '../../../pure_utils';
+import { getInvalidFieldMessage } from '../helpers';
+import { MAX_MULTI_FIELDS_SIZE } from './field_inputs';
+// import { ValuesInput } from './values_input';
 // import { shouldShowTimeSeriesOption } from '../../../pure_utils';
 
 export function supportsRarityRanking(field?: IndexPatternField) {
@@ -123,7 +149,7 @@ function getParentFormatter(params: Partial<TermsIndexPatternColumn['params']>) 
   return { id: params.secondaryFields?.length ? 'multi_terms' : 'terms' };
 }
 
-const idPrefix = htmlIdGenerator()();
+const idPrefix = 3; // htmlIdGenerator()();
 
 export const termsOperation: OperationDefinition<
   TermsIndexPatternColumn,
@@ -463,148 +489,149 @@ export const termsOperation: OperationDefinition<
     return currentColumn;
   },
   renderFieldInput: function FieldInput(props) {
-    const {
-      layer,
-      selectedColumn,
-      columnId,
-      indexPattern,
-      operationSupportMatrix,
-      updateLayer,
-      dimensionGroups,
-      groupId,
-      incompleteParams,
-    } = props;
-    const onFieldSelectChange = useCallback(
-      (fields: string[]) => {
-        const column = layer.columns[columnId] as TermsIndexPatternColumn;
-        const [sourcefield, ...secondaryFields] = fields;
-        const dataTypes = uniq(fields.map((field) => indexPattern.getFieldByName(field)?.type));
-        const newDataType = (dataTypes.length === 1 ? dataTypes[0] : 'string') || column.dataType;
-        const newParams = {
-          ...column.params,
-        };
-        if ('format' in newParams && newDataType !== 'number') {
-          delete newParams.format;
-        }
-        const mainField = indexPattern.getFieldByName(sourcefield);
-        if (
-          (!supportsRarityRanking(mainField) && newParams.orderBy.type === 'rare') ||
-          (!supportsSignificantRanking(mainField) && newParams.orderBy.type === 'significant')
-        ) {
-          newParams.orderBy = { type: 'alphabetical' };
-        }
-        // in single field mode, allow the automatic switch of the function to
-        // the most appropriate one
-        if (fields.length === 1) {
-          const possibleOperations = operationSupportMatrix.operationByField.get(sourcefield);
-          const termsSupported = possibleOperations?.has('terms');
-          if (!termsSupported) {
-            const newFieldOp = possibleOperations?.values().next().value;
-            return updateLayer(
-              insertOrReplaceColumn({
-                layer,
-                columnId,
-                indexPattern,
-                op: newFieldOp,
-                field: mainField,
-                visualizationGroups: dimensionGroups,
-                targetGroup: groupId,
-                incompleteParams,
-              })
-            );
-          }
-        }
-        updateLayer({
-          ...layer,
-          columns: {
-            ...layer.columns,
-            [columnId]: {
-              ...column,
-              dataType: newDataType,
-              sourceField: sourcefield,
-              label: column.customLabel
-                ? column.label
-                : ofName(
-                    mainField?.displayName,
-                    fields.length - 1,
-                    newParams.orderBy.type === 'rare',
-                    newParams.orderBy.type === 'significant',
-                    newParams.size
-                  ),
-              params: {
-                ...newParams,
-                secondaryFields,
-                parentFormat: getParentFormatter({
-                  ...newParams,
-                  secondaryFields,
-                }),
-              },
-            },
-          } as Record<string, TermsIndexPatternColumn>,
-        });
-      },
-      [
-        columnId,
-        dimensionGroups,
-        groupId,
-        incompleteParams,
-        indexPattern,
-        layer,
-        operationSupportMatrix.operationByField,
-        updateLayer,
-      ]
-    );
-    const currentColumn = layer.columns[columnId];
+    // const {
+    //   layer,
+    //   selectedColumn,
+    //   columnId,
+    //   indexPattern,
+    //   operationSupportMatrix,
+    //   updateLayer,
+    //   dimensionGroups,
+    //   groupId,
+    //   incompleteParams,
+    // } = props;
+    // const onFieldSelectChange = useCallback(
+    //   (fields: string[]) => {
+    //     const column = layer.columns[columnId] as TermsIndexPatternColumn;
+    //     const [sourcefield, ...secondaryFields] = fields;
+    //     const dataTypes = uniq(fields.map((field) => indexPattern.getFieldByName(field)?.type));
+    //     const newDataType = (dataTypes.length === 1 ? dataTypes[0] : 'string') || column.dataType;
+    //     const newParams = {
+    //       ...column.params,
+    //     };
+    //     if ('format' in newParams && newDataType !== 'number') {
+    //       delete newParams.format;
+    //     }
+    //     const mainField = indexPattern.getFieldByName(sourcefield);
+    //     if (
+    //       (!supportsRarityRanking(mainField) && newParams.orderBy.type === 'rare') ||
+    //       (!supportsSignificantRanking(mainField) && newParams.orderBy.type === 'significant')
+    //     ) {
+    //       newParams.orderBy = { type: 'alphabetical' };
+    //     }
+    //     // in single field mode, allow the automatic switch of the function to
+    //     // the most appropriate one
+    //     if (fields.length === 1) {
+    //       const possibleOperations = operationSupportMatrix.operationByField.get(sourcefield);
+    //       const termsSupported = possibleOperations?.has('terms');
+    //       if (!termsSupported) {
+    //         const newFieldOp = possibleOperations?.values().next().value;
+    //         return updateLayer(
+    //           insertOrReplaceColumn({
+    //             layer,
+    //             columnId,
+    //             indexPattern,
+    //             op: newFieldOp,
+    //             field: mainField,
+    //             visualizationGroups: dimensionGroups,
+    //             targetGroup: groupId,
+    //             incompleteParams,
+    //           })
+    //         );
+    //       }
+    //     }
+    //     updateLayer({
+    //       ...layer,
+    //       columns: {
+    //         ...layer.columns,
+    //         [columnId]: {
+    //           ...column,
+    //           dataType: newDataType,
+    //           sourceField: sourcefield,
+    //           label: column.customLabel
+    //             ? column.label
+    //             : ofName(
+    //                 mainField?.displayName,
+    //                 fields.length - 1,
+    //                 newParams.orderBy.type === 'rare',
+    //                 newParams.orderBy.type === 'significant',
+    //                 newParams.size
+    //               ),
+    //           params: {
+    //             ...newParams,
+    //             secondaryFields,
+    //             parentFormat: getParentFormatter({
+    //               ...newParams,
+    //               secondaryFields,
+    //             }),
+    //           },
+    //         },
+    //       } as Record<string, TermsIndexPatternColumn>,
+    //     });
+    //   },
+    //   [
+    //     columnId,
+    //     dimensionGroups,
+    //     groupId,
+    //     incompleteParams,
+    //     indexPattern,
+    //     layer,
+    //     operationSupportMatrix.operationByField,
+    //     updateLayer,
+    //   ]
+    // );
+    // const currentColumn = layer.columns[columnId];
 
-    const fieldErrorMessage = getErrorMessage(
-      selectedColumn,
-      Boolean(props.incompleteOperation),
-      'field',
-      props.currentFieldIsInvalid
-    );
+    // const fieldErrorMessage = getErrorMessage(
+    //   selectedColumn,
+    //   Boolean(props.incompleteOperation),
+    //   'field',
+    //   props.currentFieldIsInvalid
+    // );
 
-    // let the default component do its job in case of incomplete informations
-    if (
-      !currentColumn ||
-      !selectedColumn ||
-      props.incompleteOperation ||
-      (fieldErrorMessage && !selectedColumn.params?.secondaryFields?.length)
-    ) {
-      return <FieldInputBase {...props} />;
-    }
+    // // let the default component do its job in case of incomplete informations
+    // if (
+    //   !currentColumn ||
+    //   !selectedColumn ||
+    //   props.incompleteOperation ||
+    //   (fieldErrorMessage && !selectedColumn.params?.secondaryFields?.length)
+    // ) {
+    //   return <FieldInputBase {...props} />;
+    // }
 
-    const showScriptedFieldError =
-      getMultiTermsScriptedFieldErrorMessage(layer, columnId, indexPattern).length > 0;
-    const { invalidFields } = getFieldsByValidationState(indexPattern, selectedColumn);
+    // const showScriptedFieldError =
+    //   getMultiTermsScriptedFieldErrorMessage(layer, columnId, indexPattern).length > 0;
+    // const { invalidFields } = getFieldsByValidationState(indexPattern, selectedColumn);
 
-    return (
-      <EuiFormRow
-        data-test-subj="indexPattern-field-selection-row"
-        label={i18n.translate('xpack.lens.indexPattern.terms.chooseFields', {
-          defaultMessage: '{count, plural, zero {Field} other {Fields}}',
-          values: {
-            count: selectedColumn.params?.secondaryFields?.length || 0,
-          },
-        })}
-        fullWidth
-        isInvalid={Boolean(showScriptedFieldError || invalidFields.length)}
-        error={getInputFieldErrorMessage(showScriptedFieldError, invalidFields)}
-      >
-        <FieldInputs
-          column={selectedColumn}
-          indexPattern={indexPattern}
-          operationSupportMatrix={operationSupportMatrix}
-          onChange={onFieldSelectChange}
-          invalidFields={invalidFields}
-          showTimeSeriesDimensions={shouldShowTimeSeriesOption(
-            layer,
-            indexPattern,
-            groupId,
-            dimensionGroups
-          )}
-        />
-      </EuiFormRow>
-    );
+    // return (
+    //   <EuiFormRow
+    //     data-test-subj="indexPattern-field-selection-row"
+    //     label={i18n.translate('xpack.lens.indexPattern.terms.chooseFields', {
+    //       defaultMessage: '{count, plural, zero {Field} other {Fields}}',
+    //       values: {
+    //         count: selectedColumn.params?.secondaryFields?.length || 0,
+    //       },
+    //     })}
+    //     fullWidth
+    //     isInvalid={Boolean(showScriptedFieldError || invalidFields.length)}
+    //     error={getInputFieldErrorMessage(showScriptedFieldError, invalidFields)}
+    //   >
+    //     <FieldInputs
+    //       column={selectedColumn}
+    //       indexPattern={indexPattern}
+    //       operationSupportMatrix={operationSupportMatrix}
+    //       onChange={onFieldSelectChange}
+    //       invalidFields={invalidFields}
+    //       showTimeSeriesDimensions={shouldShowTimeSeriesOption(
+    //         layer,
+    //         indexPattern,
+    //         groupId,
+    //         dimensionGroups
+    //       )}
+    //     />
+    //   </EuiFormRow>
+    // );
+    return <div>FieldInput</div>;
   },
   quickFunctionDocumentation: i18n.translate('xpack.lens.indexPattern.terms.documentation.quick', {
     defaultMessage: `
@@ -625,530 +652,531 @@ The top values of a specified field ranked by the chosen metric.
     dataSectionExtra,
     ...rest
   }) {
-    const [incompleteColumn, setIncompleteColumn] = useState<IncompleteColumn | undefined>(
-      undefined
-    );
+    return <div>ParamEditor</div>;
+    // const [incompleteColumn, setIncompleteColumn] = useState<IncompleteColumn | undefined>(
+    //   undefined
+    // );
 
-    const hasRestrictions = indexPattern.hasRestrictions;
+    // const hasRestrictions = indexPattern.hasRestrictions;
 
-    const SEPARATOR = '$$$';
-    function toValue(orderBy: TermsIndexPatternColumn['params']['orderBy']) {
-      if (orderBy.type !== 'column') {
-        return orderBy.type;
-      }
-      return `${orderBy.type}${SEPARATOR}${orderBy.columnId}`;
-    }
+    // const SEPARATOR = '$$$';
+    // function toValue(orderBy: TermsIndexPatternColumn['params']['orderBy']) {
+    //   if (orderBy.type !== 'column') {
+    //     return orderBy.type;
+    //   }
+    //   return `${orderBy.type}${SEPARATOR}${orderBy.columnId}`;
+    // }
 
-    function fromValue(value: string): TermsIndexPatternColumn['params']['orderBy'] {
-      if (value === 'alphabetical') {
-        return { type: 'alphabetical', fallback: false };
-      }
-      if (value === 'rare') {
-        return { type: 'rare', maxDocCount: DEFAULT_MAX_DOC_COUNT };
-      }
-      if (value === 'significant') {
-        return { type: 'significant' };
-      }
-      if (value === 'custom') {
-        return { type: 'custom' };
-      }
-      const parts = value.split(SEPARATOR);
-      return {
-        type: 'column',
-        columnId: parts[1],
-      };
-    }
+    // function fromValue(value: string): TermsIndexPatternColumn['params']['orderBy'] {
+    //   if (value === 'alphabetical') {
+    //     return { type: 'alphabetical', fallback: false };
+    //   }
+    //   if (value === 'rare') {
+    //     return { type: 'rare', maxDocCount: DEFAULT_MAX_DOC_COUNT };
+    //   }
+    //   if (value === 'significant') {
+    //     return { type: 'significant' };
+    //   }
+    //   if (value === 'custom') {
+    //     return { type: 'custom' };
+    //   }
+    //   const parts = value.split(SEPARATOR);
+    //   return {
+    //     type: 'column',
+    //     columnId: parts[1],
+    //   };
+    // }
 
-    const orderOptions = Object.entries(layer.columns)
-      .filter(([sortId]) => isSortableByColumn(layer, sortId))
-      .map(([sortId, column]) => {
-        return {
-          value: toValue({ type: 'column', columnId: sortId }),
-          text: column.label,
-        };
-      });
-    orderOptions.push({
-      value: toValue({ type: 'alphabetical' }),
-      text: i18n.translate('xpack.lens.indexPattern.terms.orderAlphabetical', {
-        defaultMessage: 'Alphabetical',
-      }),
-    });
-    if (
-      !currentColumn.params.secondaryFields?.length &&
-      supportsRarityRanking(indexPattern.getFieldByName(currentColumn.sourceField))
-    ) {
-      orderOptions.push({
-        value: toValue({ type: 'rare', maxDocCount: DEFAULT_MAX_DOC_COUNT }),
-        text: i18n.translate('xpack.lens.indexPattern.terms.orderRare', {
-          defaultMessage: 'Rarity',
-        }),
-      });
-    }
-    if (
-      !currentColumn.params.secondaryFields?.length &&
-      supportsSignificantRanking(indexPattern.getFieldByName(currentColumn.sourceField))
-    ) {
-      orderOptions.push({
-        value: toValue({ type: 'significant' }),
-        text: i18n.translate('xpack.lens.indexPattern.terms.orderSignificant', {
-          defaultMessage: 'Significance',
-        }),
-      });
-    }
-    orderOptions.push({
-      value: toValue({ type: 'custom' }),
-      text: i18n.translate('xpack.lens.indexPattern.terms.orderCustomMetric', {
-        defaultMessage: 'Custom',
-      }),
-    });
+    // const orderOptions = Object.entries(layer.columns)
+    //   .filter(([sortId]) => isSortableByColumn(layer, sortId))
+    //   .map(([sortId, column]) => {
+    //     return {
+    //       value: toValue({ type: 'column', columnId: sortId }),
+    //       text: column.label,
+    //     };
+    //   });
+    // orderOptions.push({
+    //   value: toValue({ type: 'alphabetical' }),
+    //   text: i18n.translate('xpack.lens.indexPattern.terms.orderAlphabetical', {
+    //     defaultMessage: 'Alphabetical',
+    //   }),
+    // });
+    // if (
+    //   !currentColumn.params.secondaryFields?.length &&
+    //   supportsRarityRanking(indexPattern.getFieldByName(currentColumn.sourceField))
+    // ) {
+    //   orderOptions.push({
+    //     value: toValue({ type: 'rare', maxDocCount: DEFAULT_MAX_DOC_COUNT }),
+    //     text: i18n.translate('xpack.lens.indexPattern.terms.orderRare', {
+    //       defaultMessage: 'Rarity',
+    //     }),
+    //   });
+    // }
+    // if (
+    //   !currentColumn.params.secondaryFields?.length &&
+    //   supportsSignificantRanking(indexPattern.getFieldByName(currentColumn.sourceField))
+    // ) {
+    //   orderOptions.push({
+    //     value: toValue({ type: 'significant' }),
+    //     text: i18n.translate('xpack.lens.indexPattern.terms.orderSignificant', {
+    //       defaultMessage: 'Significance',
+    //     }),
+    //   });
+    // }
+    // orderOptions.push({
+    //   value: toValue({ type: 'custom' }),
+    //   text: i18n.translate('xpack.lens.indexPattern.terms.orderCustomMetric', {
+    //     defaultMessage: 'Custom',
+    //   }),
+    // });
 
-    const secondaryFieldsCount = currentColumn.params.secondaryFields
-      ? currentColumn.params.secondaryFields.length
-      : 0;
+    // const secondaryFieldsCount = currentColumn.params.secondaryFields
+    //   ? currentColumn.params.secondaryFields.length
+    //   : 0;
 
-    const { euiTheme } = useEuiTheme();
+    // const { euiTheme } = useEuiTheme();
 
-    return (
-      <>
-        <ValuesInput
-          value={currentColumn.params.size}
-          disabled={currentColumn.params.orderBy.type === 'rare'}
-          onChange={(value) => {
-            paramEditorUpdater({
-              ...layer,
-              columns: {
-                ...layer.columns,
-                [columnId]: {
-                  ...currentColumn,
-                  label: currentColumn.customLabel
-                    ? currentColumn.label
-                    : ofName(
-                        indexPattern.getFieldByName(currentColumn.sourceField)?.displayName,
-                        secondaryFieldsCount,
-                        currentColumn.params.orderBy.type === 'rare',
-                        currentColumn.params.orderBy.type === 'significant',
-                        value
-                      ),
-                  params: {
-                    ...currentColumn.params,
-                    size: value,
-                    otherBucket: getOtherBucketSwitchDefault(currentColumn, value),
-                  },
-                },
-              } as Record<string, TermsIndexPatternColumn>,
-            });
-          }}
-        />
-        {currentColumn.params.orderBy.type === 'rare' && (
-          <ValuesInput
-            value={currentColumn.params.orderBy.maxDocCount}
-            label={i18n.translate('xpack.lens.indexPattern.terms.maxDocCount', {
-              defaultMessage: 'Max doc count per term',
-            })}
-            maxValue={MAXIMUM_MAX_DOC_COUNT}
-            onChange={(value) => {
-              paramEditorUpdater(
-                updateColumnParam({
-                  layer,
-                  columnId,
-                  paramName: 'orderBy',
-                  value: { ...currentColumn.params.orderBy, maxDocCount: value },
-                })
-              );
-            }}
-          />
-        )}
-        <EuiFormRow
-          label={
-            <>
-              {i18n.translate('xpack.lens.indexPattern.terms.orderBy', {
-                defaultMessage: 'Rank by',
-              })}{' '}
-              <EuiIconTip
-                color="subdued"
-                content={i18n.translate('xpack.lens.indexPattern.terms.orderByHelp', {
-                  defaultMessage: `Specifies the dimension the top values are ranked by.`,
-                })}
-                iconProps={{
-                  className: 'eui-alignTop',
-                }}
-                position="top"
-                size="s"
-                type="questionInCircle"
-              />
-            </>
-          }
-          display="rowCompressed"
-          fullWidth
-        >
-          <EuiSelect
-            compressed
-            fullWidth
-            data-test-subj="indexPattern-terms-orderBy"
-            options={orderOptions}
-            value={toValue(currentColumn.params.orderBy)}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-              const newOrderByValue = fromValue(e.target.value);
-              let updatedLayer = updateDefaultLabels(
-                updateColumnParam({
-                  layer,
-                  columnId,
-                  paramName: 'orderBy',
-                  value: newOrderByValue,
-                }),
-                indexPattern
-              );
-              if (newOrderByValue.type === 'custom') {
-                const initialOperation = (
-                  operationDefinitionMap.count as OperationDefinition<
-                    GenericIndexPatternColumn,
-                    'field'
-                  >
-                ).buildColumn({
-                  layer,
-                  indexPattern,
-                  field: indexPattern.getFieldByName(DOCUMENT_FIELD_NAME)!,
-                });
-                updatedLayer = updateColumnParam({
-                  layer: updatedLayer,
-                  columnId,
-                  paramName: 'orderAgg',
-                  value: initialOperation,
-                });
-              } else {
-                updatedLayer = updateColumnParam({
-                  layer: updatedLayer,
-                  columnId,
-                  paramName: 'orderAgg',
-                  value: undefined,
-                });
-              }
-              setIncompleteColumn(undefined);
-              paramEditorUpdater(
-                updateColumnParam({
-                  layer: updatedLayer,
-                  columnId,
-                  paramName: 'orderDirection',
-                  value: newOrderByValue.type === 'alphabetical' ? 'asc' : 'desc',
-                })
-              );
-            }}
-            aria-label={i18n.translate('xpack.lens.indexPattern.terms.orderBy', {
-              defaultMessage: 'Rank by',
-            })}
-          />
-        </EuiFormRow>
-        {currentColumn.params.orderAgg && ReferenceEditor && (
-          <>
-            <EuiSpacer size="s" />
-            <ReferenceEditor
-              operationDefinitionMap={operationDefinitionMap}
-              functionLabel={i18n.translate('xpack.lens.indexPattern.terms.orderAgg.rankFunction', {
-                defaultMessage: 'Rank function',
-              })}
-              fieldLabel={i18n.translate('xpack.lens.indexPattern.terms.orderAgg.rankField', {
-                defaultMessage: 'Rank field',
-              })}
-              isInline={true}
-              paramEditorCustomProps={{
-                ...paramEditorCustomProps,
-                isInline: true,
-                labels: getLabelForRankFunctions(currentColumn.params.orderAgg.operationType),
-              }}
-              layer={layer}
-              selectionStyle="full"
-              columnId={`${columnId}-orderAgg`}
-              currentIndexPattern={indexPattern}
-              paramEditorUpdater={(setter) => {
-                if (!isColumn(setter)) {
-                  throw new Error('Setter should always be a column when ran here.');
-                }
-                paramEditorUpdater(
-                  updateColumnParam({
-                    layer,
-                    columnId,
-                    paramName: 'orderAgg',
-                    value: setter,
-                  })
-                );
-              }}
-              column={currentColumn.params.orderAgg}
-              incompleteColumn={incompleteColumn}
-              onResetIncomplete={() => setIncompleteColumn(undefined)}
-              onDeleteColumn={() => {
-                throw new Error('Should not be called');
-              }}
-              onChooseField={(choice) => {
-                const field = choice.field && indexPattern.getFieldByName(choice.field);
-                if (field) {
-                  const hypotethicalColumn = (
-                    operationDefinitionMap[choice.operationType] as OperationDefinition<
-                      GenericIndexPatternColumn,
-                      'field'
-                    >
-                  ).buildColumn({
-                    previousColumn: currentColumn.params.orderAgg,
-                    layer,
-                    indexPattern,
-                    field,
-                  });
-                  setIncompleteColumn(undefined);
-                  paramEditorUpdater(
-                    updateColumnParam({
-                      layer,
-                      columnId,
-                      paramName: 'orderAgg',
-                      value: hypotethicalColumn,
-                    })
-                  );
-                } else {
-                  setIncompleteColumn({
-                    sourceField: choice.field,
-                    operationType: choice.operationType,
-                  });
-                }
-              }}
-              onChooseFunction={(operationType: string, field?: IndexPatternField) => {
-                if (field) {
-                  const hypotethicalColumn = (
-                    operationDefinitionMap[operationType] as OperationDefinition<
-                      GenericIndexPatternColumn,
-                      'field'
-                    >
-                  ).buildColumn({
-                    previousColumn: currentColumn.params.orderAgg,
-                    layer,
-                    indexPattern,
-                    field,
-                  });
-                  setIncompleteColumn(undefined);
+    // return (
+    //   <>
+    //     <ValuesInput
+    //       value={currentColumn.params.size}
+    //       disabled={currentColumn.params.orderBy.type === 'rare'}
+    //       onChange={(value) => {
+    //         paramEditorUpdater({
+    //           ...layer,
+    //           columns: {
+    //             ...layer.columns,
+    //             [columnId]: {
+    //               ...currentColumn,
+    //               label: currentColumn.customLabel
+    //                 ? currentColumn.label
+    //                 : ofName(
+    //                     indexPattern.getFieldByName(currentColumn.sourceField)?.displayName,
+    //                     secondaryFieldsCount,
+    //                     currentColumn.params.orderBy.type === 'rare',
+    //                     currentColumn.params.orderBy.type === 'significant',
+    //                     value
+    //                   ),
+    //               params: {
+    //                 ...currentColumn.params,
+    //                 size: value,
+    //                 otherBucket: getOtherBucketSwitchDefault(currentColumn, value),
+    //               },
+    //             },
+    //           } as Record<string, TermsIndexPatternColumn>,
+    //         });
+    //       }}
+    //     />
+    //     {currentColumn.params.orderBy.type === 'rare' && (
+    //       <ValuesInput
+    //         value={currentColumn.params.orderBy.maxDocCount}
+    //         label={i18n.translate('xpack.lens.indexPattern.terms.maxDocCount', {
+    //           defaultMessage: 'Max doc count per term',
+    //         })}
+    //         maxValue={MAXIMUM_MAX_DOC_COUNT}
+    //         onChange={(value) => {
+    //           paramEditorUpdater(
+    //             updateColumnParam({
+    //               layer,
+    //               columnId,
+    //               paramName: 'orderBy',
+    //               value: { ...currentColumn.params.orderBy, maxDocCount: value },
+    //             })
+    //           );
+    //         }}
+    //       />
+    //     )}
+    //     <EuiFormRow
+    //       label={
+    //         <>
+    //           {i18n.translate('xpack.lens.indexPattern.terms.orderBy', {
+    //             defaultMessage: 'Rank by',
+    //           })}{' '}
+    //           <EuiIconTip
+    //             color="subdued"
+    //             content={i18n.translate('xpack.lens.indexPattern.terms.orderByHelp', {
+    //               defaultMessage: `Specifies the dimension the top values are ranked by.`,
+    //             })}
+    //             iconProps={{
+    //               className: 'eui-alignTop',
+    //             }}
+    //             position="top"
+    //             size="s"
+    //             type="questionInCircle"
+    //           />
+    //         </>
+    //       }
+    //       display="rowCompressed"
+    //       fullWidth
+    //     >
+    //       <EuiSelect
+    //         compressed
+    //         fullWidth
+    //         data-test-subj="indexPattern-terms-orderBy"
+    //         options={orderOptions}
+    //         value={toValue(currentColumn.params.orderBy)}
+    //         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+    //           const newOrderByValue = fromValue(e.target.value);
+    //           let updatedLayer = updateDefaultLabels(
+    //             updateColumnParam({
+    //               layer,
+    //               columnId,
+    //               paramName: 'orderBy',
+    //               value: newOrderByValue,
+    //             }),
+    //             indexPattern
+    //           );
+    //           if (newOrderByValue.type === 'custom') {
+    //             const initialOperation = (
+    //               operationDefinitionMap.count as OperationDefinition<
+    //                 GenericIndexPatternColumn,
+    //                 'field'
+    //               >
+    //             ).buildColumn({
+    //               layer,
+    //               indexPattern,
+    //               field: indexPattern.getFieldByName(DOCUMENT_FIELD_NAME)!,
+    //             });
+    //             updatedLayer = updateColumnParam({
+    //               layer: updatedLayer,
+    //               columnId,
+    //               paramName: 'orderAgg',
+    //               value: initialOperation,
+    //             });
+    //           } else {
+    //             updatedLayer = updateColumnParam({
+    //               layer: updatedLayer,
+    //               columnId,
+    //               paramName: 'orderAgg',
+    //               value: undefined,
+    //             });
+    //           }
+    //           setIncompleteColumn(undefined);
+    //           paramEditorUpdater(
+    //             updateColumnParam({
+    //               layer: updatedLayer,
+    //               columnId,
+    //               paramName: 'orderDirection',
+    //               value: newOrderByValue.type === 'alphabetical' ? 'asc' : 'desc',
+    //             })
+    //           );
+    //         }}
+    //         aria-label={i18n.translate('xpack.lens.indexPattern.terms.orderBy', {
+    //           defaultMessage: 'Rank by',
+    //         })}
+    //       />
+    //     </EuiFormRow>
+    //     {currentColumn.params.orderAgg && ReferenceEditor && (
+    //       <>
+    //         <EuiSpacer size="s" />
+    //         <ReferenceEditor
+    //           operationDefinitionMap={operationDefinitionMap}
+    //           functionLabel={i18n.translate('xpack.lens.indexPattern.terms.orderAgg.rankFunction', {
+    //             defaultMessage: 'Rank function',
+    //           })}
+    //           fieldLabel={i18n.translate('xpack.lens.indexPattern.terms.orderAgg.rankField', {
+    //             defaultMessage: 'Rank field',
+    //           })}
+    //           isInline={true}
+    //           paramEditorCustomProps={{
+    //             ...paramEditorCustomProps,
+    //             isInline: true,
+    //             labels: getLabelForRankFunctions(currentColumn.params.orderAgg.operationType),
+    //           }}
+    //           layer={layer}
+    //           selectionStyle="full"
+    //           columnId={`${columnId}-orderAgg`}
+    //           currentIndexPattern={indexPattern}
+    //           paramEditorUpdater={(setter) => {
+    //             if (!isColumn(setter)) {
+    //               throw new Error('Setter should always be a column when ran here.');
+    //             }
+    //             paramEditorUpdater(
+    //               updateColumnParam({
+    //                 layer,
+    //                 columnId,
+    //                 paramName: 'orderAgg',
+    //                 value: setter,
+    //               })
+    //             );
+    //           }}
+    //           column={currentColumn.params.orderAgg}
+    //           incompleteColumn={incompleteColumn}
+    //           onResetIncomplete={() => setIncompleteColumn(undefined)}
+    //           onDeleteColumn={() => {
+    //             throw new Error('Should not be called');
+    //           }}
+    //           onChooseField={(choice) => {
+    //             const field = choice.field && indexPattern.getFieldByName(choice.field);
+    //             if (field) {
+    //               const hypotethicalColumn = (
+    //                 operationDefinitionMap[choice.operationType] as OperationDefinition<
+    //                   GenericIndexPatternColumn,
+    //                   'field'
+    //                 >
+    //               ).buildColumn({
+    //                 previousColumn: currentColumn.params.orderAgg,
+    //                 layer,
+    //                 indexPattern,
+    //                 field,
+    //               });
+    //               setIncompleteColumn(undefined);
+    //               paramEditorUpdater(
+    //                 updateColumnParam({
+    //                   layer,
+    //                   columnId,
+    //                   paramName: 'orderAgg',
+    //                   value: hypotethicalColumn,
+    //                 })
+    //               );
+    //             } else {
+    //               setIncompleteColumn({
+    //                 sourceField: choice.field,
+    //                 operationType: choice.operationType,
+    //               });
+    //             }
+    //           }}
+    //           onChooseFunction={(operationType: string, field?: IndexPatternField) => {
+    //             if (field) {
+    //               const hypotethicalColumn = (
+    //                 operationDefinitionMap[operationType] as OperationDefinition<
+    //                   GenericIndexPatternColumn,
+    //                   'field'
+    //                 >
+    //               ).buildColumn({
+    //                 previousColumn: currentColumn.params.orderAgg,
+    //                 layer,
+    //                 indexPattern,
+    //                 field,
+    //               });
+    //               setIncompleteColumn(undefined);
 
-                  paramEditorUpdater(
-                    updateColumnParam({
-                      layer,
-                      columnId,
-                      paramName: 'orderAgg',
-                      value: hypotethicalColumn,
-                    })
-                  );
-                } else {
-                  setIncompleteColumn({ operationType });
-                }
-              }}
-              validation={{
-                input: ['field', 'managedReference'],
-                validateMetadata: (meta: OperationMetadata) =>
-                  meta.dataType === 'number' && !meta.isBucketed,
-              }}
-              {...rest}
-            />
-            <EuiSpacer size="m" />
-          </>
-        )}
-        <EuiFormRow
-          label={i18n.translate('xpack.lens.indexPattern.terms.orderDirection', {
-            defaultMessage: 'Rank direction',
-          })}
-          display="rowCompressed"
-          fullWidth
-        >
-          <EuiButtonGroup
-            isFullWidth
-            legend={i18n.translate('xpack.lens.indexPattern.terms.orderDirection', {
-              defaultMessage: 'Rank direction',
-            })}
-            data-test-subj="indexPattern-terms-orderDirection-groups"
-            buttonSize="compressed"
-            aria-label={i18n.translate('xpack.lens.indexPattern.terms.orderDirection', {
-              defaultMessage: 'Rank direction',
-            })}
-            isDisabled={isRareOrSignificant(currentColumn.params.orderBy)}
-            options={[
-              {
-                id: `${idPrefix}asc`,
-                'data-test-subj': 'indexPattern-terms-orderDirection-groups-asc',
-                value: 'asc',
-                label: i18n.translate('xpack.lens.indexPattern.terms.orderAscending', {
-                  defaultMessage: 'Ascending',
-                }),
-              },
-              {
-                id: `${idPrefix}desc`,
-                'data-test-subj': 'indexPattern-terms-orderDirection-groups-desc',
-                value: 'desc',
-                label: i18n.translate('xpack.lens.indexPattern.terms.orderDescending', {
-                  defaultMessage: 'Descending',
-                }),
-              },
-            ]}
-            idSelected={`${idPrefix}${currentColumn.params.orderDirection}`}
-            onChange={(id) => {
-              const value = id.replace(
-                idPrefix,
-                ''
-              ) as TermsIndexPatternColumn['params']['orderDirection'];
-              paramEditorUpdater(
-                updateColumnParam({
-                  layer,
-                  columnId,
-                  paramName: 'orderDirection',
-                  value,
-                })
-              );
-            }}
-          />
-        </EuiFormRow>
-        {dataSectionExtra && (
-          <>
-            <EuiSpacer size="m" />
-            {dataSectionExtra}
-          </>
-        )}
-        {!hasRestrictions && (
-          <>
-            <EuiSpacer size="m" />
-            <EuiAccordion
-              id="lnsTermsAdvanced"
-              arrowProps={{ color: 'primary' }}
-              buttonContent={
-                <EuiTitle size="xxs">
-                  <h5>
-                    <EuiTextColor color={euiTheme.colors.primary}>
-                      {i18n.translate('xpack.lens.indexPattern.terms.advancedSettings', {
-                        defaultMessage: 'Advanced',
-                      })}
-                    </EuiTextColor>
-                  </h5>
-                </EuiTitle>
-              }
-              data-test-subj="indexPattern-terms-advanced"
-              className="lnsIndexPatternDimensionEditor-advancedOptions"
-            >
-              <EuiSpacer size="s" />
-              <EuiSwitch
-                label={
-                  <EuiText size="xs">
-                    {i18n.translate('xpack.lens.indexPattern.terms.missingBucketDescription', {
-                      defaultMessage: 'Include documents without the selected field',
-                    })}
-                  </EuiText>
-                }
-                compressed
-                disabled={
-                  !currentColumn.params.otherBucket ||
-                  indexPattern.getFieldByName(currentColumn.sourceField)?.type !== 'string' ||
-                  isRareOrSignificant(currentColumn.params.orderBy)
-                }
-                data-test-subj="indexPattern-terms-missing-bucket"
-                checked={Boolean(currentColumn.params.missingBucket)}
-                onChange={(e: EuiSwitchEvent) =>
-                  paramEditorUpdater(
-                    updateColumnParam({
-                      layer,
-                      columnId,
-                      paramName: 'missingBucket',
-                      value: e.target.checked,
-                    })
-                  )
-                }
-              />
-              <EuiSpacer size="s" />
-              <EuiSwitch
-                label={
-                  <EuiText size="xs">
-                    {i18n.translate('xpack.lens.indexPattern.terms.otherBucketDescription', {
-                      defaultMessage: 'Group remaining values as "Other"',
-                    })}
-                  </EuiText>
-                }
-                compressed
-                data-test-subj="indexPattern-terms-other-bucket"
-                checked={Boolean(currentColumn.params.otherBucket)}
-                disabled={isRareOrSignificant(currentColumn.params.orderBy)}
-                onChange={(e: EuiSwitchEvent) =>
-                  paramEditorUpdater(
-                    updateColumnParam({
-                      layer,
-                      columnId,
-                      paramName: 'otherBucket',
-                      value: e.target.checked,
-                    })
-                  )
-                }
-              />
-              <EuiSpacer size="s" />
-              <EuiSwitch
-                label={
-                  <EuiText size="xs">
-                    {i18n.translate('xpack.lens.indexPattern.terms.accuracyModeDescription', {
-                      defaultMessage: 'Enable accuracy mode',
-                    })}{' '}
-                    <EuiIconTip
-                      color="subdued"
-                      content={i18n.translate('xpack.lens.indexPattern.terms.accuracyModeHelp', {
-                        defaultMessage: `Improves results for high-cardinality data, but increases the load on the Elasticsearch cluster.`,
-                      })}
-                      iconProps={{
-                        className: 'eui-alignTop',
-                      }}
-                      position="top"
-                      size="s"
-                      type="questionInCircle"
-                    />
-                  </EuiText>
-                }
-                compressed
-                disabled={currentColumn.params.orderBy.type === 'rare'}
-                data-test-subj="indexPattern-accuracy-mode"
-                checked={Boolean(
-                  currentColumn.params.accuracyMode && currentColumn.params.orderBy.type !== 'rare'
-                )}
-                onChange={(e: EuiSwitchEvent) =>
-                  paramEditorUpdater(
-                    updateColumnParam({
-                      layer,
-                      columnId,
-                      paramName: 'accuracyMode',
-                      value: e.target.checked,
-                    })
-                  )
-                }
-              />
-              {(currentColumn.dataType === 'number' || currentColumn.dataType === 'string') &&
-                !currentColumn.params.secondaryFields?.length && (
-                  <>
-                    <IncludeExcludeRow
-                      include={currentColumn.params.include}
-                      exclude={currentColumn.params.exclude}
-                      includeIsRegex={Boolean(currentColumn.params.includeIsRegex)}
-                      excludeIsRegex={Boolean(currentColumn.params.excludeIsRegex)}
-                      tableRows={activeData?.[rest.layerId]?.rows}
-                      columnId={columnId}
-                      isNumberField={Boolean(currentColumn.dataType === 'number')}
-                      updateParams={(operation, operationValue, regex, regexValue) =>
-                        paramEditorUpdater({
-                          ...layer,
-                          columns: {
-                            ...layer.columns,
-                            [columnId]: {
-                              ...currentColumn,
-                              params: {
-                                ...currentColumn.params,
-                                [operation]: operationValue,
-                                [regex]: regexValue,
-                              },
-                            },
-                          } as Record<string, TermsIndexPatternColumn>,
-                        })
-                      }
-                    />
-                  </>
-                )}
-            </EuiAccordion>
-          </>
-        )}
-      </>
-    );
+    //               paramEditorUpdater(
+    //                 updateColumnParam({
+    //                   layer,
+    //                   columnId,
+    //                   paramName: 'orderAgg',
+    //                   value: hypotethicalColumn,
+    //                 })
+    //               );
+    //             } else {
+    //               setIncompleteColumn({ operationType });
+    //             }
+    //           }}
+    //           validation={{
+    //             input: ['field', 'managedReference'],
+    //             validateMetadata: (meta: OperationMetadata) =>
+    //               meta.dataType === 'number' && !meta.isBucketed,
+    //           }}
+    //           {...rest}
+    //         />
+    //         <EuiSpacer size="m" />
+    //       </>
+    //     )}
+    //     <EuiFormRow
+    //       label={i18n.translate('xpack.lens.indexPattern.terms.orderDirection', {
+    //         defaultMessage: 'Rank direction',
+    //       })}
+    //       display="rowCompressed"
+    //       fullWidth
+    //     >
+    //       <EuiButtonGroup
+    //         isFullWidth
+    //         legend={i18n.translate('xpack.lens.indexPattern.terms.orderDirection', {
+    //           defaultMessage: 'Rank direction',
+    //         })}
+    //         data-test-subj="indexPattern-terms-orderDirection-groups"
+    //         buttonSize="compressed"
+    //         aria-label={i18n.translate('xpack.lens.indexPattern.terms.orderDirection', {
+    //           defaultMessage: 'Rank direction',
+    //         })}
+    //         isDisabled={isRareOrSignificant(currentColumn.params.orderBy)}
+    //         options={[
+    //           {
+    //             id: `${idPrefix}asc`,
+    //             'data-test-subj': 'indexPattern-terms-orderDirection-groups-asc',
+    //             value: 'asc',
+    //             label: i18n.translate('xpack.lens.indexPattern.terms.orderAscending', {
+    //               defaultMessage: 'Ascending',
+    //             }),
+    //           },
+    //           {
+    //             id: `${idPrefix}desc`,
+    //             'data-test-subj': 'indexPattern-terms-orderDirection-groups-desc',
+    //             value: 'desc',
+    //             label: i18n.translate('xpack.lens.indexPattern.terms.orderDescending', {
+    //               defaultMessage: 'Descending',
+    //             }),
+    //           },
+    //         ]}
+    //         idSelected={`${idPrefix}${currentColumn.params.orderDirection}`}
+    //         onChange={(id) => {
+    //           const value = id.replace(
+    //             idPrefix,
+    //             ''
+    //           ) as TermsIndexPatternColumn['params']['orderDirection'];
+    //           paramEditorUpdater(
+    //             updateColumnParam({
+    //               layer,
+    //               columnId,
+    //               paramName: 'orderDirection',
+    //               value,
+    //             })
+    //           );
+    //         }}
+    //       />
+    //     </EuiFormRow>
+    //     {dataSectionExtra && (
+    //       <>
+    //         <EuiSpacer size="m" />
+    //         {dataSectionExtra}
+    //       </>
+    //     )}
+    //     {!hasRestrictions && (
+    //       <>
+    //         <EuiSpacer size="m" />
+    //         <EuiAccordion
+    //           id="lnsTermsAdvanced"
+    //           arrowProps={{ color: 'primary' }}
+    //           buttonContent={
+    //             <EuiTitle size="xxs">
+    //               <h5>
+    //                 <EuiTextColor color={euiTheme.colors.primary}>
+    //                   {i18n.translate('xpack.lens.indexPattern.terms.advancedSettings', {
+    //                     defaultMessage: 'Advanced',
+    //                   })}
+    //                 </EuiTextColor>
+    //               </h5>
+    //             </EuiTitle>
+    //           }
+    //           data-test-subj="indexPattern-terms-advanced"
+    //           className="lnsIndexPatternDimensionEditor-advancedOptions"
+    //         >
+    //           <EuiSpacer size="s" />
+    //           <EuiSwitch
+    //             label={
+    //               <EuiText size="xs">
+    //                 {i18n.translate('xpack.lens.indexPattern.terms.missingBucketDescription', {
+    //                   defaultMessage: 'Include documents without the selected field',
+    //                 })}
+    //               </EuiText>
+    //             }
+    //             compressed
+    //             disabled={
+    //               !currentColumn.params.otherBucket ||
+    //               indexPattern.getFieldByName(currentColumn.sourceField)?.type !== 'string' ||
+    //               isRareOrSignificant(currentColumn.params.orderBy)
+    //             }
+    //             data-test-subj="indexPattern-terms-missing-bucket"
+    //             checked={Boolean(currentColumn.params.missingBucket)}
+    //             onChange={(e: EuiSwitchEvent) =>
+    //               paramEditorUpdater(
+    //                 updateColumnParam({
+    //                   layer,
+    //                   columnId,
+    //                   paramName: 'missingBucket',
+    //                   value: e.target.checked,
+    //                 })
+    //               )
+    //             }
+    //           />
+    //           <EuiSpacer size="s" />
+    //           <EuiSwitch
+    //             label={
+    //               <EuiText size="xs">
+    //                 {i18n.translate('xpack.lens.indexPattern.terms.otherBucketDescription', {
+    //                   defaultMessage: 'Group remaining values as "Other"',
+    //                 })}
+    //               </EuiText>
+    //             }
+    //             compressed
+    //             data-test-subj="indexPattern-terms-other-bucket"
+    //             checked={Boolean(currentColumn.params.otherBucket)}
+    //             disabled={isRareOrSignificant(currentColumn.params.orderBy)}
+    //             onChange={(e: EuiSwitchEvent) =>
+    //               paramEditorUpdater(
+    //                 updateColumnParam({
+    //                   layer,
+    //                   columnId,
+    //                   paramName: 'otherBucket',
+    //                   value: e.target.checked,
+    //                 })
+    //               )
+    //             }
+    //           />
+    //           <EuiSpacer size="s" />
+    //           <EuiSwitch
+    //             label={
+    //               <EuiText size="xs">
+    //                 {i18n.translate('xpack.lens.indexPattern.terms.accuracyModeDescription', {
+    //                   defaultMessage: 'Enable accuracy mode',
+    //                 })}{' '}
+    //                 <EuiIconTip
+    //                   color="subdued"
+    //                   content={i18n.translate('xpack.lens.indexPattern.terms.accuracyModeHelp', {
+    //                     defaultMessage: `Improves results for high-cardinality data, but increases the load on the Elasticsearch cluster.`,
+    //                   })}
+    //                   iconProps={{
+    //                     className: 'eui-alignTop',
+    //                   }}
+    //                   position="top"
+    //                   size="s"
+    //                   type="questionInCircle"
+    //                 />
+    //               </EuiText>
+    //             }
+    //             compressed
+    //             disabled={currentColumn.params.orderBy.type === 'rare'}
+    //             data-test-subj="indexPattern-accuracy-mode"
+    //             checked={Boolean(
+    //               currentColumn.params.accuracyMode && currentColumn.params.orderBy.type !== 'rare'
+    //             )}
+    //             onChange={(e: EuiSwitchEvent) =>
+    //               paramEditorUpdater(
+    //                 updateColumnParam({
+    //                   layer,
+    //                   columnId,
+    //                   paramName: 'accuracyMode',
+    //                   value: e.target.checked,
+    //                 })
+    //               )
+    //             }
+    //           />
+    //           {(currentColumn.dataType === 'number' || currentColumn.dataType === 'string') &&
+    //             !currentColumn.params.secondaryFields?.length && (
+    //               <>
+    //                 <IncludeExcludeRow
+    //                   include={currentColumn.params.include}
+    //                   exclude={currentColumn.params.exclude}
+    //                   includeIsRegex={Boolean(currentColumn.params.includeIsRegex)}
+    //                   excludeIsRegex={Boolean(currentColumn.params.excludeIsRegex)}
+    //                   tableRows={activeData?.[rest.layerId]?.rows}
+    //                   columnId={columnId}
+    //                   isNumberField={Boolean(currentColumn.dataType === 'number')}
+    //                   updateParams={(operation, operationValue, regex, regexValue) =>
+    //                     paramEditorUpdater({
+    //                       ...layer,
+    //                       columns: {
+    //                         ...layer.columns,
+    //                         [columnId]: {
+    //                           ...currentColumn,
+    //                           params: {
+    //                             ...currentColumn.params,
+    //                             [operation]: operationValue,
+    //                             [regex]: regexValue,
+    //                           },
+    //                         },
+    //                       } as Record<string, TermsIndexPatternColumn>,
+    //                     })
+    //                   }
+    //                 />
+    //               </>
+    //             )}
+    //         </EuiAccordion>
+    //       </>
+    //     )}
+    //   </>
+    // );
   },
   getMaxPossibleNumValues: (column) => column.params.size + (column.params.otherBucket ? 1 : 0),
 };

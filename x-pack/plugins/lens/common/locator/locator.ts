@@ -184,6 +184,8 @@ export class LensAppLocatorDefinition implements LocatorDefinition<LensAppLocato
     const queryState: GlobalQueryStateFromUrl = {};
     const { isFilterPinned } = await import('@kbn/es-query');
 
+    const globalObject = typeof window !== 'undefined' ? window : global;
+
     if (query) {
       appState.query = query;
     }
@@ -197,7 +199,7 @@ export class LensAppLocatorDefinition implements LocatorDefinition<LensAppLocato
     }
 
     const savedObjectPath = savedObjectId ? `/edit/${encodeURIComponent(savedObjectId)}` : '';
-    const basepath = `${window.location.origin}${window.location.pathname}`;
+    const basepath = `${globalObject.location.origin}${globalObject.location.pathname}`;
     const url = new URL(basepath);
     url.hash = savedObjectPath;
     url.searchParams.append('_g', rison.encodeUnknown(queryState) || '');

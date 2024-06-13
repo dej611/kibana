@@ -19,7 +19,7 @@ import {
 } from '../../../../common/datasources/form_based/operations';
 import type { FormBasedLayer } from '../types';
 import type { IndexPattern } from '../../../types';
-import { reducedTimeRangeOptions } from '../reduced_time_range_utils';
+import { reducedTimeRangeOptions } from '../../../../common/datasources/form_based/reduced_time_range_utils';
 
 export function setReducedTimeRange(
   columnId: string,

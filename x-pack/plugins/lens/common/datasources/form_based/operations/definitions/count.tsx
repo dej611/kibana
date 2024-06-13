@@ -7,19 +7,15 @@
 
 import { i18n } from '@kbn/i18n';
 import React from 'react';
-import { euiThemeVars } from '@kbn/ui-theme';
-import { EuiSwitch, EuiText } from '@elastic/eui';
-import { AggFunctionsMapping } from '@kbn/data-plugin/public';
-import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/count.tsx
-import { TimeScaleUnit } from '../../../../expressions';
-=======
+// import { euiThemeVars } from '@kbn/ui-theme';
+// import { EuiSwitch, EuiText } from '@elastic/eui';
+import type { AggFunctionsMapping } from '@kbn/data-plugin/public';
+import { buildExpressionFunction } from '@kbn/expressions-plugin/common';
 import { COUNT_ID, COUNT_NAME } from '@kbn/lens-formula-docs';
-import { TimeScaleUnit } from '../../../../../common/expressions';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/count.tsx
+import { IndexPatternField } from '../../../../types';
+import { TimeScaleUnit } from '../../../../expressions';
 import { OperationDefinition, ParamEditorProps } from '.';
 import { FieldBasedIndexPatternColumn, ValueFormatConfig } from './column_types';
-import type { IndexPatternField } from '../../../../../public/types';
 import {
   getInvalidFieldMessage,
   getFilter,
@@ -27,8 +23,8 @@ import {
   isColumnOfType,
 } from './helpers';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
-import { updateColumnParam } from '../layer_helpers';
-import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
+// import { updateColumnParam } from '../layer_helpers';
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
 import { getGroupByKey } from '../../get_group_by_key';
 
 const countLabel = i18n.translate('xpack.lens.indexPattern.countOf', {
@@ -159,32 +155,33 @@ export const countOperation: OperationDefinition<CountIndexPatternColumn, 'field
       {
         dataTestSubj: 'hide-zero-values',
         inlineElement: (
-          <EuiSwitch
-            label={
-              <EuiText size="xs">
-                {i18n.translate('xpack.lens.indexPattern.hideZero', {
-                  defaultMessage: 'Hide zero values',
-                })}
-              </EuiText>
-            }
-            labelProps={{
-              style: {
-                fontWeight: euiThemeVars.euiFontWeightMedium,
-              },
-            }}
-            checked={Boolean(currentColumn.params?.emptyAsNull)}
-            onChange={() => {
-              paramEditorUpdater(
-                updateColumnParam({
-                  layer,
-                  columnId,
-                  paramName: 'emptyAsNull',
-                  value: !currentColumn.params?.emptyAsNull,
-                })
-              );
-            }}
-            compressed
-          />
+          <div>Advanced stuff</div>
+          // <EuiSwitch
+          //   label={
+          //     <EuiText size="xs">
+          //       {i18n.translate('xpack.lens.indexPattern.hideZero', {
+          //         defaultMessage: 'Hide zero values',
+          //       })}
+          //     </EuiText>
+          //   }
+          //   labelProps={{
+          //     style: {
+          //       fontWeight: euiThemeVars.euiFontWeightMedium,
+          //     },
+          //   }}
+          //   checked={Boolean(currentColumn.params?.emptyAsNull)}
+          //   onChange={() => {
+          //     paramEditorUpdater(
+          //       updateColumnParam({
+          //         layer,
+          //         columnId,
+          //         paramName: 'emptyAsNull',
+          //         value: !currentColumn.params?.emptyAsNull,
+          //       })
+          //     );
+          //   }}
+          //   compressed
+          // />
         ),
       },
     ];

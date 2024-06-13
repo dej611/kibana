@@ -5,26 +5,16 @@
  * 2.0.
  */
 
-<<<<<<< HEAD:x-pack/plugins/lens/common/data_views_service/loader.ts
 // import { isFieldLensCompatible } from '@kbn/visualization-ui-components';
 const isFieldLensCompatible = () => true;
-import type { DataViewsContract, DataView, DataViewSpec } from '@kbn/data-views-plugin/public';
-=======
-import { isFieldLensCompatible } from '@kbn/visualization-ui-components';
-import {
+import type {
   DataViewsContract,
   DataView,
   DataViewSpec,
   DataViewField,
 } from '@kbn/data-views-plugin/public';
->>>>>>> upstream/main:x-pack/plugins/lens/public/data_views_service/loader.ts
 import { keyBy } from 'lodash';
-import type {
-  IndexPattern,
-  IndexPatternField,
-  IndexPatternMap,
-  IndexPatternRef,
-} from '../../public/types';
+import type { IndexPattern, IndexPatternField, IndexPatternMap, IndexPatternRef } from '../types';
 import { documentField } from '../document_field';
 
 type ErrorHandler = (err: Error) => void;

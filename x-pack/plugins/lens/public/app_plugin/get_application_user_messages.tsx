@@ -34,7 +34,7 @@ import {
   EDITOR_MISSING_VIS_TYPE,
   EDITOR_UNKNOWN_DATASOURCE_TYPE,
   EDITOR_UNKNOWN_VIS_TYPE,
-} from '../user_messages_ids';
+} from '../../common/user_messages_ids';
 
 /**
  * Provides a place to register general user messages that don't belong in the datasource or visualization objects

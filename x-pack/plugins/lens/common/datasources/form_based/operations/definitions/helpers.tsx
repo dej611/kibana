@@ -16,22 +16,15 @@ import {
   type FieldBasedOperationErrorMessage,
   type GenericIndexPatternColumn,
   operationDefinitionMap,
+  type LastValueIndexPatternColumn,
 } from '.';
 import type {
   FieldBasedIndexPatternColumn,
   FormattedIndexPatternColumn,
   ReferenceBasedIndexPatternColumn,
 } from './column_types';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/helpers.tsx
-import type {
-  FormBasedLayer,
-  LastValueIndexPatternColumn,
-} from '../../../../../public/datasources/form_based/types';
-=======
-import type { FormBasedLayer, LastValueIndexPatternColumn } from '../../types';
-import { hasField } from '../../pure_utils';
 import { FIELD_NOT_FOUND, FIELD_WRONG_TYPE } from '../../../../user_messages_ids';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/helpers.tsx
+import { FormBasedLayer } from '../../types';
 
 export function getInvalidFieldMessage(
   layer: FormBasedLayer,

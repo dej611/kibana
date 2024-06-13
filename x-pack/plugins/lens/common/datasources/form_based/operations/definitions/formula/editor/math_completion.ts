@@ -24,26 +24,19 @@ import type { DataViewsPublicPluginStart } from '@kbn/data-views-plugin/public';
 import { parseTimeShift } from '@kbn/data-plugin/common';
 import { tinymathFunctions } from '@kbn/lens-formula-docs';
 import moment from 'moment';
-<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/formula/editor/math_completion.ts
-import { nonNullable } from '../../../../../../../public/utils';
-import { DateRange } from '../../../../../../types';
-import type { IndexPattern } from '../../../../../../../public/types';
-=======
-import { TimefilterContract } from '@kbn/data-plugin/public';
+import type { TimefilterContract } from '@kbn/data-plugin/public';
 import { getAbsoluteDateRange, nonNullable } from '../../../../../../utils';
-import { DateRange } from '../../../../../../../common/types';
-import type { IndexPattern } from '../../../../../../types';
->>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/formula/editor/math_completion.ts
+import {
+  reducedTimeRangeOptions,
+  reducedTimeRangeOptionOrder,
+} from '../../../../reduced_time_range_utils';
+import { DateRange, IndexPattern } from '../../../../../../types';
 import { memoizedGetAvailableOperationsByMetadata } from '../../../operations';
 import { groupArgsByType, unquotedStringRegex } from '../util';
 import type { GenericOperationDefinition } from '../..';
 import { getFunctionSignatureLabel, getHelpTextContent } from './formula_help';
 import { hasFunctionFieldArgument } from '../validation';
-import { timeShiftOptions, timeShiftOptionOrder } from '../../../../time_shift_utils';
-import {
-  reducedTimeRangeOptionOrder,
-  reducedTimeRangeOptions,
-} from '../../../../../../../public/datasources/form_based/reduced_time_range_utils';
+import { timeShiftOptionOrder, timeShiftOptions } from '../../../../time_shift_utils';
 
 export enum SUGGESTION_TYPE {
   FIELD = 'field',

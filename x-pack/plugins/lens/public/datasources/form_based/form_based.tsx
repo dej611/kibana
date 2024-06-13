@@ -25,6 +25,13 @@ import type { SharePluginStart } from '@kbn/share-plugin/public';
 import { type DraggingIdentifier } from '@kbn/dom-drag-drop';
 import { DimensionTrigger } from '@kbn/visualization-ui-components';
 import memoizeOne from 'memoize-one';
+import { nonNullable } from '../../../common/utils';
+import { injectReferences } from '../../../common/datasources/form_based/loader';
+import { getStateTimeShiftWarningMessages } from '../../../common/datasources/form_based/time_shift_utils';
+import {
+  FormBasedPrivateState,
+  DataViewDragDropOperation,
+} from '../../../common/datasources/form_based/types';
 import {
   IndexPattern,
   IndexPatternField,
@@ -47,8 +54,6 @@ import {
   changeIndexPattern,
   changeLayerIndexPattern,
   extractReferences,
-  injectReferences,
-  loadInitialState,
   onRefreshIndexPattern,
   renameIndexPattern,
   triggerActionOnIndexPatternChange,
@@ -62,17 +67,7 @@ import {
   getDatasourceSuggestionsForVisualizeField,
   getDatasourceSuggestionsForVisualizeCharts,
 } from './form_based_suggestions';
-
-import {
-  getFiltersInLayer,
-  getSearchWarningMessages,
-  getVisualDefaultsForLayer,
-  isColumnInvalid,
-  cloneLayer,
-  getNotifiableFeatures,
-  getUnsupportedOperationsWarningMessage,
-} from '../../../common/datasources/form_based/utils';
-import { getUniqueLabelGenerator, isDraggedDataViewField, nonNullable } from '../../utils';
+import { getUniqueLabelGenerator, isDraggedDataViewField } from '../../utils';
 import {
   hasField,
   normalizeOperationDataType,
@@ -93,29 +88,32 @@ import {
   getReferenceRoot,
   reorderByGroups,
 } from '../../../common/datasources/form_based/operations/layer_helpers';
-import { FormBasedPrivateState, FormBasedPersistedState, DataViewDragDropOperation } from './types';
+import { loadInitialState } from '../../../common/datasources/form_based/loader';
 import { mergeLayer, mergeLayers } from './state_helpers';
 import type { Datasource, VisualizeEditorContext } from '../../types';
 import { deleteColumn, isReferenced } from '../../../common/datasources/form_based/operations';
 import { GeoFieldWorkspacePanel } from '../../editor_frame_service/editor_frame/workspace_panel/geo_field_workspace_panel';
-import { getStateTimeShiftWarningMessages } from '../../../common/datasources/form_based/time_shift_utils';
-import { getPrecisionErrorWarningMessages } from '../../../common/datasources/form_based/utils';
 import { DOCUMENT_FIELD_NAME } from '../../../common/constants';
 import { isColumnOfType } from '../../../common/datasources/form_based/operations/definitions/helpers';
 import { LayerSettingsPanel } from './layer_settings';
-import { FormBasedLayer, LastValueIndexPatternColumn } from '../..';
+import { FormBasedLayer, FormBasedPersistedState, LastValueIndexPatternColumn } from '../..';
 import { filterAndSortUserMessages } from '../../app_plugin/get_application_user_messages';
-<<<<<<< HEAD
+import { EDITOR_INVALID_DIMENSION } from '../../../common/user_messages_ids';
+import {
+  cloneLayer,
+  getFiltersInLayer,
+  getNotifiableFeatures,
+  getPrecisionErrorWarningMessages,
+  getSearchWarningMessages,
+  getUnsupportedOperationsWarningMessage,
+  getVisualDefaultsForLayer,
+  isColumnInvalid,
+} from './utils';
 export type {
   OperationType,
   GenericIndexPatternColumn,
 } from '../../../common/datasources/form_based/operations';
 export { deleteColumn } from '../../../common/datasources/form_based/operations';
-=======
-import { EDITOR_INVALID_DIMENSION } from '../../user_messages_ids';
-export type { OperationType, GenericIndexPatternColumn } from './operations';
-export { deleteColumn } from './operations';
->>>>>>> upstream/main
 
 function wrapOnDot(str?: string) {
   // u200B is a non-width white-space character, which allows
@@ -462,16 +460,7 @@ export function getFormBasedDatasource({
       );
     },
 
-    toExpression: (state, layerId, indexPatterns, dateRange, nowInstant, searchSessionId) =>
-      toExpression(
-        state,
-        layerId,
-        indexPatterns,
-        uiSettings,
-        dateRange,
-        nowInstant,
-        searchSessionId
-      ),
+    toExpression,
 
     LayerSettingsComponent(props) {
       return <LayerSettingsPanel {...props} />;

@@ -16,10 +16,10 @@ import type { FieldFormatsStart } from '@kbn/field-formats-plugin/public';
 import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
 import type { DataViewsService } from '@kbn/data-plugin/common';
 import { termsOperation } from './terms';
-// import { filtersOperation } from './filters';
-// import { cardinalityOperation } from './cardinality';
-// import { percentileOperation } from './percentile';
-// import { percentileRanksOperation } from './percentile_ranks';
+import { filtersOperation } from './filters';
+import { cardinalityOperation } from './cardinality';
+import { percentileOperation } from './percentile';
+import { percentileRanksOperation } from './percentile_ranks';
 import {
   minOperation,
   averageOperation,
@@ -28,29 +28,29 @@ import {
   medianOperation,
   standardDeviationOperation,
 } from './metrics';
-// import { dateHistogramOperation } from './date_histogram';
-// import {
-//   cumulativeSumOperation,
-//   counterRateOperation,
-//   derivativeOperation,
-//   movingAverageOperation,
-//   overallSumOperation,
-//   overallMinOperation,
-//   overallMaxOperation,
-//   overallAverageOperation,
-//   timeScaleOperation,
-// } from './calculations';
-// import { countOperation } from './count';
-// import {
-//   mathOperation,
-//   formulaOperation,
-//   timeRangeOperation,
-//   nowOperation,
-//   intervalOperation,
-// } from './formula';
-// import { staticValueOperation } from './static_value';
-// import { lastValueOperation } from './last_value';
-// import { rangeOperation } from './ranges';
+import { dateHistogramOperation } from './date_histogram';
+import {
+  cumulativeSumOperation,
+  counterRateOperation,
+  derivativeOperation,
+  movingAverageOperation,
+  overallSumOperation,
+  overallMinOperation,
+  overallMaxOperation,
+  overallAverageOperation,
+  timeScaleOperation,
+} from './calculations';
+import { countOperation } from './count';
+import {
+  mathOperation,
+  formulaOperation,
+  timeRangeOperation,
+  nowOperation,
+  intervalOperation,
+} from './formula';
+import { staticValueOperation } from './static_value';
+import { lastValueOperation } from './last_value';
+import { rangeOperation } from './ranges';
 import type {
   FramePublicAPI,
   OperationMetadata,
@@ -111,8 +111,8 @@ export type { CountIndexPatternColumn } from './count';
 export type { LastValueIndexPatternColumn } from './last_value';
 export type { RangeIndexPatternColumn } from './ranges';
 export type {
-  FormulaIndexPatternColumn,
-  MathIndexPatternColumn,
+  // FormulaIndexPatternColumn,
+  // MathIndexPatternColumn,
   TimeRangeIndexPatternColumn,
   NowIndexPatternColumn,
   IntervalIndexPatternColumn,
@@ -123,36 +123,36 @@ export type { StaticValueIndexPatternColumn } from './static_value';
 // If you want to implement a new operation, add the definition to this array and
 // the column type to the `GenericIndexPatternColumn` union type below.
 const internalOperationDefinitions = [
-  // filtersOperation,
+  filtersOperation,
   termsOperation,
-  // dateHistogramOperation,
+  dateHistogramOperation,
   minOperation,
   maxOperation,
   averageOperation,
-  // cardinalityOperation,
+  cardinalityOperation,
   sumOperation,
   standardDeviationOperation,
   medianOperation,
-  // percentileOperation,
-  // percentileRanksOperation,
-  // lastValueOperation,
-  // countOperation,
-  // rangeOperation,
-  // cumulativeSumOperation,
-  // counterRateOperation,
-  // derivativeOperation,
-  // movingAverageOperation,
-  // mathOperation,
-  // formulaOperation,
-  // overallSumOperation,
-  // overallMinOperation,
-  // overallMaxOperation,
-  // overallAverageOperation,
-  // staticValueOperation,
-  // timeScaleOperation,
-  // timeRangeOperation,
-  // nowOperation,
-  // intervalOperation,
+  percentileOperation,
+  percentileRanksOperation,
+  lastValueOperation,
+  countOperation,
+  rangeOperation,
+  cumulativeSumOperation,
+  counterRateOperation,
+  derivativeOperation,
+  movingAverageOperation,
+  mathOperation,
+  formulaOperation,
+  overallSumOperation,
+  overallMinOperation,
+  overallMaxOperation,
+  overallAverageOperation,
+  staticValueOperation,
+  timeScaleOperation,
+  timeRangeOperation,
+  nowOperation,
+  intervalOperation,
 ];
 
 // export { termsOperation } from './terms';
@@ -744,7 +744,8 @@ export type GenericOperationDefinition<
 /**
  * List of all available operation definitions
  */
-export const operationDefinitions = internalOperationDefinitions as GenericOperationDefinition[];
+export const operationDefinitions =
+  internalOperationDefinitions as unknown as GenericOperationDefinition[];
 
 /**
  * Map of all operation visible to consumers (e.g. the dimension panel).
