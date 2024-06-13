@@ -6,13 +6,11 @@
  * Side Public License, v 1.
  */
 
-import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { EuiLoadingChart } from '@elastic/eui';
-import classNames from 'classnames';
-
-import { EmbeddablePhaseEvent, EmbeddablePanel, ViewMode } from '@kbn/embeddable-plugin/public';
-
 import { css } from '@emotion/react';
+import { EmbeddablePanel, ReactEmbeddableRenderer, ViewMode } from '@kbn/embeddable-plugin/public';
+import classNames from 'classnames';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { DashboardPanelState } from '../../../../common';
 import { pluginServices } from '../../../services/plugin_services';
 import { useDashboardContainer } from '../../embeddable/dashboard_container';
@@ -27,7 +25,6 @@ export interface Props extends DivProps {
   focusedPanelId?: string;
   key: string;
   isRenderable?: boolean;
-  onPanelStatusChange?: (info: EmbeddablePhaseEvent) => void;
 }
 
 export const Item = React.forwardRef<HTMLDivElement, Props>(
@@ -38,7 +35,6 @@ export const Item = React.forwardRef<HTMLDivElement, Props>(
       id,
       index,
       type,
-      onPanelStatusChange,
       isRenderable = true,
       // The props below are passed from ReactGridLayoutn and need to be merged with their counterparts.
       // https://github.com/react-grid-layout/react-grid-layout/issues/1241#issuecomment-658306889
@@ -51,6 +47,7 @@ export const Item = React.forwardRef<HTMLDivElement, Props>(
     const container = useDashboardContainer();
     const scrollToPanelId = container.select((state) => state.componentState.scrollToPanelId);
     const highlightPanelId = container.select((state) => state.componentState.highlightPanelId);
+    const useMargins = container.select((state) => state.explicitInput.useMargins);
 
     const expandPanel = expandedPanelId !== undefined && expandedPanelId === id;
     const hidePanel = expandedPanelId !== undefined && expandedPanelId !== id;
@@ -91,7 +88,43 @@ export const Item = React.forwardRef<HTMLDivElement, Props>(
           pointer-events: none;
           opacity: 0.25;
         `
-      : css``;
+      : undefined;
+
+    const renderedEmbeddable = useMemo(() => {
+      const {
+        embeddable: { reactEmbeddableRegistryHasKey },
+      } = pluginServices.getServices();
+
+      const panelProps = {
+        showBadges: true,
+        showBorder: useMargins,
+        showNotifications: true,
+        showShadow: false,
+      };
+
+      // render React embeddable
+      if (reactEmbeddableRegistryHasKey(type)) {
+        return (
+          <ReactEmbeddableRenderer
+            type={type}
+            maybeId={id}
+            getParentApi={() => container}
+            key={`${type}_${id}`}
+            panelProps={panelProps}
+            onApiAvailable={(api) => container.registerChildApi(api)}
+          />
+        );
+      }
+      // render legacy embeddable
+      return (
+        <EmbeddablePanel
+          key={type}
+          index={index}
+          embeddable={() => container.untilEmbeddableLoaded(id)}
+          {...panelProps}
+        />
+      );
+    }, [id, container, type, index, useMargins]);
 
     return (
       <div
@@ -104,19 +137,11 @@ export const Item = React.forwardRef<HTMLDivElement, Props>(
       >
         {isRenderable ? (
           <>
-            <EmbeddablePanel
-              key={type}
-              index={index}
-              showBadges={true}
-              showShadow={true}
-              showNotifications={true}
-              onPanelStatusChange={onPanelStatusChange}
-              embeddable={() => container.untilEmbeddableLoaded(id)}
-            />
+            {renderedEmbeddable}
             {children}
           </>
         ) : (
-          <div className="embPanel embPanel-isLoading">
+          <div>
             <EuiLoadingChart size="l" mono />
           </div>
         )}

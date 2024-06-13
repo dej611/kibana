@@ -19,13 +19,16 @@ import {
   EuiButtonEmpty,
   EuiButton,
   EuiForm,
+  EuiSpacer,
 } from '@elastic/eui';
 
 import { FLYOUT_MAX_WIDTH } from '../../constants';
 import type { FleetProxy } from '../../../../types';
 import { TextInput, TextAreaInput } from '../form';
 
-import { useFleetProxyForm } from './user_fleet_proxy_form';
+import { ProxyWarning } from '../fleet_proxies_table/proxy_warning';
+
+import { useFleetProxyForm } from './use_fleet_proxy_form';
 
 export interface FleetProxyFlyoutProps {
   onClose: () => void;
@@ -36,8 +39,6 @@ export const FleetProxyFlyout: React.FunctionComponent<FleetProxyFlyoutProps> = 
   onClose,
   fleetProxy,
 }) => {
-  // const { docLinks } = useStartServices();
-
   const form = useFleetProxyForm(fleetProxy, onClose);
   const { inputs } = form;
 
@@ -61,6 +62,8 @@ export const FleetProxyFlyout: React.FunctionComponent<FleetProxyFlyoutProps> = 
         </EuiTitle>
       </EuiFlyoutHeader>
       <EuiFlyoutBody>
+        <ProxyWarning />
+        <EuiSpacer size="m" />
         <EuiForm onSubmit={form.submit}>
           <TextInput
             label={

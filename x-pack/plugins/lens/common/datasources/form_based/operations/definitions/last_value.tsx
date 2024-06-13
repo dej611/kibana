@@ -18,6 +18,7 @@ import {
 import { AggFunctionsMapping } from '@kbn/data-plugin/public';
 import { buildExpressionFunction } from '@kbn/expressions-plugin/public';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { LAST_VALUE_ID, LAST_VALUE_NAME } from '@kbn/lens-formula-docs';
 import type { FieldBasedOperationErrorMessage, OperationDefinition } from '.';
 import { FieldBasedIndexPatternColumn, ValueFormatConfig } from './column_types';
 import type { IndexPatternField, IndexPattern } from '../../../../../public/types';
@@ -33,8 +34,17 @@ import {
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
 import { isRuntimeField, isScriptedField } from './terms/helpers';
 import { FormRow } from './shared_components/form_row';
+<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/last_value.tsx
 import { getColumnReducedTimeRangeError } from '../../../../../public/datasources/form_based/reduced_time_range_utils';
 import { getGroupByKey } from '../../get_group_by_key';
+=======
+import { getColumnReducedTimeRangeError } from '../../reduced_time_range_utils';
+import { getGroupByKey } from './get_group_by_key';
+import {
+  LAST_VALUE_OP_SORT_FIELD_INVALID_TYPE,
+  LAST_VALUE_OP_SORT_FIELD_NOT_FOUND,
+} from '../../../../user_messages_ids';
+>>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/last_value.tsx
 
 function ofName(name: string, timeShift: string | undefined, reducedTimeRange: string | undefined) {
   return adjustTimeScaleLabelSuffix(
@@ -64,39 +74,48 @@ const supportedTypes = new Set([
   'date_range',
 ]);
 
-function getInvalidSortFieldMessage(
+function getInvalidSortFieldMessages(
   sortField: string,
   columnId: string,
   indexPattern?: IndexPattern
-): FieldBasedOperationErrorMessage | undefined {
+): FieldBasedOperationErrorMessage[] {
   if (!indexPattern) {
-    return;
+    return [];
   }
   const field = indexPattern.getFieldByName(sortField);
   if (!field) {
-    return {
-      message: (
-        <FormattedMessage
-          id="xpack.lens.indexPattern.lastValue.sortFieldNotFound"
-          defaultMessage="Sort field {sortField} was not found."
-          values={{
-            sortField: <strong>{sortField}</strong>,
-          }}
-        />
-      ),
-      displayLocations: [
-        { id: 'toolbar' },
-        { id: 'dimensionButton', dimensionId: columnId },
-        { id: 'embeddableBadge' },
-      ],
-    };
+    return [
+      {
+        uniqueId: LAST_VALUE_OP_SORT_FIELD_NOT_FOUND,
+        message: (
+          <FormattedMessage
+            id="xpack.lens.indexPattern.lastValue.sortFieldNotFound"
+            defaultMessage="Sort field {sortField} was not found."
+            values={{
+              sortField: <strong>{sortField}</strong>,
+            }}
+          />
+        ),
+        displayLocations: [
+          { id: 'toolbar' },
+          { id: 'dimensionButton', dimensionId: columnId },
+          { id: 'embeddableBadge' },
+        ],
+      },
+    ];
   }
   if (field.type !== 'date') {
-    return i18n.translate('xpack.lens.indexPattern.lastValue.invalidTypeSortField', {
-      defaultMessage: 'Field {invalidField} is not a date field and cannot be used for sorting',
-      values: { invalidField: sortField },
-    });
+    return [
+      {
+        uniqueId: LAST_VALUE_OP_SORT_FIELD_INVALID_TYPE,
+        message: i18n.translate('xpack.lens.indexPattern.lastValue.invalidTypeSortField', {
+          defaultMessage: 'Field {invalidField} is not a date field and cannot be used for sorting',
+          values: { invalidField: sortField },
+        }),
+      },
+    ];
   }
+  return [];
 }
 
 function isTimeFieldNameDateField(indexPattern: IndexPattern) {
@@ -136,7 +155,7 @@ function setDefaultShowArrayValues(
 }
 
 export interface LastValueIndexPatternColumn extends FieldBasedIndexPatternColumn {
-  operationType: 'last_value';
+  operationType: typeof LAST_VALUE_ID;
   params: {
     sortField: string;
     showArrayValues: boolean;
@@ -161,10 +180,8 @@ export const lastValueOperation: OperationDefinition<
   Partial<LastValueIndexPatternColumn['params']>,
   true
 > = {
-  type: 'last_value',
-  displayName: i18n.translate('xpack.lens.indexPattern.lastValue', {
-    defaultMessage: 'Last value',
-  }),
+  type: LAST_VALUE_ID,
+  displayName: LAST_VALUE_NAME,
   getDefaultLabel: (column, columns, indexPattern) =>
     ofName(
       getSafeName(column.sourceField, indexPattern),
@@ -212,24 +229,11 @@ export const lastValueOperation: OperationDefinition<
   },
   getErrorMessage(layer, columnId, indexPattern) {
     const column = layer.columns[columnId] as LastValueIndexPatternColumn;
-    const errorMessages: FieldBasedOperationErrorMessage[] = [];
-
-    const invalidSourceFieldMessage = getInvalidFieldMessage(layer, columnId, indexPattern);
-    if (invalidSourceFieldMessage) {
-      errorMessages.push(...invalidSourceFieldMessage);
-    }
-
-    const invalidSortFieldMessage = getInvalidSortFieldMessage(
-      column.params.sortField,
-      columnId,
-      indexPattern
-    );
-    if (invalidSortFieldMessage) {
-      errorMessages.push(invalidSortFieldMessage);
-    }
-
-    errorMessages.push(...(getColumnReducedTimeRangeError(layer, columnId, indexPattern) || []));
-    return errorMessages.length ? errorMessages : undefined;
+    return [
+      ...getInvalidFieldMessage(layer, columnId, indexPattern),
+      ...getInvalidSortFieldMessages(column.params.sortField, columnId, indexPattern),
+      ...getColumnReducedTimeRangeError(layer, columnId, indexPattern),
+    ];
   },
   buildColumn({ field, previousColumn, indexPattern }, columnParams) {
     const lastValueParams = columnParams as LastValueIndexPatternColumn['params'];
@@ -250,7 +254,7 @@ export const lastValueOperation: OperationDefinition<
     return {
       label: ofName(field.displayName, previousColumn?.timeShift, previousColumn?.reducedTimeRange),
       dataType: field.type as DataType,
-      operationType: 'last_value',
+      operationType: LAST_VALUE_ID,
       isBucketed: false,
       scale: getScale(field.type),
       sourceField: field.name,
@@ -332,11 +336,8 @@ export const lastValueOperation: OperationDefinition<
       });
 
     const dateFields = getDateFields(indexPattern);
-    const isSortFieldInvalid = !!getInvalidSortFieldMessage(
-      currentColumn.params.sortField,
-      '',
-      indexPattern
-    );
+    const isSortFieldInvalid =
+      getInvalidSortFieldMessages(currentColumn.params.sortField, '', indexPattern).length > 0;
 
     const usingTopValues = Object.keys(layer.columns).some(
       (_columnId) => layer.columns[_columnId].operationType === 'terms'
@@ -449,22 +450,6 @@ export const lastValueOperation: OperationDefinition<
         </FormRow>
       </>
     );
-  },
-  documentation: {
-    section: 'elasticsearch',
-    signature: i18n.translate('xpack.lens.indexPattern.lastValue.signature', {
-      defaultMessage: 'field: string',
-    }),
-    description: i18n.translate('xpack.lens.indexPattern.lastValue.documentation.markdown', {
-      defaultMessage: `
-Returns the value of a field from the last document, ordered by the default time field of the data view.
-
-This function is usefull the retrieve the latest state of an entity.
-
-Example: Get the current status of server A:
-\`last_value(server.status, kql=\'server.name="A"\')\`
-      `,
-    }),
   },
   quickFunctionDocumentation: i18n.translate(
     'xpack.lens.indexPattern.lastValue.documentation.quick',

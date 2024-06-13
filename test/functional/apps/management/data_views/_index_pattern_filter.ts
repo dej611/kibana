@@ -24,13 +24,16 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
       await PageObjects.settings.clickKibanaIndexPatterns();
     });
 
+    after(async function () {
+      await kibanaServer.savedObjects.cleanStandardList();
+    });
+
     beforeEach(async function () {
       await PageObjects.settings.createIndexPattern('logstash-*');
     });
 
     afterEach(async function () {
       await PageObjects.settings.removeIndexPattern();
-      await kibanaServer.savedObjects.cleanStandardList();
     });
 
     it('should filter indexed fields by type', async function () {
@@ -75,10 +78,10 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         '@tags.raw',
         '@timestamp',
         '_id',
+        '_ignored',
         '_index',
         '_score',
         '_source',
-        '_test',
       ];
 
       expect(await PageObjects.settings.getFieldNames()).to.eql(unfilteredFields);
@@ -104,10 +107,10 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         '@tags.raw',
         '@timestamp',
         '_id',
+        '_ignored',
         '_index',
         '_score',
         '_source',
-        'agent',
       ];
 
       expect(await PageObjects.settings.getFieldNames()).to.eql(unfilteredFields);
@@ -167,6 +170,8 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
 
       await PageObjects.settings.clickIndexPatternLogstash();
 
+      await PageObjects.settings.refreshDataViewFieldList();
+
       await testSubjects.existOrFail('dataViewMappingConflict');
 
       expect(await PageObjects.settings.getFieldTypes()).to.eql([
@@ -176,10 +181,10 @@ export default function ({ getService, getPageObjects }: FtrProviderContext) {
         'keyword',
         'date',
         '_id',
+        '_ignored',
         '_index',
         '',
         '_source',
-        'text',
       ]);
 
       // set other filters to check if they get reset after pressing the button

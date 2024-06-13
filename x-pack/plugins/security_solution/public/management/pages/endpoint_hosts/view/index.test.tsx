@@ -9,7 +9,6 @@ import React from 'react';
 import * as reactTestingLibrary from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { EndpointList } from '.';
-import '../../../../common/mock/match_media';
 import { createUseUiSetting$Mock } from '../../../../common/lib/kibana/kibana_react.mock';
 
 import {
@@ -61,6 +60,8 @@ const mockUserPrivileges = useUserPrivileges as jest.Mock;
 // not sure why this can't be imported from '../../../../common/mock/formatted_relative';
 // but sure enough, it needs to be inline in this one file
 jest.mock('@kbn/i18n-react', () => {
+  const { i18n } = jest.requireActual('@kbn/i18n');
+  i18n.init({ locale: 'en' });
   const originalModule = jest.requireActual('@kbn/i18n-react');
   const FormattedRelative = jest.fn().mockImplementation(() => '20 hours ago');
 
@@ -181,7 +182,7 @@ describe('when on the endpoint list page', () => {
     });
 
     const renderResult = render();
-    const timelineFlyout = renderResult.queryByTestId('flyoutOverlay');
+    const timelineFlyout = renderResult.queryByTestId('timeline-bottom-bar-title-button');
     expect(timelineFlyout).toBeNull();
   });
 
@@ -748,6 +749,8 @@ describe('when on the endpoint list page', () => {
           });
 
           const renderResult = await render();
+          await middlewareSpy.waitForAction('serverFinishedInitialization');
+
           const detailsTab = renderResult.getByTestId('endpoint-details-flyout-tab-details');
           const activityLogTab = renderResult.queryByTestId(
             'endpoint-details-flyout-tab-activity_log'
@@ -846,6 +849,8 @@ describe('when on the endpoint list page', () => {
           history.push(`${MANAGEMENT_PATH}/endpoints?selected_endpoint=1&show=isolate`);
         });
         renderResult = render();
+        await middlewareSpy.waitForAction('serverFinishedInitialization');
+
         // Need to reset `http.post` and adjust it so that the mock for http host
         // isolation api does not output error noise to the console
         coreStart.http.post.mockReset();
@@ -1026,7 +1031,7 @@ describe('when on the endpoint list page', () => {
       const agentPolicy = generator.generateAgentPolicy();
       agentPolicyId = agentPolicy.id;
       agentId = hosts[0].metadata.elastic.agent.id;
-      packagePolicy.policy_id = agentPolicyId;
+      packagePolicy.policy_ids = [agentPolicyId];
 
       setEndpointListApiMockImplementation(coreStart.http, {
         endpointsResults: hostInfo,
@@ -1452,12 +1457,15 @@ describe('when on the endpoint list page', () => {
       const hostLink = await renderResult.findByTestId('hostLink');
       expect(hostLink).not.toBeNull();
     });
-    it('shows Agent Policy, View Agent Details and Reassign Policy Links when canAccessFleet RBAC control is enabled', async () => {
+    it('shows Agent Policy, View Agent Details and Reassign Policy Links when canReadFleetAgents,canWriteFleetAgents,canReadFleetAgentPolicies RBAC control is enabled', async () => {
       mockUserPrivileges.mockReturnValue({
         ...mockInitialUserPrivilegesState(),
         endpointPrivileges: {
           ...mockInitialUserPrivilegesState().endpointPrivileges,
           canAccessFleet: true,
+          canReadFleetAgents: true,
+          canWriteFleetAgents: true,
+          canReadFleetAgentPolicies: true,
         },
       });
       await renderAndClickActionsButton();

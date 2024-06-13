@@ -5,12 +5,12 @@
  * 2.0.
  */
 
+import React from 'react';
 import { Filter } from '@kbn/es-query';
 import { DataTableRecord } from '@kbn/discover-utils/types';
+import { HttpSetup } from '@kbn/core-http-browser';
 import { i18n } from '@kbn/i18n';
 import { EuiDataGridCellValueElementProps, EuiFlexItem, EuiSpacer } from '@elastic/eui';
-import React from 'react';
-import { FindingsBaseProps } from '../../../common/types';
 import * as TEST_SUBJECTS from '../test_subjects';
 import { FindingsDistributionBar } from '../layout/findings_distribution_bar';
 import { ErrorCallout } from '../layout/error_callout';
@@ -21,19 +21,24 @@ import { TimestampTableCell } from '../../../components/timestamp_table_cell';
 import { CspEvaluationBadge } from '../../../components/csp_evaluation_badge';
 import { CspFinding } from '../../../../common/schemas/csp_finding';
 import { FindingsRuleFlyout } from '../findings_flyout/findings_flyout';
+import { createDetectionRuleFromBenchmarkRule } from '../utils/create_detection_rule_from_benchmark';
+import { findingsTableFieldLabels } from './findings_table_field_labels';
 
-type LatestFindingsTableProps = FindingsBaseProps & {
+interface LatestFindingsTableProps {
   groupSelectorComponent?: JSX.Element;
   height?: number;
   showDistributionBar?: boolean;
   nonPersistedFilters?: Filter[];
-};
-
+}
 /**
  * Type Guard for checking if the given source is a CspFinding
  */
 const isCspFinding = (source: Record<string, any> | undefined): source is CspFinding => {
   return source?.result?.evaluation !== undefined;
+};
+
+const getCspFinding = (source: Record<string, any> | undefined): CspFinding | false => {
+  return isCspFinding(source) && (source as CspFinding);
 };
 
 /**
@@ -47,8 +52,7 @@ const CspFindingRenderer = ({
   row: DataTableRecord;
   children: ({ finding }: { finding: CspFinding }) => JSX.Element;
 }) => {
-  const source = row.raw._source;
-  const finding = isCspFinding(source) && (source as CspFinding);
+  const finding = getCspFinding(row.raw._source);
   if (!finding) return <></>;
   return children({ finding });
 };
@@ -82,17 +86,17 @@ const customCellRenderer = (rows: DataTableRecord[]) => ({
 });
 
 export const LatestFindingsTable = ({
-  dataView,
   groupSelectorComponent,
   height,
   showDistributionBar = true,
   nonPersistedFilters,
 }: LatestFindingsTableProps) => {
   const {
-    cloudPostureTable,
+    cloudPostureDataTable,
     rows,
     error,
     isFetching,
+    isLoading,
     fetchNextPage,
     passed,
     failed,
@@ -100,11 +104,17 @@ export const LatestFindingsTable = ({
     canShowDistributionBar,
     onDistributionBarClick,
   } = useLatestFindingsTable({
-    dataView,
     getDefaultQuery,
     nonPersistedFilters,
     showDistributionBar,
   });
+
+  const createMisconfigurationRuleFn = (rowIndex: number) => {
+    const finding = getCspFinding(rows[rowIndex].raw._source);
+    if (!finding) return;
+
+    return async (http: HttpSetup) => createDetectionRuleFromBenchmarkRule(http, finding.rule);
+  };
 
   return (
     <EuiFlexItem data-test-subj={TEST_SUBJECTS.LATEST_FINDINGS_CONTAINER}>
@@ -128,18 +138,19 @@ export const LatestFindingsTable = ({
           )}
           <CloudSecurityDataTable
             data-test-subj={TEST_SUBJECTS.LATEST_FINDINGS_TABLE}
-            dataView={dataView}
-            isLoading={isFetching}
+            isLoading={isFetching || isLoading}
             defaultColumns={defaultColumns}
             rows={rows}
             total={total}
             flyoutComponent={flyoutComponent}
-            cloudPostureTable={cloudPostureTable}
+            cloudPostureDataTable={cloudPostureDataTable}
             loadMore={fetchNextPage}
             title={title}
             customCellRenderer={customCellRenderer}
             groupSelectorComponent={groupSelectorComponent}
             height={height}
+            createRuleFn={createMisconfigurationRuleFn}
+            columnHeaders={findingsTableFieldLabels}
           />
         </>
       )}

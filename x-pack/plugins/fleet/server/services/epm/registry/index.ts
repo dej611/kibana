@@ -13,6 +13,8 @@ import semverGte from 'semver/functions/gte';
 import type { Response } from 'node-fetch';
 import type { Logger } from '@kbn/logging';
 
+import type { ExtractedIntegrationFields } from '@kbn/fields-metadata-plugin/server';
+
 import { splitPkgKey as split } from '../../../../common/services';
 
 import { KibanaAssetType } from '../../../types';
@@ -26,16 +28,16 @@ import type {
   PackageVerificationResult,
   ArchivePackage,
   BundledPackage,
+  AssetsMap,
 } from '../../../types';
 import {
-  getArchiveFilelist,
   getPathParts,
-  unpackBufferToCache,
   setVerificationResult,
-  getVerificationResult,
   getPackageInfo,
   setPackageInfo,
   generatePackageInfoFromArchiveBuffer,
+  unpackBufferToAssetsMap,
+  getVerificationResult,
 } from '../archive';
 import { streamToBuffer, streamToString } from '../streams';
 import { appContextService } from '../..';
@@ -48,7 +50,7 @@ import {
 
 import { getBundledPackageByName } from '../packages/bundled_packages';
 
-import { withPackageSpan } from '../packages/utils';
+import { resolveDataStreamFields, resolveDataStreamsMap, withPackageSpan } from '../packages/utils';
 
 import { verifyPackageArchiveSignature } from '../packages/package_verification';
 
@@ -94,16 +96,8 @@ async function _fetchFindLatestPackage(
 
     const bundledPackage = await getBundledPackageByName(packageName);
 
-    // temporary workaround to allow synthetics package beta version until there is a GA available
-    // needed because synthetics is installed by default on kibana startup
-    const prereleaseAllowedExceptions = ['synthetics'];
-
-    const prereleaseEnabled = prerelease || prereleaseAllowedExceptions.includes(packageName);
-
     const registryUrl = getRegistryUrl();
-    const url = new URL(
-      `${registryUrl}/search?package=${packageName}&prerelease=${prereleaseEnabled}`
-    );
+    const url = new URL(`${registryUrl}/search?package=${packageName}&prerelease=${prerelease}`);
 
     if (!ignoreConstraints) {
       setConstraints(url);
@@ -319,16 +313,15 @@ export async function getPackage(
 ): Promise<{
   paths: string[];
   packageInfo: ArchivePackage;
+  assetsMap: AssetsMap;
   verificationResult?: PackageVerificationResult;
 }> {
   const verifyPackage = appContextService.getExperimentalFeatures().packageVerification;
-  let paths = getArchiveFilelist({ name, version });
-  let packageInfo = getPackageInfo({ name, version });
-  let verificationResult = verifyPackage ? getVerificationResult({ name, version }) : undefined;
+  let packageInfo: ArchivePackage | undefined = getPackageInfo({ name, version });
+  let verificationResult: PackageVerificationResult | undefined = verifyPackage
+    ? getVerificationResult({ name, version })
+    : undefined;
 
-  if (paths && packageInfo) {
-    return { paths, packageInfo, verificationResult };
-  }
   const {
     archiveBuffer,
     archivePath,
@@ -346,22 +339,62 @@ export async function getPackage(
     verificationResult = latestVerificationResult;
     setVerificationResult({ name, version }, latestVerificationResult);
   }
-  if (!paths || paths.length === 0) {
-    paths = await withPackageSpan('Unpack archive', () =>
-      unpackBufferToCache({
-        name,
-        version,
-        archiveBuffer,
-        contentType: ensureContentType(archivePath),
-      })
-    );
-  }
+
+  const { assetsMap, paths } = await unpackBufferToAssetsMap({
+    name,
+    version,
+    archiveBuffer,
+    contentType: ensureContentType(archivePath),
+  });
 
   if (!packageInfo) {
     packageInfo = await getPackageInfoFromArchiveOrCache(name, version, archiveBuffer, archivePath);
   }
 
-  return { paths, packageInfo, verificationResult };
+  return { paths, packageInfo, assetsMap, verificationResult };
+}
+
+export async function getPackageFieldsMetadata(
+  params: { packageName: string; datasetName?: string },
+  options: { excludedFieldsAssets?: string[] } = {}
+): Promise<ExtractedIntegrationFields> {
+  const { packageName, datasetName } = params;
+  const { excludedFieldsAssets = ['ecs.yml'] } = options;
+
+  // Attempt retrieving latest package name and version
+  const latestPackage = await fetchFindLatestPackageOrThrow(packageName);
+  const { name, version } = latestPackage;
+
+  // Attempt retrieving latest package
+  const resolvedPackage = await getPackage(name, version);
+
+  // We need to collect all the available data streams for the package.
+  // In case a dataset is specified from the parameter, it will load the fields only for that specific dataset.
+  // As a fallback case, we'll try to read the fields for all the data streams in the package.
+  const dataStreamsMap = resolveDataStreamsMap(resolvedPackage.packageInfo.data_streams);
+
+  const { assetsMap } = resolvedPackage;
+
+  const dataStream = datasetName ? dataStreamsMap.get(datasetName) : null;
+
+  if (dataStream) {
+    // Resolve a single data stream fields when the `datasetName` parameter is specified
+    return resolveDataStreamFields({ dataStream, assetsMap, excludedFieldsAssets });
+  } else {
+    // Resolve and merge all the integration data streams fields otherwise
+    return [...dataStreamsMap.values()].reduce(
+      (packageDataStreamsFields, currentDataStream) =>
+        Object.assign(
+          packageDataStreamsFields,
+          resolveDataStreamFields({
+            dataStream: currentDataStream,
+            assetsMap,
+            excludedFieldsAssets,
+          })
+        ),
+      {}
+    );
+  }
 }
 
 function ensureContentType(archivePath: string) {

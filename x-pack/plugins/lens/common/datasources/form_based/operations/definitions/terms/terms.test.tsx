@@ -44,6 +44,7 @@ import { ReferenceEditor } from '../../../../../../public/datasources/form_based
 import { IndexPattern } from '../../../../../../public/types';
 import { cloneDeep } from 'lodash';
 import { IncludeExcludeRow } from './include_exclude_options';
+import { TERMS_MULTI_TERMS_AND_SCRIPTED_FIELDS } from '../../../../../user_messages_ids';
 
 jest.mock('@kbn/unified-field-list/src/services/field_stats', () => ({
   loadFieldStats: jest.fn().mockResolvedValue({
@@ -1378,8 +1379,7 @@ describe('terms', () => {
     it('should show an error message when any field but the first is invalid', () => {
       const updateLayerSpy = jest.fn();
       const operationSupportMatrix = getDefaultOperationSupportMatrix('col1');
-
-      layer.columns.col1 = {
+      const col1: TermsIndexPatternColumn = {
         label: 'Top value of geo.src + 1 other',
         dataType: 'string',
         isBucketed: true,
@@ -1391,7 +1391,8 @@ describe('terms', () => {
           secondaryFields: ['unsupported'],
         },
         sourceField: 'geo.src',
-      } as TermsIndexPatternColumn;
+      };
+      layer.columns.col1 = col1;
       const instance = mount(
         <InlineFieldInput
           {...defaultFieldInputProps}
@@ -1399,7 +1400,7 @@ describe('terms', () => {
           updateLayer={updateLayerSpy}
           columnId="col1"
           operationSupportMatrix={operationSupportMatrix}
-          selectedColumn={layer.columns.col1 as TermsIndexPatternColumn}
+          selectedColumn={col1}
         />
       );
       expect(
@@ -2739,7 +2740,7 @@ describe('terms', () => {
       };
     });
     it('returns undefined for no errors found', () => {
-      expect(termsOperation.getErrorMessage!(layer, 'col1', indexPattern)).toEqual(undefined);
+      expect(termsOperation.getErrorMessage!(layer, 'col1', indexPattern)).toHaveLength(0);
     });
     it('returns error message if the sourceField does not exist in index pattern', () => {
       layer = {
@@ -2766,7 +2767,7 @@ describe('terms', () => {
                 "id": "embeddableBadge",
               },
             ],
-            "message": <FormattedMessage
+            "message": <Memo(MemoizedFormattedMessage)
               defaultMessage="{count, plural, one {Field} other {Fields}} {missingFields} {count, plural, one {was} other {were}} not found."
               id="xpack.lens.indexPattern.fieldsNotFound"
               values={
@@ -2783,6 +2784,7 @@ describe('terms', () => {
                 }
               }
             />,
+            "uniqueId": "field_not_found",
           },
         ]
       `);
@@ -2798,7 +2800,7 @@ describe('terms', () => {
           } as TermsIndexPatternColumn,
         },
       };
-      expect(termsOperation.getErrorMessage!(layer, 'col1', indexPattern)).toBeUndefined();
+      expect(termsOperation.getErrorMessage!(layer, 'col1', indexPattern)).toHaveLength(0);
     });
 
     it('return error for scripted field when in multi terms mode', () => {
@@ -2817,7 +2819,10 @@ describe('terms', () => {
         },
       };
       expect(termsOperation.getErrorMessage!(layer, 'col1', indexPattern)).toEqual([
-        'Scripted fields are not supported when using multiple fields, found scripted',
+        {
+          uniqueId: TERMS_MULTI_TERMS_AND_SCRIPTED_FIELDS,
+          message: 'Scripted fields are not supported when using multiple fields, found scripted',
+        },
       ]);
     });
 

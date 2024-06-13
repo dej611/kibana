@@ -16,6 +16,7 @@ import {
   ExpressionAstFunctionBuilder,
 } from '@kbn/expressions-plugin/public';
 import { useDebouncedValue } from '@kbn/visualization-ui-components';
+import { PERCENTILE_ID, PERCENTILE_NAME } from '@kbn/lens-formula-docs';
 import { OperationDefinition } from '.';
 import {
   getFormatFromPreviousColumn,
@@ -24,7 +25,6 @@ import {
   isValidNumber,
   getFilter,
   isColumnOfType,
-  combineErrorMessages,
 } from './helpers';
 import { FieldBasedIndexPatternColumn } from './column_types';
 import { adjustTimeScaleLabelSuffix } from '../time_scale_utils';
@@ -33,7 +33,7 @@ import { getColumnReducedTimeRangeError } from '../../../../../public/datasource
 import { getGroupByKey, groupByKey } from '../../get_group_by_key';
 
 export interface PercentileIndexPatternColumn extends FieldBasedIndexPatternColumn {
-  operationType: 'percentile';
+  operationType: typeof PERCENTILE_ID;
   params: {
     percentile: number;
     format?: {
@@ -110,11 +110,9 @@ export const percentileOperation: OperationDefinition<
   { percentile: number },
   true
 > = {
-  type: 'percentile',
+  type: PERCENTILE_ID,
   allowAsReference: true,
-  displayName: i18n.translate('xpack.lens.indexPattern.percentile', {
-    defaultMessage: 'Percentile',
-  }),
+  displayName: PERCENTILE_NAME,
   input: 'field',
   operationParams: [
     { name: 'percentile', type: 'number', required: false, defaultValue: DEFAULT_PERCENTILE_VALUE },
@@ -161,7 +159,7 @@ export const percentileOperation: OperationDefinition<
   buildColumn: ({ field, previousColumn, indexPattern }, columnParams) => {
     const existingPercentileParam =
       previousColumn &&
-      isColumnOfType<PercentileIndexPatternColumn>('percentile', previousColumn) &&
+      isColumnOfType<PercentileIndexPatternColumn>(PERCENTILE_ID, previousColumn) &&
       previousColumn.params.percentile;
     const newPercentileParam =
       columnParams?.percentile ?? (existingPercentileParam || DEFAULT_PERCENTILE_VALUE);
@@ -173,7 +171,7 @@ export const percentileOperation: OperationDefinition<
         previousColumn?.reducedTimeRange
       ),
       dataType: 'number',
-      operationType: 'percentile',
+      operationType: PERCENTILE_ID,
       sourceField: field.name,
       isBucketed: false,
       scale: 'ratio',
@@ -326,11 +324,10 @@ export const percentileOperation: OperationDefinition<
       aggs,
     };
   },
-  getErrorMessage: (layer, columnId, indexPattern) =>
-    combineErrorMessages([
-      getInvalidFieldMessage(layer, columnId, indexPattern),
-      getColumnReducedTimeRangeError(layer, columnId, indexPattern),
-    ]),
+  getErrorMessage: (layer, columnId, indexPattern) => [
+    ...getInvalidFieldMessage(layer, columnId, indexPattern),
+    ...getColumnReducedTimeRangeError(layer, columnId, indexPattern),
+  ],
   paramEditor: function PercentileParamEditor({
     paramEditorUpdater,
     currentColumn,
@@ -430,20 +427,6 @@ export const percentileOperation: OperationDefinition<
         )}
       </FormRow>
     );
-  },
-  documentation: {
-    section: 'elasticsearch',
-    signature: i18n.translate('xpack.lens.indexPattern.percentile.signature', {
-      defaultMessage: 'field: string, [percentile]: number',
-    }),
-    description: i18n.translate('xpack.lens.indexPattern.percentile.documentation.markdown', {
-      defaultMessage: `
-Returns the specified percentile of the values of a field. This is the value n percent of the values occuring in documents are smaller.
-
-Example: Get the number of bytes larger than 95 % of values:
-\`percentile(bytes, percentile=95)\`
-      `,
-    }),
   },
   quickFunctionDocumentation: i18n.translate(
     'xpack.lens.indexPattern.percentile.documentation.quick',

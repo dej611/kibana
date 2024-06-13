@@ -7,7 +7,7 @@
 
 import type { IKibanaResponse } from '@kbn/core/server';
 
-import { API_VERSIONS, INTERNAL_API_ACCESS } from '../../../common/constants';
+import { API_VERSIONS } from '../../../common/constants';
 
 import type { FleetAuthz } from '../../../common';
 
@@ -55,7 +55,6 @@ import {
   getListHandler,
   getInstalledListHandler,
   getLimitedListHandler,
-  getFileHandler,
   getInfoHandler,
   getBulkAssetsHandler,
   installPackageFromRegistryHandler,
@@ -70,6 +69,7 @@ import {
   createCustomIntegrationHandler,
   getInputsHandler,
 } from './handlers';
+import { getFileHandler } from './file_handler';
 
 const MAX_FILE_SIZE_BYTES = 104857600; // 100MB
 
@@ -86,6 +86,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
     .get({
       path: EPM_API_ROUTES.CATEGORIES_PATTERN,
       fleetAuthz: READ_PACKAGE_INFO_AUTHZ,
+      description: `Get package categories`,
     })
     .addVersion(
       {
@@ -99,6 +100,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
     .get({
       path: EPM_API_ROUTES.LIST_PATTERN,
       fleetAuthz: READ_PACKAGE_INFO_AUTHZ,
+      description: `Get list of packages`,
     })
     .addVersion(
       {
@@ -125,6 +127,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
     .get({
       path: EPM_API_ROUTES.LIMITED_LIST_PATTERN,
       fleetAuthz: READ_PACKAGE_INFO_AUTHZ,
+      description: `Get limited package list`,
     })
     .addVersion(
       {
@@ -192,7 +195,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
     .put({
       path: EPM_API_ROUTES.INFO_PATTERN,
       fleetAuthz: {
-        integrations: { upgradePackages: true, writePackageSettings: true },
+        integrations: { writePackageSettings: true },
       },
     })
     .addVersion(
@@ -287,6 +290,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
     .get({
       path: EPM_API_ROUTES.VERIFICATION_KEY_ID,
       fleetAuthz: READ_PACKAGE_INFO_AUTHZ,
+      description: `Get a package signature verification key ID`,
     })
     .addVersion(
       {
@@ -313,6 +317,7 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
     .post({
       path: EPM_API_ROUTES.BULK_ASSETS_PATTERN,
       fleetAuthz: READ_PACKAGE_INFO_AUTHZ,
+      description: `Get bulk assets`,
     })
     .addVersion(
       {
@@ -359,13 +364,12 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
       path: EPM_API_ROUTES.INFO_PATTERN_DEPRECATED,
 
       fleetAuthz: {
-        integrations: { upgradePackages: true, writePackageSettings: true },
+        integrations: { writePackageSettings: true },
       },
-      access: INTERNAL_API_ACCESS,
     })
     .addVersion(
       {
-        version: API_VERSIONS.internal.v1,
+        version: API_VERSIONS.public.v1,
         validate: { request: UpdatePackageRequestSchemaDeprecated },
       },
       async (context, request, response) => {
@@ -415,11 +419,10 @@ export const registerRoutes = (router: FleetAuthzRouter) => {
       fleetAuthz: {
         integrations: { removePackages: true },
       },
-      access: INTERNAL_API_ACCESS,
     })
     .addVersion(
       {
-        version: API_VERSIONS.internal.v1,
+        version: API_VERSIONS.public.v1,
         validate: { request: DeletePackageRequestSchemaDeprecated },
       },
       async (context, request, response) => {

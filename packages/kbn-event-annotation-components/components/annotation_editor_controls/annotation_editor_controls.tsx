@@ -8,7 +8,7 @@
 
 import './index.scss';
 import { isFieldLensCompatible } from '@kbn/visualization-ui-components';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { i18n } from '@kbn/i18n';
 import { EuiFormRow, EuiSwitch, EuiSwitchEvent, EuiButtonGroup, EuiSpacer } from '@elastic/eui';
 import {
@@ -79,11 +79,23 @@ const AnnotationEditorControls = ({
   }, [isQueryBased]);
 
   const update = useCallback(
-    <T extends EventAnnotationConfig>(newAnnotation: Partial<T> | undefined) =>
-      newAnnotation &&
-      onAnnotationChange(sanitizeProperties({ ...currentAnnotation, ...newAnnotation })),
+    <T extends EventAnnotationConfig>(newAnnotation: Partial<T> | undefined) => {
+      if (!newAnnotation) return;
+
+      onAnnotationChange(sanitizeProperties({ ...currentAnnotation, ...newAnnotation }));
+    },
     [currentAnnotation, onAnnotationChange]
   );
+
+  const currentLineConfig = useMemo(() => {
+    if (isRange) {
+      return;
+    }
+    return {
+      lineStyle: currentAnnotation.lineStyle,
+      lineWidth: currentAnnotation.lineWidth,
+    };
+  }, [currentAnnotation, isRange]);
 
   return (
     <>
@@ -243,15 +255,13 @@ const AnnotationEditorControls = ({
                   <>
                     <EuiSpacer size="xs" />
                     <FieldPicker
-                      selectedOptions={
+                      activeField={
                         selectedField
-                          ? [
-                              {
-                                label: selectedField,
-                                value: { type: 'field', field: selectedField },
-                              },
-                            ]
-                          : []
+                          ? {
+                              label: selectedField,
+                              value: { type: 'field', field: selectedField },
+                            }
+                          : undefined
                       }
                       options={options}
                       onChoose={function (choice: FieldOptionValue | undefined): void {
@@ -270,10 +280,7 @@ const AnnotationEditorControls = ({
             <LineStyleSettings
               idPrefix={idPrefix}
               setConfig={update}
-              currentConfig={{
-                lineStyle: currentAnnotation.lineStyle,
-                lineWidth: currentAnnotation.lineWidth,
-              }}
+              currentConfig={currentLineConfig}
             />
           </>
         )}

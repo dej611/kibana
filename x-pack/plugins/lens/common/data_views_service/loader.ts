@@ -5,9 +5,19 @@
  * 2.0.
  */
 
+<<<<<<< HEAD:x-pack/plugins/lens/common/data_views_service/loader.ts
 // import { isFieldLensCompatible } from '@kbn/visualization-ui-components';
 const isFieldLensCompatible = () => true;
 import type { DataViewsContract, DataView, DataViewSpec } from '@kbn/data-views-plugin/public';
+=======
+import { isFieldLensCompatible } from '@kbn/visualization-ui-components';
+import {
+  DataViewsContract,
+  DataView,
+  DataViewSpec,
+  DataViewField,
+} from '@kbn/data-views-plugin/public';
+>>>>>>> upstream/main:x-pack/plugins/lens/public/data_views_service/loader.ts
 import { keyBy } from 'lodash';
 import type {
   IndexPattern,
@@ -42,46 +52,7 @@ export function convertDataViewIntoLensIndexPattern(
   const metaKeys = new Set(dataView.metaFields);
   const newFields = dataView.fields
     .filter(isFieldLensCompatible)
-    .map((field): IndexPatternField => {
-      // Convert the getters on the index pattern service into plain JSON
-      const base = {
-        name: field.name,
-        displayName: field.displayName,
-        type: field.type,
-        aggregatable: field.aggregatable,
-        filterable: field.filterable,
-        searchable: field.searchable,
-        meta: metaKeys.has(field.name),
-        esTypes: field.esTypes,
-        scripted: field.scripted,
-        isMapped: field.isMapped,
-        customLabel: field.customLabel,
-        runtimeField: field.runtimeField,
-        runtime: Boolean(field.runtimeField),
-        timeSeriesDimension: field.timeSeriesDimension,
-        timeSeriesMetric: field.timeSeriesMetric,
-        timeSeriesRollup: field.isRolledUpField,
-        partiallyApplicableFunctions: field.isRolledUpField
-          ? {
-              percentile: true,
-              percentile_rank: true,
-              median: true,
-              last_value: true,
-              unique_count: true,
-              standard_deviation: true,
-            }
-          : undefined,
-      };
-
-      // Simplifies tests by hiding optional properties instead of undefined
-      return base.scripted
-        ? {
-            ...base,
-            lang: field.lang,
-            script: field.script,
-          }
-        : base;
-    })
+    .map((field) => buildIndexPatternField(field, metaKeys))
     .concat(documentField);
 
   const { typeMeta, title, name, timeFieldName, fieldFormatMap } = dataView;
@@ -121,6 +92,52 @@ export function convertDataViewIntoLensIndexPattern(
     spec: dataView.toSpec(false),
     isPersisted: dataView.isPersisted(),
   };
+}
+
+export function buildIndexPatternField(
+  field: DataViewField,
+  metaKeys?: Set<string>
+): IndexPatternField {
+  const meta = metaKeys ? metaKeys.has(field.name) : false;
+  // Convert the getters on the index pattern service into plain JSON
+  const base = {
+    name: field.name,
+    displayName: field.displayName,
+    type: field.type,
+    aggregatable: field.aggregatable,
+    filterable: field.filterable,
+    searchable: field.searchable,
+    meta,
+    esTypes: field.esTypes,
+    scripted: field.scripted,
+    isMapped: field.isMapped,
+    customLabel: field.customLabel,
+    customDescription: field.customDescription,
+    runtimeField: field.runtimeField,
+    runtime: Boolean(field.runtimeField),
+    timeSeriesDimension: field.timeSeriesDimension,
+    timeSeriesMetric: field.timeSeriesMetric,
+    timeSeriesRollup: field.isRolledUpField,
+    partiallyApplicableFunctions: field.isRolledUpField
+      ? {
+          percentile: true,
+          percentile_rank: true,
+          median: true,
+          last_value: true,
+          unique_count: true,
+          standard_deviation: true,
+        }
+      : undefined,
+  };
+
+  // Simplifies tests by hiding optional properties instead of undefined
+  return base.scripted
+    ? {
+        ...base,
+        lang: field.lang,
+        script: field.script,
+      }
+    : base;
 }
 
 export async function loadIndexPatternRefs(

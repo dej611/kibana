@@ -17,6 +17,7 @@ import { dataPluginMock } from '@kbn/data-plugin/server/mocks';
 import { licensingMock } from '@kbn/licensing-plugin/server/mocks';
 import { encryptedSavedObjectsMock } from '@kbn/encrypted-saved-objects-plugin/server/mocks';
 import { securityMock } from '@kbn/security-plugin/server/mocks';
+import { cloudMock } from '@kbn/cloud-plugin/public/mocks';
 
 import type { PackagePolicyClient } from '../services/package_policy_service';
 import type { AgentPolicyServiceInterface } from '../services';
@@ -31,6 +32,8 @@ import { packageServiceMock } from '../services/epm/package_service.mock';
 import type { UninstallTokenServiceInterface } from '../services/security/uninstall_token_service';
 import type { MessageSigningServiceInterface } from '../services/security';
 
+import { PackagePolicyMocks } from './package_policy.mocks';
+
 // Export all mocks from artifacts
 export * from '../services/artifacts/mocks';
 
@@ -39,6 +42,8 @@ export * from '../services/files/mocks';
 
 // export all mocks from fleet actions client
 export * from '../services/actions/mocks';
+
+export * from './package_policy.mocks';
 
 export interface MockedFleetAppContext extends FleetAppContext {
   elasticsearch: ReturnType<typeof elasticsearchServiceMock.createStart>;
@@ -51,7 +56,8 @@ export interface MockedFleetAppContext extends FleetAppContext {
 }
 
 export const createAppContextStartContractMock = (
-  configOverrides: Partial<FleetConfigType> = {}
+  configOverrides: Partial<FleetConfigType> = {},
+  isServerless: boolean = false
 ): MockedFleetAppContext => {
   const config = {
     agents: { enabled: true, elasticsearch: {} },
@@ -89,6 +95,16 @@ export const createAppContextStartContractMock = (
     bulkActionsResolver: {} as any,
     messageSigningService: createMessageSigningServiceMock(),
     uninstallTokenService: createUninstallTokenServiceMock(),
+    ...(isServerless
+      ? {
+          cloud: {
+            ...cloudMock.createSetup(),
+            apm: {},
+            isCloudEnabled: true,
+            isServerlessEnabled: true,
+          },
+        }
+      : {}),
   };
 };
 
@@ -144,6 +160,22 @@ export const createPackagePolicyServiceMock = (): jest.Mocked<PackagePolicyClien
     getUpgradePackagePolicyInfo: jest.fn(),
     enrichPolicyWithDefaultsFromPackage: jest.fn(),
     findAllForAgentPolicy: jest.fn(),
+    fetchAllItems: jest.fn((..._) => {
+      return {
+        async *[Symbol.asyncIterator]() {
+          yield Promise.resolve([PackagePolicyMocks.generatePackagePolicy({ id: '111' })]);
+          yield Promise.resolve([PackagePolicyMocks.generatePackagePolicy({ id: '222' })]);
+        },
+      };
+    }),
+    fetchAllItemIds: jest.fn((..._) => {
+      return {
+        async *[Symbol.asyncIterator]() {
+          yield Promise.resolve(['111']);
+          yield Promise.resolve(['222']);
+        },
+      };
+    }),
   };
 };
 
@@ -157,6 +189,9 @@ export const createMockAgentPolicyService = (): jest.Mocked<AgentPolicyServiceIn
     list: jest.fn(),
     getFullAgentPolicy: jest.fn(),
     getByIds: jest.fn(),
+    turnOffAgentTamperProtections: jest.fn(),
+    fetchAllAgentPolicies: jest.fn(),
+    fetchAllAgentPolicyIds: jest.fn(),
   };
 };
 

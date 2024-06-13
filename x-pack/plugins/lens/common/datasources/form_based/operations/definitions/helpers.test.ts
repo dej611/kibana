@@ -5,8 +5,14 @@
  * 2.0.
  */
 
+<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/helpers.test.ts
 import { createMockedIndexPattern } from '../../../../../public/datasources/form_based/mocks';
 import type { FormBasedLayer } from '../../../../../public/datasources/form_based/types';
+=======
+import { FIELD_WRONG_TYPE } from '../../../../user_messages_ids';
+import { createMockedIndexPattern } from '../../mocks';
+import type { FormBasedLayer } from '../../types';
+>>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/helpers.test.ts
 import type { GenericIndexPatternColumn } from './column_types';
 import { getInvalidFieldMessage, isValidNumber } from './helpers';
 import type { TermsIndexPatternColumn } from './terms';
@@ -50,7 +56,7 @@ describe('helpers', () => {
               "id": "embeddableBadge",
             },
           ],
-          "message": <FormattedMessage
+          "message": <Memo(MemoizedFormattedMessage)
             defaultMessage="{count, plural, one {Field} other {Fields}} {missingFields} {count, plural, one {was} other {were}} not found."
             id="xpack.lens.indexPattern.fieldsNotFound"
             values={
@@ -67,6 +73,7 @@ describe('helpers', () => {
               }
             }
           />,
+          "uniqueId": "field_not_found",
         }
       `);
     });
@@ -84,7 +91,10 @@ describe('helpers', () => {
         createMockedIndexPattern()
       );
       expect(messages).toHaveLength(1);
-      expect(messages![0]).toEqual('Field timestamp is of the wrong type');
+      expect(messages![0]).toEqual({
+        uniqueId: FIELD_WRONG_TYPE,
+        message: 'Field timestamp is of the wrong type',
+      });
     });
 
     it('returns an error if one field amongst multiples does not exist', () => {
@@ -117,7 +127,7 @@ describe('helpers', () => {
               "id": "embeddableBadge",
             },
           ],
-          "message": <FormattedMessage
+          "message": <Memo(MemoizedFormattedMessage)
             defaultMessage="{count, plural, one {Field} other {Fields}} {missingFields} {count, plural, one {was} other {were}} not found."
             id="xpack.lens.indexPattern.fieldsNotFound"
             values={
@@ -134,6 +144,7 @@ describe('helpers', () => {
               }
             }
           />,
+          "uniqueId": "field_not_found",
         }
       `);
     });
@@ -168,7 +179,7 @@ describe('helpers', () => {
               "id": "embeddableBadge",
             },
           ],
-          "message": <FormattedMessage
+          "message": <Memo(MemoizedFormattedMessage)
             defaultMessage="{count, plural, one {Field} other {Fields}} {missingFields} {count, plural, one {was} other {were}} not found."
             id="xpack.lens.indexPattern.fieldsNotFound"
             values={
@@ -191,6 +202,7 @@ describe('helpers', () => {
               }
             }
           />,
+          "uniqueId": "field_not_found",
         }
       `);
     });
@@ -211,7 +223,10 @@ describe('helpers', () => {
         createMockedIndexPattern()
       );
       expect(messages).toHaveLength(1);
-      expect(messages![0]).toEqual('Field timestamp is of the wrong type');
+      expect(messages![0]).toEqual({
+        uniqueId: FIELD_WRONG_TYPE,
+        message: 'Field timestamp is of the wrong type',
+      });
     });
 
     it('returns an error if multiple fields are of the wrong type', () => {
@@ -230,7 +245,10 @@ describe('helpers', () => {
         createMockedIndexPattern()
       );
       expect(messages).toHaveLength(1);
-      expect(messages![0]).toEqual('Fields start_date, timestamp are of the wrong type');
+      expect(messages![0]).toEqual({
+        uniqueId: FIELD_WRONG_TYPE,
+        message: 'Fields start_date, timestamp are of the wrong type',
+      });
     });
 
     it('returns no message if all fields are matching', () => {
@@ -245,7 +263,7 @@ describe('helpers', () => {
         columnId,
         createMockedIndexPattern()
       );
-      expect(messages).toBeUndefined();
+      expect(messages).toHaveLength(0);
     });
   });
 

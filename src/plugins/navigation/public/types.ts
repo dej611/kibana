@@ -6,16 +6,31 @@
  * Side Public License, v 1.
  */
 
-import { AggregateQuery, Query } from '@kbn/es-query';
-import { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
-import { TopNavMenuProps, TopNavMenuExtensionsRegistrySetup, createTopNav } from './top_nav_menu';
-import { RegisteredTopNavMenuData } from './top_nav_menu/top_nav_menu_data';
+import type { AggregateQuery, Query } from '@kbn/es-query';
+import type { Observable } from 'rxjs';
+import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
+import type { SolutionNavigationDefinition } from '@kbn/core-chrome-browser';
+import type { CloudSetup, CloudStart } from '@kbn/cloud-plugin/public';
+import type { SpacesPluginSetup, SpacesPluginStart } from '@kbn/spaces-plugin/public';
+import type { CloudExperimentsPluginStart } from '@kbn/cloud-experiments-plugin/common';
 
-export interface NavigationPublicPluginSetup {
+import { PanelContentProvider } from '@kbn/shared-ux-chrome-navigation';
+import { TopNavMenuProps, TopNavMenuExtensionsRegistrySetup, createTopNav } from './top_nav_menu';
+import type { RegisteredTopNavMenuData } from './top_nav_menu/top_nav_menu_data';
+
+export interface NavigationPublicSetup {
   registerMenuItem: TopNavMenuExtensionsRegistrySetup['register'];
 }
 
-export interface NavigationPublicPluginStart {
+export type SolutionNavigation = Omit<SolutionNavigationDefinition, 'sideNavComponentGetter'>;
+export type AddSolutionNavigationArg = Omit<SolutionNavigation, 'sideNavComponent'> & {
+  /** Data test subj for the side navigation */
+  dataTestSubj?: string;
+  /** Panel content provider for the side navigation */
+  panelContentProvider?: PanelContentProvider;
+};
+
+export interface NavigationPublicStart {
   ui: {
     TopNavMenu: (props: TopNavMenuProps<Query>) => React.ReactElement;
     AggregateQueryTopNavMenu: (props: TopNavMenuProps<AggregateQuery>) => React.ReactElement;
@@ -24,8 +39,22 @@ export interface NavigationPublicPluginStart {
       customExtensions?: RegisteredTopNavMenuData[]
     ) => ReturnType<typeof createTopNav>;
   };
+  /** Add a solution navigation to the header nav switcher. */
+  addSolutionNavigation: (solutionNavigationAgg: AddSolutionNavigationArg) => void;
+  /** Flag to indicate if the solution navigation is enabled.*/
+  isSolutionNavEnabled$: Observable<boolean>;
 }
 
-export interface NavigationPluginStartDependencies {
-  unifiedSearch: UnifiedSearchPublicPluginStart;
+export interface NavigationPublicSetupDependencies {
+  cloud?: CloudSetup;
+  spaces?: SpacesPluginSetup;
 }
+
+export interface NavigationPublicStartDependencies {
+  unifiedSearch: UnifiedSearchPublicPluginStart;
+  cloud?: CloudStart;
+  cloudExperiments?: CloudExperimentsPluginStart;
+  spaces?: SpacesPluginStart;
+}
+
+export type SolutionType = 'es' | 'oblt' | 'security' | 'analytics';

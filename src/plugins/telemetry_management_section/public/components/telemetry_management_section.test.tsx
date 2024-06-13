@@ -13,6 +13,7 @@ import { TelemetryService } from '@kbn/telemetry-plugin/public/services';
 import { coreMock } from '@kbn/core/public/mocks';
 import { render } from '@testing-library/react';
 import type { DocLinksStart } from '@kbn/core/public';
+import { I18nProvider } from '@kbn/i18n-react';
 
 describe('TelemetryManagementSectionComponent', () => {
   const coreStart = coreMock.createStart();
@@ -72,19 +73,7 @@ describe('TelemetryManagementSectionComponent', () => {
 
     const component = render(
       <React.Suspense fallback={<span>Fallback</span>}>
-        <TelemetryManagementSection
-          telemetryService={telemetryService}
-          showAppliesSettingMessage={false}
-          enableSaving={true}
-          toasts={coreStart.notifications.toasts}
-          docLinks={docLinks}
-        />
-      </React.Suspense>
-    );
-
-    try {
-      component.rerender(
-        <React.Suspense fallback={<span>Fallback</span>}>
+        <I18nProvider>
           <TelemetryManagementSection
             telemetryService={telemetryService}
             showAppliesSettingMessage={false}
@@ -92,6 +81,22 @@ describe('TelemetryManagementSectionComponent', () => {
             toasts={coreStart.notifications.toasts}
             docLinks={docLinks}
           />
+        </I18nProvider>
+      </React.Suspense>
+    );
+
+    try {
+      component.rerender(
+        <React.Suspense fallback={<span>Fallback</span>}>
+          <I18nProvider>
+            <TelemetryManagementSection
+              telemetryService={telemetryService}
+              showAppliesSettingMessage={false}
+              enableSaving={true}
+              toasts={coreStart.notifications.toasts}
+              docLinks={docLinks}
+            />
+          </I18nProvider>
         </React.Suspense>
       );
     } finally {
@@ -243,19 +248,19 @@ describe('TelemetryManagementSectionComponent', () => {
       />
     );
     try {
-      const toggleOptInComponent = component.find('Field');
+      const toggleOptInComponent = component.find('FieldRow');
       await expect(
-        toggleOptInComponent.prop<TelemetryManagementSection['toggleOptIn']>('handleChange')()
+        toggleOptInComponent.prop<TelemetryManagementSection['toggleOptIn']>('onFieldChange')()
       ).resolves.toBe(true);
       // TODO: Fix `mountWithIntl` types in @kbn/test-jest-helpers to make testing easier
       expect((component.state() as { enabled: boolean }).enabled).toBe(true);
       await expect(
-        toggleOptInComponent.prop<TelemetryManagementSection['toggleOptIn']>('handleChange')()
+        toggleOptInComponent.prop<TelemetryManagementSection['toggleOptIn']>('onFieldChange')()
       ).resolves.toBe(true);
       expect((component.state() as { enabled: boolean }).enabled).toBe(false);
       telemetryService.setOptIn = jest.fn().mockRejectedValue(Error('test-error'));
       await expect(
-        toggleOptInComponent.prop<TelemetryManagementSection['toggleOptIn']>('handleChange')()
+        toggleOptInComponent.prop<TelemetryManagementSection['toggleOptIn']>('onFieldChange')()
       ).rejects.toStrictEqual(Error('test-error'));
     } finally {
       component.unmount();

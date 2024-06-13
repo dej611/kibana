@@ -84,6 +84,7 @@ export class FleetAgentGenerator extends BaseDataGenerator<Agent> {
     const hostname = this.randomHostname();
     const now = new Date().toISOString();
     const osFamily = this.randomOSFamily();
+    const version = overrides?._source?.agent?.version ?? this.randomVersion();
     const componentStatus = this.randomChoice<FleetServerAgentComponentStatus>(
       FleetServerAgentComponentStatuses
     );
@@ -113,19 +114,19 @@ export class FleetAgentGenerator extends BaseDataGenerator<Agent> {
           enrolled_at: now,
           agent: {
             id: agentId,
-            version: this.randomVersion(),
+            version,
           },
           local_metadata: {
             elastic: {
               agent: {
-                'build.original': `8.0.0-SNAPSHOT (build: ${this.randomString(
+                'build.original': `${version} (build: ${this.randomString(
                   5
                 )} at 2021-05-07 18:42:49 +0000 UTC)`,
                 id: agentId,
                 log_level: 'info',
                 snapshot: true,
                 upgradeable: true,
-                version: '8.0.0',
+                version,
               },
             },
             host: {
@@ -246,5 +247,9 @@ export class FleetAgentGenerator extends BaseDataGenerator<Agent> {
 
   public randomAgentStatus() {
     return this.randomChoice(agentStatusList);
+  }
+
+  public randomString(length: number = 5) {
+    return super.randomString(length);
   }
 }

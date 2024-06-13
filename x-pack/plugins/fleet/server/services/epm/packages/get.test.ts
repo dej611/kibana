@@ -65,6 +65,7 @@ describe('When using EPM `get` services', () => {
             description: '',
             namespace: 'default',
             policy_id: '22222-22222-2222-2222',
+            policy_ids: ['22222-22222-2222-2222'],
             enabled: true,
             inputs: [],
             package: { name: 'system', title: 'System', version: '0.10.4' },
@@ -89,6 +90,7 @@ describe('When using EPM `get` services', () => {
             package: { name: 'system', title: 'System', version: '0.10.4' },
             enabled: true,
             policy_id: '11111-111111-11111-11111', // << duplicate id with plicy below
+            policy_ids: ['11111-111111-11111-11111'],
             inputs: [],
             revision: 1,
             created_at: '2020-12-21T19:22:04.902Z',
@@ -110,6 +112,7 @@ describe('When using EPM `get` services', () => {
             description: '',
             namespace: 'default',
             policy_id: '11111-111111-11111-11111',
+            policy_ids: ['11111-111111-11111-11111'],
             enabled: true,
             inputs: [],
             package: { name: 'system', title: 'System', version: '0.10.4' },
@@ -133,6 +136,7 @@ describe('When using EPM `get` services', () => {
             description: '',
             namespace: 'default',
             policy_id: '33333-33333-333333-333333',
+            policy_ids: ['33333-33333-333333-333333'],
             enabled: true,
             inputs: [],
             package: { name: 'system', title: 'System', version: '0.10.4' },
@@ -268,6 +272,7 @@ description: Elasticsearch description`,
               name: 'elasticsearch',
               version: '0.0.1',
               install_source: 'upload',
+              install_status: 'installed',
               package_assets: [],
               data_utf8: `
             name: elasticsearch
@@ -360,6 +365,7 @@ test: invalid manifest`,
               name: 'invalidpackage',
               version: '0.0.1',
               install_source: 'upload',
+              install_status: 'installed',
               package_assets: [],
               data_utf8: `
             name: invalidpackage
@@ -414,6 +420,7 @@ test: invalid manifest
               version: '0.0.1',
               install_source: 'upload',
               install_version: '0.0.1',
+              install_status: 'installed',
             },
             score: 0,
             type: PACKAGES_SAVED_OBJECT_TYPE,
@@ -425,11 +432,54 @@ test: invalid manifest
         page: 1,
       });
 
-      soClient.get.mockResolvedValue({
-        id: 'elasticsearch',
-        attributes: {},
-        references: [],
-        type: PACKAGES_SAVED_OBJECT_TYPE,
+      soClient.get.mockImplementation((type) => {
+        if (type === 'epm-packages-assets') {
+          return Promise.resolve({
+            attributes: {
+              data_utf8: `
+name: elasticsearch
+version: 0.0.1
+title: Elastic
+description: Elasticsearch description`,
+            },
+          } as any);
+        } else {
+          return Promise.resolve({
+            id: 'elasticsearch',
+            attributes: {
+              name: 'elasticsearch',
+              version: '0.0.1',
+              install_status: 'installed',
+              install_source: 'upload',
+              package_assets: [],
+              data_utf8: `
+            name: elasticsearch
+            version: 0.0.1
+            title: Elastic
+            description: Elasticsearch description`,
+            },
+          });
+        }
+      });
+
+      soClient.bulkGet.mockResolvedValue({
+        saved_objects: [
+          {
+            id: 'test',
+            references: [],
+            type: 'epm-package-assets',
+            attributes: {
+              asset_path: 'elasticsearch-0.0.1/manifest.yml',
+              data_utf8: `
+name: elasticsearch
+version: 0.0.1
+title: Elastic
+description: Elasticsearch description
+format_version: 0.0.1
+owner: elastic`,
+            },
+          },
+        ],
       });
 
       await getPackages({ savedObjectsClient: soClient });
@@ -783,6 +833,7 @@ test: invalid manifest
       } as RegistryPackage);
       MockRegistry.getPackage.mockResolvedValue({
         paths: [],
+        assetsMap: new Map(),
         packageInfo: {
           name: 'my-package',
           version: '1.0.0',

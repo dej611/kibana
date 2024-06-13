@@ -12,15 +12,15 @@ import { FormattedMessage } from '@kbn/i18n-react';
 
 import { useHistory } from 'react-router-dom';
 
-import { AGENTS_PREFIX } from '../../../constants';
+import { SO_SEARCH_LIMIT } from '../../../../../constants';
+
 import {
-  sendDeleteAgentPolicy,
   useStartServices,
   useConfig,
-  sendRequest,
   useLink,
+  useDeleteAgentPolicyMutation,
+  sendGetAgents,
 } from '../../../hooks';
-import { API_VERSIONS } from '../../../../../../common/constants';
 
 interface Props {
   children: (deleteAgentPolicy: DeleteAgentPolicy) => React.ReactElement;
@@ -47,6 +47,7 @@ export const AgentPolicyDeleteProvider: React.FunctionComponent<Props> = ({
   const onSuccessCallback = useRef<OnSuccessCallback | null>(null);
   const { getPath } = useLink();
   const history = useHistory();
+  const deleteAgentPolicyMutation = useDeleteAgentPolicyMutation();
 
   const deleteAgentPolicyPrompt: DeleteAgentPolicy = (
     agentPolicyToDelete,
@@ -72,14 +73,14 @@ export const AgentPolicyDeleteProvider: React.FunctionComponent<Props> = ({
     setIsLoading(true);
 
     try {
-      const { data } = await sendDeleteAgentPolicy({
+      const { data } = await deleteAgentPolicyMutation.mutateAsync({
         agentPolicyId: agentPolicy!,
       });
 
       if (data) {
         notifications.toasts.addSuccess(
           i18n.translate('xpack.fleet.deleteAgentPolicy.successSingleNotificationTitle', {
-            defaultMessage: "Deleted agent policy '{id}'",
+            defaultMessage: "Deleted agent policy ''{id}''",
             values: { id: data.name || data.id },
           })
         );
@@ -89,7 +90,7 @@ export const AgentPolicyDeleteProvider: React.FunctionComponent<Props> = ({
       } else {
         notifications.toasts.addDanger(
           i18n.translate('xpack.fleet.deleteAgentPolicy.failureSingleNotificationTitle', {
-            defaultMessage: "Error deleting agent policy '{id}'",
+            defaultMessage: "Error deleting agent policy ''{id}''",
             values: { id: agentPolicy },
           })
         );
@@ -110,15 +111,13 @@ export const AgentPolicyDeleteProvider: React.FunctionComponent<Props> = ({
       return;
     }
     setIsLoadingAgentsCount(true);
-    const { data } = await sendRequest<{ total: number }>({
-      path: `/api/fleet/agents`,
-      method: 'get',
-      query: {
-        kuery: `${AGENTS_PREFIX}.policy_id : ${agentPolicyToCheck}`,
-      },
-      version: API_VERSIONS.public.v1,
+    // filtering out the unenrolled agents assigned to this policy
+    const agents = await sendGetAgents({
+      showInactive: true,
+      kuery: `policy_id:"${agentPolicyToCheck}" and not status: unenrolled`,
+      perPage: SO_SEARCH_LIMIT,
     });
-    setAgentsCount(data?.total || 0);
+    setAgentsCount(agents.data?.total ?? 0);
     setIsLoadingAgentsCount(false);
   };
 
@@ -167,6 +166,7 @@ export const AgentPolicyDeleteProvider: React.FunctionComponent<Props> = ({
         ) : agentsCount ? (
           <EuiCallOut
             color="danger"
+            iconType="warning"
             title={i18n.translate(
               'xpack.fleet.deleteAgentPolicy.confirmModal.affectedAgentsTitle',
               {
@@ -176,7 +176,7 @@ export const AgentPolicyDeleteProvider: React.FunctionComponent<Props> = ({
           >
             <FormattedMessage
               id="xpack.fleet.deleteAgentPolicy.confirmModal.affectedAgentsMessage"
-              defaultMessage="{agentsCount, plural, one {# agent is} other {# agents are}} assigned to this agent policy. Unassign these agents before deleting this policy."
+              defaultMessage="{agentsCount, plural, one {# agent is} other {# agents are}} assigned to this agent policy. Unassign these agents before deleting this policy. This might include inactive agents."
               values={{
                 agentsCount,
               }}

@@ -33,7 +33,9 @@ test('set correct defaults', () => {
       "apisToRedactInLogs": Array [],
       "compression": false,
       "customHeaders": Object {},
+      "dnsCacheTtl": "P0D",
       "healthCheckDelay": "PT2.5S",
+      "healthCheckStartupDelay": "PT0.5S",
       "hosts": Array [
         "http://localhost:9200",
       ],

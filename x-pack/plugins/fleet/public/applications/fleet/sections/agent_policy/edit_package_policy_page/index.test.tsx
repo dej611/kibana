@@ -13,6 +13,7 @@ import { createFleetTestRendererMock } from '../../../../../mock';
 
 import {
   useUIExtension,
+  sendGetAgentStatus,
   sendGetOneAgentPolicy,
   sendGetOnePackagePolicy,
   sendUpgradePackagePolicyDryRun,
@@ -152,6 +153,7 @@ const mockPackagePolicy = {
   package: { name: 'nginx', title: 'Nginx', version: '1.3.0' },
   enabled: true,
   policy_id: 'agent-policy-1',
+  policy_ids: ['agent-policy-1'],
   inputs: [
     {
       type: 'logfile',
@@ -174,6 +176,11 @@ const mockPackagePolicy = {
 const mockPackagePolicyNewVersion = {
   ...mockPackagePolicy,
   package: { name: 'nginx', title: 'Nginx', version: '1.4.0' },
+};
+
+const mockPackagePolicyAgentless = {
+  ...mockPackagePolicy,
+  policy_id: 'agentless',
 };
 
 const TestComponent = async () => {
@@ -227,7 +234,7 @@ describe('edit package policy page', () => {
     });
 
     await act(async () => {
-      fireEvent.click(renderResult.getByLabelText('Show logfile inputs'));
+      fireEvent.click(renderResult.getByText('Change defaults'));
     });
 
     await act(async () => {
@@ -349,7 +356,7 @@ describe('edit package policy page', () => {
     render();
 
     await waitFor(() => {
-      expect(renderResult.getByTestId('euiErrorBoundary')).toBeVisible();
+      expect(renderResult.getByTestId('errorBoundaryFatalHeader')).toBeVisible();
     });
   });
 
@@ -415,5 +422,37 @@ describe('edit package policy page', () => {
     await waitFor(() => {
       expect(renderResult.getByText('Review field conflicts')).toBeInTheDocument();
     });
+  });
+
+  it('should not show confirmation modal if package is on agentless policy', async () => {
+    (sendGetAgentStatus as MockFn).mockResolvedValue({ data: { results: { total: 1 } } });
+    (useGetOnePackagePolicy as MockFn).mockReturnValue({
+      data: {
+        item: mockPackagePolicyAgentless,
+      },
+    });
+    (sendGetOnePackagePolicy as MockFn).mockResolvedValue({
+      data: {
+        item: mockPackagePolicyAgentless,
+      },
+    });
+    (sendGetOneAgentPolicy as MockFn).mockResolvedValue({
+      data: { item: { id: 'agentless', name: 'Agentless policy', namespace: 'default' } },
+    });
+
+    render();
+
+    await waitFor(() => {
+      expect(renderResult.getByText('Collect logs from Nginx instances')).toBeInTheDocument();
+    });
+    act(() => {
+      fireEvent.click(renderResult.getByRole('switch'));
+    });
+
+    await act(async () => {
+      fireEvent.click(renderResult.getByText('Save integration').closest('button')!);
+    });
+
+    expect(sendUpdatePackagePolicy).toHaveBeenCalled();
   });
 });

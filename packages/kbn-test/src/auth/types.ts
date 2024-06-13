@@ -32,9 +32,26 @@ export interface CreateSamlSessionParams {
   log: ToolingLog;
 }
 
+export interface SAMLResponseValueParams {
+  location: string;
+  ecSession: string;
+  email: string;
+  kbnHost: string;
+  log: ToolingLog;
+}
+
 export interface User {
   readonly email: string;
   readonly password: string;
 }
 
 export type Role = string;
+
+export interface UserProfile {
+  username: string;
+  roles: string[];
+  full_name: string;
+  email: string;
+  enabled: boolean;
+  elastic_cloud_user: boolean;
+}

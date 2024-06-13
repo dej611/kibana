@@ -10,6 +10,7 @@ import type { Position } from '@elastic/charts';
 import type { $Values } from '@kbn/utility-types';
 import { CustomPaletteParams, PaletteOutput, ColorMapping } from '@kbn/coloring';
 import type { ColorMode } from '@kbn/charts-plugin/common';
+<<<<<<< HEAD
 import type { LegendSize } from '@kbn/visualizations-plugin/common';
 import { SavedObjectReference } from '@kbn/core-saved-objects-common';
 import type { VisualizeFieldContext } from '@kbn/ui-actions-plugin/public';
@@ -18,6 +19,11 @@ import { DataViewSpec, FieldSpec } from '@kbn/data-views-plugin/common';
 import { FieldFormatParams } from '@kbn/field-formats-plugin/common';
 import { ExpressionAstExpression } from '@kbn/expressions-plugin/common';
 import type { VisualizeEditorContext } from '../public/types';
+=======
+import type { LegendSize, PartitionLegendValue } from '@kbn/visualizations-plugin/common/constants';
+import { CategoryDisplay, LegendDisplay, NumberDisplay, PieChartTypes } from './constants';
+import { layerTypes } from './layer_types';
+>>>>>>> upstream/main
 import { CollapseFunction } from './expressions';
 import { layerTypes } from './layer_types';
 import { CategoryDisplay, LegendDisplay, NumberDisplay, PieChartTypes } from './constants';
@@ -71,7 +77,7 @@ export interface SharedPieLayerState {
   categoryDisplay: CategoryDisplayType;
   legendDisplay: LegendDisplayType;
   legendPosition?: Position;
-  showValuesInLegend?: boolean;
+  legendStats?: PartitionLegendValue[];
   nestedLegend?: boolean;
   percentDecimals?: number;
   emptySizeRatio?: number;
@@ -91,6 +97,7 @@ export interface PieVisualizationState {
   layers: PieLayerState[];
   palette?: PaletteOutput;
 }
+
 export interface LegacyMetricState {
   autoScaleMetricAlignment?: 'left' | 'right' | 'center';
   layerId: string;
@@ -103,6 +110,7 @@ export interface LegacyMetricState {
   textAlign?: 'left' | 'right' | 'center';
 }
 
+<<<<<<< HEAD
 export interface IndexPatternRef {
   id: string;
   title: string;
@@ -173,3 +181,10 @@ export interface DatasourceCommon<T = unknown, P = unknown> {
 }
 
 export type DatasourceCommonMap = Record<string, DatasourceCommon>;
+=======
+export enum RowHeightMode {
+  auto = 'auto',
+  single = 'single',
+  custom = 'custom',
+}
+>>>>>>> upstream/main

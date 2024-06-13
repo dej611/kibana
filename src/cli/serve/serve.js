@@ -18,6 +18,8 @@ import { getConfigFromFiles } from '@kbn/config';
 
 const DEV_MODE_PATH = '@kbn/cli-dev-mode';
 const DEV_MODE_SUPPORTED = canRequire(DEV_MODE_PATH);
+const MOCK_IDP_PLUGIN_PATH = '@kbn/mock-idp-plugin/common';
+const MOCK_IDP_PLUGIN_SUPPORTED = canRequire(MOCK_IDP_PLUGIN_PATH);
 
 function canRequire(path) {
   try {
@@ -94,10 +96,16 @@ function pathCollector() {
 const configPathCollector = pathCollector();
 const pluginPathCollector = pathCollector();
 
-export function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
+export function applyConfigOverrides(rawConfig, opts, extraCliOptions, keystoreConfig) {
   const set = _.partial(lodashSet, rawConfig);
   const get = _.partial(_.get, rawConfig);
   const has = _.partial(_.has, rawConfig);
+
+  function ensureNotDefined(path, command = '--ssl') {
+    if (has(path)) {
+      throw new Error(`Can't use ${command} when "${path}" configuration is already defined.`);
+    }
+  }
 
   if (opts.oss) {
     delete rawConfig.xpack;
@@ -110,13 +118,11 @@ export function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
     if (opts.serverless) {
       setServerlessKibanaDevServiceAccountIfPossible(get, set, opts);
 
-      // Load mock identity provider plugin and configure realm if supported (ES only supports SAML when run with SSL)
-      if (opts.ssl && canRequire('@kbn/mock-idp-plugin/common')) {
+      // Configure realm if supported (ES only supports SAML when run with SSL)
+      if (opts.ssl && MOCK_IDP_PLUGIN_SUPPORTED) {
         // Ensure the plugin is loaded in dynamically to exclude from production build
-        const {
-          MOCK_IDP_PLUGIN_PATH,
-          MOCK_IDP_REALM_NAME,
-        } = require('@kbn/mock-idp-plugin/common');
+        // eslint-disable-next-line import/no-dynamic-require
+        const { MOCK_IDP_REALM_NAME } = require(MOCK_IDP_PLUGIN_PATH);
 
         if (has('server.basePath')) {
           console.log(
@@ -125,7 +131,6 @@ export function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
           _.unset(rawConfig, 'server.basePath');
         }
 
-        set('plugins.paths', _.compact([].concat(get('plugins.paths'), MOCK_IDP_PLUGIN_PATH)));
         set(`xpack.security.authc.providers.saml.${MOCK_IDP_REALM_NAME}`, {
           order: Number.MAX_SAFE_INTEGER,
           realm: MOCK_IDP_REALM_NAME,
@@ -153,47 +158,57 @@ export function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
       }
     }
 
-    if (opts.ssl) {
+    if (opts.http2) {
+      set('server.protocol', 'http2');
+    }
+
+    // HTTP TLS configuration
+    if (opts.ssl || opts.http2) {
       // @kbn/dev-utils is part of devDependencies
       // eslint-disable-next-line import/no-extraneous-dependencies
       const { CA_CERT_PATH, KBN_KEY_PATH, KBN_CERT_PATH } = require('@kbn/dev-utils');
-      const customElasticsearchHosts = opts.elasticsearch
-        ? opts.elasticsearch.split(',')
-        : [].concat(get('elasticsearch.hosts') || []);
-
-      function ensureNotDefined(path) {
-        if (has(path)) {
-          throw new Error(`Can't use --ssl when "${path}" configuration is already defined.`);
-        }
-      }
 
       ensureNotDefined('server.ssl.certificate');
       ensureNotDefined('server.ssl.key');
       ensureNotDefined('server.ssl.keystore.path');
       ensureNotDefined('server.ssl.truststore.path');
       ensureNotDefined('server.ssl.certificateAuthorities');
-      ensureNotDefined('elasticsearch.ssl.certificateAuthorities');
-      const elasticsearchHosts = (
-        (customElasticsearchHosts.length > 0 && customElasticsearchHosts) || [
-          'https://localhost:9200',
-        ]
-      ).map((hostUrl) => {
-        const parsedUrl = url.parse(hostUrl);
-        if (parsedUrl.hostname !== 'localhost') {
-          throw new Error(
-            `Hostname "${parsedUrl.hostname}" can't be used with --ssl. Must be "localhost" to work with certificates.`
-          );
-        }
-        return `https://localhost:${parsedUrl.port}`;
-      });
 
       set('server.ssl.enabled', true);
       set('server.ssl.certificate', KBN_CERT_PATH);
       set('server.ssl.key', KBN_KEY_PATH);
       set('server.ssl.certificateAuthorities', CA_CERT_PATH);
-      set('elasticsearch.hosts', elasticsearchHosts);
-      set('elasticsearch.ssl.certificateAuthorities', CA_CERT_PATH);
     }
+  }
+
+  // Kib/ES encryption
+  if (opts.ssl) {
+    // @kbn/dev-utils is part of devDependencies
+    // eslint-disable-next-line import/no-extraneous-dependencies
+    const { CA_CERT_PATH } = require('@kbn/dev-utils');
+
+    const customElasticsearchHosts = opts.elasticsearch
+      ? opts.elasticsearch.split(',')
+      : [].concat(get('elasticsearch.hosts') || []);
+
+    ensureNotDefined('elasticsearch.ssl.certificateAuthorities');
+
+    const elasticsearchHosts = (
+      (customElasticsearchHosts.length > 0 && customElasticsearchHosts) || [
+        'https://localhost:9200',
+      ]
+    ).map((hostUrl) => {
+      const parsedUrl = url.parse(hostUrl);
+      if (parsedUrl.hostname !== 'localhost') {
+        throw new Error(
+          `Hostname "${parsedUrl.hostname}" can't be used with --ssl. Must be "localhost" to work with certificates.`
+        );
+      }
+      return `https://localhost:${parsedUrl.port}`;
+    });
+
+    set('elasticsearch.hosts', elasticsearchHosts);
+    set('elasticsearch.ssl.certificateAuthorities', CA_CERT_PATH);
   }
 
   if (opts.elasticsearch) set('elasticsearch.hosts', opts.elasticsearch.split(','));
@@ -210,7 +225,7 @@ export function applyConfigOverrides(rawConfig, opts, extraCliOptions) {
   set('plugins.paths', _.compact([].concat(get('plugins.paths'), opts.pluginPath)));
 
   _.mergeWith(rawConfig, extraCliOptions, mergeAndReplaceArrays);
-  _.merge(rawConfig, readKeystore());
+  _.merge(rawConfig, keystoreConfig);
 
   return rawConfig;
 }
@@ -263,6 +278,7 @@ export default function (program) {
     command
       .option('--dev', 'Run the server with development mode defaults')
       .option('--ssl', 'Run the dev server using HTTPS')
+      .option('--http2', 'Run the dev server using HTTP2 with TLS')
       .option('--dist', 'Use production assets from kbn/optimizer')
       .option(
         '--no-base-path',
@@ -325,11 +341,12 @@ export default function (program) {
     // Kibana server process, and will be using core's bootstrap script
     // to effectively start Kibana.
     const bootstrapScript = getBootstrapScript(cliArgs.dev);
-
+    const keystoreConfig = await readKeystore();
     await bootstrapScript({
       configs,
       cliArgs,
-      applyConfigOverrides: (rawConfig) => applyConfigOverrides(rawConfig, opts, unknownOptions),
+      applyConfigOverrides: (rawConfig) =>
+        applyConfigOverrides(rawConfig, opts, unknownOptions, keystoreConfig),
     });
   });
 }

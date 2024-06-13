@@ -563,7 +563,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
                           helpPopoverContainer.current = null;
                         }
                       }}
-                      theme={props.core.theme}
+                      startServices={props.core}
                     >
                       <HelpComponent />
                     </WrappingHelpPopover>
@@ -804,7 +804,7 @@ export function DimensionEditor(props: DimensionEditorProps) {
                     compressed={true}
                     rowHeader="firstName"
                     columns={columnsSidebar}
-                    responsive={false}
+                    responsiveBreakpoint={false}
                   />
                 </EuiPanel>
               </EuiPopover>

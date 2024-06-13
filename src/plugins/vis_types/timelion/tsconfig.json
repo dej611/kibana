@@ -32,6 +32,8 @@
     "@kbn/std",
     "@kbn/timelion-grammar",
     "@kbn/visualization-utils",
+    "@kbn/code-editor",
+    "@kbn/react-kibana-context-render",
   ],
   "exclude": [
     "target/**/*",

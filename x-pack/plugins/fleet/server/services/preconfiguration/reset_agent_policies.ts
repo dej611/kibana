@@ -22,6 +22,7 @@ import { packagePolicyService } from '../package_policy';
 import { getAgentsByKuery, forceUnenrollAgent } from '../agents';
 import { listEnrollmentApiKeys, deleteEnrollmentApiKey } from '../api_keys';
 import type { AgentPolicy } from '../../types';
+import { AgentPolicyInvalidError } from '../../errors';
 
 export async function resetPreconfiguredAgentPolicies(
   soClient: SavedObjectsClientContract,
@@ -33,7 +34,6 @@ export async function resetPreconfiguredAgentPolicies(
   await _deleteExistingData(soClient, esClient, logger, agentPolicyId);
   await _deleteGhostPackagePolicies(soClient, esClient, logger);
   await _deletePreconfigurationDeleteRecord(soClient, logger, agentPolicyId);
-
   await setupFleet(soClient, esClient);
 }
 
@@ -51,7 +51,7 @@ async function _deleteGhostPackagePolicies(
 
   const policyIds = Array.from(
     packagePolicies.reduce((acc, packagePolicy) => {
-      acc.add(packagePolicy.policy_id);
+      packagePolicy.policy_ids.forEach((policyId) => acc.add(policyId));
 
       return acc;
     }, new Set<string>())
@@ -74,7 +74,9 @@ async function _deleteGhostPackagePolicies(
   await pMap(
     packagePolicies,
     (packagePolicy) => {
-      if (agentPolicyExistsMap.get(packagePolicy.policy_id) === false) {
+      if (
+        packagePolicy.policy_ids.every((policyId) => agentPolicyExistsMap.get(policyId) === false)
+      ) {
         logger.info(`Deleting ghost package policy ${packagePolicy.name} (${packagePolicy.id})`);
         return soClient.delete(PACKAGE_POLICY_SAVED_OBJECT_TYPE, packagePolicy.id);
       }
@@ -135,7 +137,7 @@ async function _deleteExistingData(
       throw err;
     });
     if (policy && !policy.is_preconfigured) {
-      throw new Error('Invalid policy');
+      throw new AgentPolicyInvalidError(`Invalid policy ${agentPolicyId}`);
     }
     if (policy) {
       existingPolicies = [policy];
@@ -153,9 +155,9 @@ async function _deleteExistingData(
     return;
   }
 
-  // unenroll all the agents enroled in this policies
+  // unenroll all the agents enrolled in these policies
   const { agents } = await getAgentsByKuery(esClient, soClient, {
-    showInactive: false,
+    showInactive: true,
     perPage: SO_SEARCH_LIMIT,
     kuery: existingPolicies.map((policy) => `policy_id:"${policy.id}"`).join(' or '),
   });
@@ -190,7 +192,6 @@ async function _deleteExistingData(
     (policy) =>
       agentPolicyService.delete(soClient, esClient, policy.id, {
         force: true,
-        removeFleetServerDocuments: true,
       }),
     {
       concurrency: 20,

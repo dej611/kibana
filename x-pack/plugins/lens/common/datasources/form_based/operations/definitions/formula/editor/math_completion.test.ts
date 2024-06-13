@@ -5,14 +5,23 @@
  * 2.0.
  */
 
+import moment from 'moment';
 import { parse } from '@kbn/tinymath';
 import { monaco } from '@kbn/monaco';
 import { unifiedSearchPluginMock } from '@kbn/unified-search-plugin/public/mocks';
 import { dataViewPluginMocks } from '@kbn/data-views-plugin/public/mocks';
+<<<<<<< HEAD:x-pack/plugins/lens/common/datasources/form_based/operations/definitions/formula/editor/math_completion.test.ts
 import { createMockedIndexPattern } from '../../../../../../../public/datasources/form_based/mocks';
 import { GenericOperationDefinition } from '../..';
 import type { OperationMetadata, IndexPatternField } from '../../../../../../../public/types';
 import { tinymathFunctions } from '../util';
+=======
+import { tinymathFunctions } from '@kbn/lens-formula-docs';
+import { TimefilterContract } from '@kbn/data-plugin/public';
+import { createMockedIndexPattern } from '../../../../mocks';
+import { GenericOperationDefinition } from '../..';
+import type { OperationMetadata, IndexPatternField } from '../../../../../../types';
+>>>>>>> upstream/main:x-pack/plugins/lens/public/datasources/form_based/operations/definitions/formula/editor/math_completion.test.ts
 import {
   getSignatureHelp,
   getHover,
@@ -48,11 +57,6 @@ const operationDefinitionMap: Record<string, GenericOperationDefinition> = {
     getPossibleOperationForField: jest.fn((field: IndexPatternField) =>
       field.type === 'number' ? numericOperation() : undefined
     ),
-    documentation: {
-      section: 'elasticsearch',
-      signature: 'field: string',
-      description: 'description',
-    },
   }),
   count: createOperationDefinitionMock('count', {
     getPossibleOperationForField: (field: IndexPatternField) =>
@@ -93,7 +97,7 @@ const operationDefinitionMap: Record<string, GenericOperationDefinition> = {
   ),
 };
 
-describe('math completion', () => {
+describe('[Lens formula] math completion', () => {
   describe('signature help', () => {
     function unwrapSignatures(signatureResult: monaco.languages.SignatureHelpResult) {
       return signatureResult.value.signatures[0];
@@ -106,15 +110,21 @@ describe('math completion', () => {
     it('should return a signature for a field-based ES function', () => {
       expect(unwrapSignatures(getSignatureHelp('sum()', 4, operationDefinitionMap))).toEqual({
         label: 'sum(field: string)',
-        documentation: { value: 'description' },
+        documentation: {
+          value: `
+Returns the sum of a field. This function only works for number fields.`,
+        },
         parameters: [{ label: 'field' }],
       });
     });
 
     it('should return a signature for count', () => {
       expect(unwrapSignatures(getSignatureHelp('count()', 6, operationDefinitionMap))).toEqual({
-        label: 'count(undefined)',
-        documentation: { value: '' },
+        label: 'count([field: string])',
+        documentation: {
+          value: `
+The total number of documents. When you provide a field, the total number of field values is counted. When you use the Count function for fields that have multiple values in a single document, all values are counted.`,
+        },
         parameters: [],
       });
     });
@@ -126,7 +136,11 @@ describe('math completion', () => {
         )
       ).toEqual({
         label: expect.stringContaining('moving_average('),
-        documentation: { value: '' },
+        documentation: {
+          value: `
+Calculates the moving average of a metric over time, averaging the last n-th values to calculate the current value. To use this function, you need to configure a date histogram dimension as well.
+The default window value is 5.`,
+        },
         parameters: [
           { label: 'function' },
           {
@@ -145,7 +159,10 @@ describe('math completion', () => {
       ).toEqual({
         label: expect.stringContaining('count('),
         parameters: [],
-        documentation: { value: '' },
+        documentation: {
+          value: `
+The total number of documents. When you provide a field, the total number of field values is counted. When you use the Count function for fields that have multiple values in a single document, all values are counted.`,
+        },
       });
     });
 
@@ -202,8 +219,6 @@ describe('math completion', () => {
   });
 
   describe('autocomplete', () => {
-    const dateRange = { fromDate: '2022-11-01T00:00:00.000Z', toDate: '2022-11-03T00:00:00.000Z' };
-
     function getSuggestionArgs({
       expression,
       zeroIndexedOffset,
@@ -224,7 +239,13 @@ describe('math completion', () => {
         operationDefinitionMap,
         unifiedSearch: unifiedSearchPluginMock.createStartContract(),
         dataViews: dataViewPluginMocks.createStartContract(),
-        dateRange,
+        timefilter: {
+          getTime: () => ({ from: '2022-11-01T00:00:00.000Z', to: '2022-11-03T00:00:00.000Z' }),
+          calculateBounds: () => ({
+            min: moment('2022-11-01T00:00:00.000Z'),
+            max: moment('2022-11-03T00:00:00.000Z'),
+          }),
+        } as unknown as TimefilterContract,
       };
     }
     it('should list all valid functions at the top level (fake test)', async () => {

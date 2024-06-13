@@ -43,10 +43,13 @@ import {
 import { useServices } from './services';
 import type { SavedObjectsFindOptionsReference } from './services';
 import { getReducer } from './reducer';
-import type { SortColumnField } from './components';
+import { type SortColumnField, getInitialSorting, saveSorting } from './components';
 import { useTags } from './use_tags';
 import { useInRouterContext, useUrlState } from './use_url_state';
 import { RowActions, TableItemsRowActions } from './types';
+import { UserAvatarTip } from './components/user_avatar_tip';
+import { NoUsersTip } from './components/user_missing_tip';
+import { ManagedAvatarTip } from './components/managed_avatar_tip';
 
 interface ContentEditorConfig
   extends Pick<OpenContentEditorParams, 'isReadonly' | 'onSave' | 'customValidators'> {
@@ -65,6 +68,7 @@ export interface TableListViewTableProps<
   /** Add an additional custom column */
   customTableColumn?: EuiBasicTableColumn<T>;
   urlStateEnabled?: boolean;
+  createdByEnabled?: boolean;
   /**
    * Id of the heading element describing the table. This id will be used as `aria-labelledby` of the wrapper element.
    * If the table is not empty, this component renders its own h1 element using the same id.
@@ -87,18 +91,13 @@ export interface TableListViewTableProps<
   /** Handler to set the item title "href" value. If it returns undefined there won't be a link for this item. */
   getDetailViewLink?: (entity: T) => string | undefined;
   /** Handler to execute when clicking the item title */
-  onClickTitle?: (item: T) => void;
+  getOnClickTitle?: (item: T) => (() => void) | undefined;
   createItem?(): void;
   deleteItems?(items: T[]): Promise<void>;
   /**
    * Edit action onClick handler. Edit action not provided when property is not provided
    */
   editItem?(item: T): void;
-
-  /**
-   * Handler to set edit action visiblity, and content editor readonly state per item. If not provided all non-managed items are considered editable. Note: Items with the managed property set to true will always be non-editable.
-   */
-  itemIsEditable?(item: T): boolean;
 
   /**
    * Name for the column containing the "title" value.
@@ -140,10 +139,15 @@ export interface State<T extends UserContentCommonSchema = UserContentCommonSche
   selectedIds: string[];
   totalItems: number;
   hasUpdatedAtMetadata: boolean;
+  hasCreatedByMetadata: boolean;
   pagination: Pagination;
   tableSort: {
     field: SortColumnField;
     direction: Direction;
+  };
+  sortColumnChanged: boolean;
+  tableFilter: {
+    createdBy: string[];
   };
 }
 
@@ -152,6 +156,9 @@ export interface URLState {
   sort?: {
     field: SortColumnField;
     direction: Direction;
+  };
+  filter?: {
+    createdBy?: string[];
   };
 
   [key: string]: unknown;
@@ -162,6 +169,7 @@ interface URLQueryParams {
   title?: string;
   sort?: string;
   sortdir?: string;
+  created_by?: string[];
 
   [key: string]: unknown;
 }
@@ -200,6 +208,16 @@ const urlStateDeserializer = (params: URLQueryParams): URLState => {
     }
   }
 
+  if (sanitizedParams.created_by) {
+    stateFromURL.filter = {
+      createdBy: Array.isArray(sanitizedParams.created_by)
+        ? sanitizedParams.created_by
+        : [sanitizedParams.created_by],
+    };
+  } else {
+    stateFromURL.filter = { createdBy: [] };
+  }
+
   return stateFromURL;
 };
 
@@ -212,6 +230,7 @@ const urlStateDeserializer = (params: URLQueryParams): URLState => {
 const urlStateSerializer = (updated: {
   s?: string;
   sort?: { field: 'title' | 'updatedAt'; direction: Direction };
+  filter?: { createdBy?: string[] };
 }) => {
   const updatedQueryParams: Partial<URLQueryParams> = {};
 
@@ -230,6 +249,10 @@ const urlStateSerializer = (updated: {
     updatedQueryParams.title = undefined;
   }
 
+  if (updated.filter?.createdBy) {
+    updatedQueryParams.created_by = updated.filter.createdBy;
+  }
+
   return updatedQueryParams;
 };
 
@@ -241,6 +264,10 @@ const tableColumnMetadata = {
   updatedAt: {
     field: 'updatedAt',
     name: 'Last updated',
+  },
+  createdBy: {
+    field: 'createdBy',
+    name: 'Creator',
   },
 } as const;
 
@@ -259,10 +286,9 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
   findItems,
   createItem,
   editItem,
-  itemIsEditable,
   deleteItems,
   getDetailViewLink,
-  onClickTitle,
+  getOnClickTitle,
   id: listingId = 'userContent',
   contentEditor = { enabled: false },
   titleColumnName,
@@ -270,14 +296,15 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
   onFetchSuccess,
   refreshListBouncer,
   setPageDataTestSubject,
+  createdByEnabled = false,
 }: TableListViewTableProps<T>) {
   useEffect(() => {
     setPageDataTestSubject(`${entityName}LandingPage`);
   }, [entityName, setPageDataTestSubject]);
 
-  if (!getDetailViewLink && !onClickTitle) {
+  if (!getDetailViewLink && !getOnClickTitle) {
     throw new Error(
-      `[TableListView] One o["getDetailViewLink" or "onClickTitle"] prop must be provided.`
+      `[TableListView] One o["getDetailViewLink" or "getOnClickTitle"] prop must be provided.`
     );
   }
 
@@ -329,8 +356,9 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
     return getReducer<T>();
   }, []);
 
-  const initialState = useMemo<State<T>>(
-    () => ({
+  const initialState = useMemo<State<T>>(() => {
+    const initialSort = getInitialSorting(entityName);
+    return {
       items: [],
       hasNoItems: undefined,
       totalItems: 0,
@@ -339,6 +367,7 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
       isDeletingItems: false,
       showDeleteModal: false,
       hasUpdatedAtMetadata: false,
+      hasCreatedByMetadata: false,
       selectedIds: [],
       searchQuery: { text: '', query: new Query(Ast.create([]), undefined, '') },
       pagination: {
@@ -347,13 +376,13 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
         pageSize: initialPageSize,
         pageSizeOptions: uniq([10, 20, 50, initialPageSize]).sort(),
       },
-      tableSort: {
-        field: 'attributes.title' as const,
-        direction: 'asc',
+      tableSort: initialSort.tableSort,
+      sortColumnChanged: !initialSort.isDefault,
+      tableFilter: {
+        createdBy: [],
       },
-    }),
-    [initialPageSize]
-  );
+    };
+  }, [initialPageSize, entityName]);
 
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -369,8 +398,10 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
     selectedIds,
     totalItems,
     hasUpdatedAtMetadata,
+    hasCreatedByMetadata,
     pagination,
     tableSort,
+    tableFilter,
   } = state;
 
   const showFetchError = Boolean(fetchError);
@@ -440,14 +471,28 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
     items,
   });
 
-  const isEditable = useCallback(
-    (item: T) => {
-      // If the So is `managed` it is never editable.
-      if (item.managed) return false;
-      return itemIsEditable?.(item) ?? true;
-    },
-    [itemIsEditable]
-  );
+  const tableItemsRowActions = useMemo(() => {
+    return items.reduce<TableItemsRowActions>((acc, item) => {
+      const ret = {
+        ...acc,
+        [item.id]: rowItemActions ? rowItemActions(item) : undefined,
+      };
+
+      if (item.managed) {
+        ret[item.id] = {
+          edit: {
+            enabled: false,
+            reason: i18n.translate('contentManagement.tableList.managedItemNoEdit', {
+              defaultMessage: 'Elastic manages this item. Clone it to make changes.',
+            }),
+          },
+          ...ret[item.id],
+        };
+      }
+
+      return ret;
+    }, {});
+  }, [items, rowItemActions]);
 
   const inspectItem = useCallback(
     (item: T) => {
@@ -464,7 +509,9 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
         },
         entityName,
         ...contentEditor,
-        isReadonly: contentEditor.isReadonly || !isEditable(item),
+        isReadonly:
+          contentEditor.isReadonly || tableItemsRowActions[item.id]?.edit?.enabled === false,
+        readonlyReason: tableItemsRowActions[item.id]?.edit?.reason,
         onSave:
           contentEditor.onSave &&
           (async (args) => {
@@ -475,7 +522,14 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
           }),
       });
     },
-    [getTagIdsFromReferences, openContentEditor, entityName, contentEditor, isEditable, fetchItems]
+    [
+      getTagIdsFromReferences,
+      openContentEditor,
+      entityName,
+      contentEditor,
+      tableItemsRowActions,
+      fetchItems,
+    ]
   );
 
   const tableColumns = useMemo(() => {
@@ -494,7 +548,7 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
               id={listingId}
               item={record}
               getDetailViewLink={getDetailViewLink}
-              onClickTitle={onClickTitle}
+              getOnClickTitle={getOnClickTitle}
               onClickTag={(tag, withModifierKey) => {
                 if (withModifierKey) {
                   addOrRemoveExcludeTagFilter(tag);
@@ -513,6 +567,30 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
       columns.push(customTableColumn);
     }
 
+    if (hasCreatedByMetadata && createdByEnabled) {
+      columns.push({
+        field: tableColumnMetadata.createdBy.field,
+        name: (
+          <>
+            {i18n.translate('contentManagement.tableList.createdByColumnTitle', {
+              defaultMessage: 'Creator',
+            })}
+            <NoUsersTip />
+          </>
+        ),
+        render: (field: string, record: { createdBy?: string; managed?: boolean }) =>
+          record.createdBy ? (
+            <UserAvatarTip uid={record.createdBy} />
+          ) : record.managed ? (
+            <ManagedAvatarTip entityName={entityName} />
+          ) : null,
+        sortable:
+          false /* createdBy column is not sortable because it doesn't make sense to sort by id*/,
+        width: '100px',
+        align: 'center',
+      });
+    }
+
     if (hasUpdatedAtMetadata) {
       columns.push({
         field: tableColumnMetadata.updatedAt.field,
@@ -523,7 +601,7 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
           <UpdatedAtField dateTime={record.updatedAt} DateFormatterComp={DateFormatterComp} />
         ),
         sortable: true,
-        width: '150px',
+        width: '120px',
       });
     }
 
@@ -549,7 +627,7 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
           ),
           icon: 'pencil',
           type: 'icon',
-          available: (item) => isEditable(item),
+          available: (item) => Boolean(tableItemsRowActions[item.id]?.edit?.enabled),
           enabled: (v) => !(v as unknown as { error: string })?.error,
           onClick: editItem,
           'data-test-subj': `edit-action`,
@@ -586,7 +664,7 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
         name: i18n.translate('contentManagement.tableList.listing.table.actionTitle', {
           defaultMessage: 'Actions',
         }),
-        width: '100px',
+        width: `${32 * actions.length}px`,
         actions,
       });
     }
@@ -596,17 +674,20 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
     titleColumnName,
     customTableColumn,
     hasUpdatedAtMetadata,
+    hasCreatedByMetadata,
+    createdByEnabled,
     editItem,
     contentEditor.enabled,
     listingId,
     getDetailViewLink,
-    onClickTitle,
+    getOnClickTitle,
     searchQuery.text,
     addOrRemoveExcludeTagFilter,
     addOrRemoveIncludeTagFilter,
     DateFormatterComp,
-    isEditable,
+    tableItemsRowActions,
     inspectItem,
+    entityName,
   ]);
 
   const itemsById = useMemo(() => {
@@ -616,15 +697,6 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
   const selectedItems = useMemo(() => {
     return selectedIds.map((selectedId) => itemsById[selectedId]);
   }, [selectedIds, itemsById]);
-
-  const tableItemsRowActions = useMemo(() => {
-    return items.reduce<TableItemsRowActions>((acc, item) => {
-      return {
-        ...acc,
-        [item.id]: rowItemActions ? rowItemActions(item) : undefined,
-      };
-    }, {});
-  }, [items, rowItemActions]);
 
   // ------------
   // Callbacks
@@ -692,13 +764,14 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
     [updateQuery, buildQueryFromText]
   );
 
-  const updateTableSortAndPagination = useCallback(
+  const updateTableSortFilterAndPagination = useCallback(
     (data: {
       sort?: State<T>['tableSort'];
       page?: {
         pageIndex: number;
         pageSize: number;
       };
+      filter?: Partial<State<T>['tableFilter']>;
     }) => {
       if (data.sort && urlStateEnabled) {
         setUrlState({
@@ -706,6 +779,12 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
             field: data.sort.field === 'attributes.title' ? 'title' : data.sort.field,
             direction: data.sort.direction,
           },
+        });
+      }
+
+      if (data.filter && urlStateEnabled) {
+        setUrlState({
+          filter: data.filter,
         });
       }
 
@@ -721,14 +800,27 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
 
   const onSortChange = useCallback(
     (field: SortColumnField, direction: Direction) => {
-      updateTableSortAndPagination({
-        sort: {
-          field,
-          direction,
-        },
+      const sort = {
+        field,
+        direction,
+      };
+      // persist the sorting changes caused by explicit user's interaction
+      saveSorting(entityName, sort);
+
+      updateTableSortFilterAndPagination({
+        sort,
       });
     },
-    [updateTableSortAndPagination]
+    [entityName, updateTableSortFilterAndPagination]
+  );
+
+  const onFilterChange = useCallback(
+    (filter: Partial<State['tableFilter']>) => {
+      updateTableSortFilterAndPagination({
+        filter,
+      });
+    },
+    [updateTableSortFilterAndPagination]
   );
 
   const onTableChange = useCallback(
@@ -755,6 +847,9 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
           field: fieldSerialized as SortColumnField,
           direction: criteria.sort.direction,
         };
+
+        // persist the sorting changes caused by explicit user's interaction
+        saveSorting(entityName, data.sort);
       }
 
       data.page = {
@@ -762,9 +857,9 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
         pageSize: criteria.page.size,
       };
 
-      updateTableSortAndPagination(data);
+      updateTableSortFilterAndPagination(data);
     },
-    [updateTableSortAndPagination]
+    [updateTableSortFilterAndPagination, entityName]
   );
 
   const deleteSelectedItems = useCallback(async () => {
@@ -903,8 +998,24 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
       });
     };
 
+    const updateFilterFromURL = (filter?: URLState['filter']) => {
+      if (!filter) {
+        return;
+      }
+
+      dispatch({
+        type: 'onTableChange',
+        data: {
+          filter: {
+            createdBy: filter.createdBy ?? [],
+          },
+        },
+      });
+    };
+
     updateQueryFromURL(urlState.s);
     updateSortFromURL(urlState.sort);
+    updateFilterFromURL(urlState.filter);
   }, [urlState, buildQueryFromText, urlStateEnabled]);
 
   useEffect(() => {
@@ -988,6 +1099,7 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
           tableColumns={tableColumns}
           hasUpdatedAtMetadata={hasUpdatedAtMetadata}
           tableSort={tableSort}
+          tableFilter={tableFilter}
           tableItemsRowActions={tableItemsRowActions}
           pagination={pagination}
           selectedIds={selectedIds}
@@ -999,9 +1111,11 @@ function TableListViewTableComp<T extends UserContentCommonSchema>({
           onTableChange={onTableChange}
           onTableSearchChange={onTableSearchChange}
           onSortChange={onSortChange}
+          onFilterChange={onFilterChange}
           addOrRemoveIncludeTagFilter={addOrRemoveIncludeTagFilter}
           addOrRemoveExcludeTagFilter={addOrRemoveExcludeTagFilter}
           clearTagSelection={clearTagSelection}
+          createdByEnabled={createdByEnabled}
         />
 
         {/* Delete modal */}

@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import React, { useEffect, useMemo, useState, FC } from 'react';
+import type { FC } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { isEqual, uniq } from 'lodash';
 import type * as estypes from '@elastic/elasticsearch/lib/api/typesWithBodyKey';
 
@@ -21,32 +22,40 @@ import {
   EuiText,
 } from '@elastic/eui';
 
-import type { DataView } from '@kbn/data-views-plugin/public';
+import { reportPerformanceMetricEvent } from '@kbn/ebt-tools';
 import { ProgressControls } from '@kbn/aiops-components';
 import { useFetchStream } from '@kbn/ml-response-stream/client';
 import {
   LOG_RATE_ANALYSIS_TYPE,
   type LogRateAnalysisType,
   type WindowParameters,
-} from '@kbn/aiops-utils';
+} from '@kbn/aiops-log-rate-analysis';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { SignificantItem, SignificantItemGroup } from '@kbn/ml-agg-utils';
+import { AIOPS_TELEMETRY_ID } from '@kbn/aiops-common/constants';
+import { initialState, streamReducer } from '@kbn/aiops-log-rate-analysis/api/stream_reducer';
+import type { AiopsLogRateAnalysisSchema } from '@kbn/aiops-log-rate-analysis/api/schema';
+import type { AiopsLogRateAnalysisSchemaSignificantItem } from '@kbn/aiops-log-rate-analysis/api/schema_v2';
+import { useLogRateAnalysisStateContext } from '@kbn/aiops-components';
 
 import { useAiopsAppContext } from '../../hooks/use_aiops_app_context';
-import { initialState, streamReducer } from '../../../common/api/stream_reducer';
-import type { AiopsLogRateAnalysisSchema } from '../../../common/api/log_rate_analysis/schema';
-import type { AiopsLogRateAnalysisSchemaSignificantItem } from '../../../common/api/log_rate_analysis/schema_v2';
-import { AIOPS_TELEMETRY_ID } from '../../../common/constants';
+import { useDataSource } from '../../hooks/use_data_source';
+import {
+  commonColumns,
+  significantItemColumns,
+} from '../log_rate_analysis_results_table/use_columns';
+
 import {
   getGroupTableItems,
   LogRateAnalysisResultsTable,
   LogRateAnalysisResultsGroupsTable,
 } from '../log_rate_analysis_results_table';
-import { useLogRateAnalysisResultsTableRowContext } from '../log_rate_analysis_results_table/log_rate_analysis_results_table_row_provider';
 
-import { FieldFilterPopover } from './field_filter_popover';
+import { ItemFilterPopover as FieldFilterPopover } from './item_filter_popover';
+import { ItemFilterPopover as ColumnFilterPopover } from './item_filter_popover';
 import { LogRateAnalysisTypeCallOut } from './log_rate_analysis_type_callout';
+import type { ColumnNames } from '../log_rate_analysis_results_table';
 
 const groupResultsMessage = i18n.translate(
   'xpack.aiops.logRateAnalysis.resultsTable.groupedSwitchLabel.groupResults',
@@ -74,6 +83,37 @@ const groupResultsOnMessage = i18n.translate(
 );
 const resultsGroupedOffId = 'aiopsLogRateAnalysisGroupingOff';
 const resultsGroupedOnId = 'aiopsLogRateAnalysisGroupingOn';
+const fieldFilterHelpText = i18n.translate('xpack.aiops.logRateAnalysis.page.fieldFilterHelpText', {
+  defaultMessage:
+    'Deselect non-relevant fields to remove them from groups and click the Apply button to rerun the grouping.  Use the search bar to filter the list, then select/deselect multiple fields with the actions below.',
+});
+const columnsFilterHelpText = i18n.translate(
+  'xpack.aiops.logRateAnalysis.page.columnsFilterHelpText',
+  {
+    defaultMessage: 'Configure visible columns.',
+  }
+);
+const disabledFieldFilterApplyButtonTooltipContent = i18n.translate(
+  'xpack.aiops.analysis.fieldSelectorNotEnoughFieldsSelected',
+  {
+    defaultMessage: 'Grouping requires at least 2 fields to be selected.',
+  }
+);
+const disabledColumnFilterApplyButtonTooltipContent = i18n.translate(
+  'xpack.aiops.analysis.columnSelectorNotEnoughColumnsSelected',
+  {
+    defaultMessage: 'At least one column must be selected.',
+  }
+);
+const columnSearchAriaLabel = i18n.translate('xpack.aiops.analysis.columnSelectorAriaLabel', {
+  defaultMessage: 'Filter columns',
+});
+const columnsButton = i18n.translate('xpack.aiops.logRateAnalysis.page.columnsFilterButtonLabel', {
+  defaultMessage: 'Columns',
+});
+const fieldsButton = i18n.translate('xpack.aiops.analysis.fieldFilterButtonLabel', {
+  defaultMessage: 'Filter fields',
+});
 
 /**
  * Interface for log rate analysis results data.
@@ -91,8 +131,6 @@ export interface LogRateAnalysisResultsData {
  * LogRateAnalysis props require a data view.
  */
 interface LogRateAnalysisResultsProps {
-  /** The data view to analyze. */
-  dataView: DataView;
   /** The type of analysis, whether it's a spike or dip */
   analysisType?: LogRateAnalysisType;
   /** Start timestamp filter */
@@ -121,7 +159,6 @@ interface LogRateAnalysisResultsProps {
 }
 
 export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
-  dataView,
   analysisType = LOG_RATE_ANALYSIS_TYPE.SPIKE,
   earliest,
   isBrushCleared,
@@ -136,9 +173,14 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
   onAnalysisCompleted,
   embeddingOrigin,
 }) => {
-  const { http } = useAiopsAppContext();
+  const { analytics, http } = useAiopsAppContext();
+  const { dataView } = useDataSource();
 
-  const { clearAllRowState } = useLogRateAnalysisResultsTableRowContext();
+  // Store the performance metric's start time using a ref
+  // to be able to track it across rerenders.
+  const analysisStartTime = useRef<number | undefined>(window.performance.now());
+
+  const { clearAllRowState } = useLogRateAnalysisStateContext();
 
   const [currentAnalysisType, setCurrentAnalysisType] = useState<LogRateAnalysisType | undefined>();
   const [currentAnalysisWindowParameters, setCurrentAnalysisWindowParameters] = useState<
@@ -152,6 +194,7 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
   );
   const [shouldStart, setShouldStart] = useState(false);
   const [toggleIdSelected, setToggleIdSelected] = useState(resultsGroupedOffId);
+  const [skippedColumns, setSkippedColumns] = useState<ColumnNames[]>(['p-value']);
 
   const onGroupResultsToggle = (optionId: string) => {
     setToggleIdSelected(optionId);
@@ -172,6 +215,10 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
       regroupOnly: true,
     });
     startHandler(true, false);
+  };
+
+  const onVisibleColumnsChange = (columns: ColumnNames[]) => {
+    setSkippedColumns(columns);
   };
 
   const {
@@ -231,13 +278,29 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
           remainingFieldCandidates,
           significantItems: data.significantItems as AiopsLogRateAnalysisSchemaSignificantItem[],
         });
-      } else {
+      } else if (loaded > 0) {
+        // Reset all overrides.
         setOverrides(undefined);
+
+        // If provided call the `onAnalysisCompleted` callback with the analysis results.
         if (onAnalysisCompleted) {
           onAnalysisCompleted({
             analysisType,
             significantItems: data.significantItems,
             significantItemsGroups: data.significantItemsGroups,
+          });
+        }
+
+        // Track performance metric
+        if (analysisStartTime.current !== undefined) {
+          const analysisDuration = window.performance.now() - analysisStartTime.current;
+
+          // Set this to undefined so reporting the metric gets triggered only once.
+          analysisStartTime.current = undefined;
+
+          reportPerformanceMetricEvent(analytics, {
+            eventName: 'aiopsLogRateAnalysisCompleted',
+            duration: analysisDuration,
           });
         }
       }
@@ -357,10 +420,34 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
         </EuiFlexItem>
         <EuiFlexItem grow={false}>
           <FieldFilterPopover
+            dataTestSubj="aiopsFieldFilterButton"
             disabled={!groupResults || isRunning}
             disabledApplyButton={isRunning}
-            uniqueFieldNames={uniqueFieldNames}
+            disabledApplyTooltipContent={disabledFieldFilterApplyButtonTooltipContent}
+            helpText={fieldFilterHelpText}
+            itemSearchAriaLabel={fieldsButton}
+            popoverButtonTitle={fieldsButton}
+            uniqueItemNames={uniqueFieldNames}
             onChange={onFieldsFilterChange}
+          />
+        </EuiFlexItem>
+        <EuiFlexItem grow={false}>
+          <ColumnFilterPopover
+            dataTestSubj="aiopsColumnFilterButton"
+            disabled={isRunning}
+            disabledApplyButton={isRunning}
+            disabledApplyTooltipContent={disabledColumnFilterApplyButtonTooltipContent}
+            helpText={columnsFilterHelpText}
+            itemSearchAriaLabel={columnSearchAriaLabel}
+            initialSkippedItems={skippedColumns}
+            popoverButtonTitle={columnsButton}
+            selectedItemLimit={1}
+            uniqueItemNames={
+              (groupResults
+                ? Object.values(commonColumns)
+                : Object.values(significantItemColumns)) as string[]
+            }
+            onChange={onVisibleColumnsChange as (columns: string[]) => void}
           />
         </EuiFlexItem>
       </ProgressControls>
@@ -460,10 +547,10 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
       >
         {showLogRateAnalysisResultsTable && groupResults ? (
           <LogRateAnalysisResultsGroupsTable
+            skippedColumns={skippedColumns}
             significantItems={data.significantItems}
             groupTableItems={groupTableItems}
             loading={isRunning}
-            dataView={dataView}
             timeRangeMs={timeRangeMs}
             searchQuery={searchQuery}
             barColorOverride={barColorOverride}
@@ -473,9 +560,9 @@ export const LogRateAnalysisResults: FC<LogRateAnalysisResultsProps> = ({
         ) : null}
         {showLogRateAnalysisResultsTable && !groupResults ? (
           <LogRateAnalysisResultsTable
+            skippedColumns={skippedColumns}
             significantItems={data.significantItems}
             loading={isRunning}
-            dataView={dataView}
             timeRangeMs={timeRangeMs}
             searchQuery={searchQuery}
             barColorOverride={barColorOverride}

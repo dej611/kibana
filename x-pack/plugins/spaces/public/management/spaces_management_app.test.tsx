@@ -52,13 +52,15 @@ async function mountApp(basePath: string, pathname: string, spaceId?: string) {
       spacesManager,
       getStartServices: async () => [coreStart, pluginsStart as PluginsStart, {}],
       config,
+      getRolesAPIClient: jest.fn(),
     })
     .mount({
       basePath,
       element: container,
       setBreadcrumbs,
       history: scopedHistoryMock.create({ pathname }),
-      theme$: themeServiceMock.createTheme$(),
+      theme: coreStart.theme,
+      theme$: themeServiceMock.createTheme$(), // needed as a deprecated field in ManagementAppMountParams
     });
 
   return { unmount, container, setBreadcrumbs, docTitle: coreStart.chrome.docTitle };
@@ -71,6 +73,7 @@ describe('spacesManagementApp', () => {
         spacesManager: spacesManagerMock.create(),
         getStartServices: coreMock.createSetup().getStartServices as any,
         config,
+        getRolesAPIClient: jest.fn(),
       })
     ).toMatchInlineSnapshot(`
       Object {

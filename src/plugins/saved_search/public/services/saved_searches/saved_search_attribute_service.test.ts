@@ -186,10 +186,12 @@ describe('getSavedSearchAttributeService', () => {
           ],
           "description": "",
           "grid": Object {},
+          "headerRowHeight": undefined,
           "hideAggregatedPreview": undefined,
           "hideChart": false,
           "id": "saved-object-id",
           "isTextBasedQuery": false,
+          "managed": false,
           "references": Array [
             Object {
               "id": "1",
@@ -217,12 +219,12 @@ describe('getSavedSearchAttributeService', () => {
             "getSearchRequestBody": [MockFunction],
             "getSerializedFields": [MockFunction],
             "history": Array [],
+            "loadDataViewFields": [MockFunction],
             "onRequestStart": [MockFunction],
             "parseActiveIndexPatternFromQueryString": [MockFunction],
             "removeField": [MockFunction],
             "serialize": [MockFunction],
             "setField": [MockFunction],
-            "setFields": [MockFunction],
             "setOverwriteDataViewType": [MockFunction],
             "setParent": [MockFunction],
             "toExpressionAst": [MockFunction],
@@ -240,6 +242,7 @@ describe('getSavedSearchAttributeService', () => {
           "title": "saved-search-title",
           "usesAdHocDataView": undefined,
           "viewMode": undefined,
+          "visContext": undefined,
         }
       `);
     });

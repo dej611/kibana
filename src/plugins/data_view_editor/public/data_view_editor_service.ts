@@ -179,6 +179,9 @@ export class DataViewEditorService {
   };
 
   private getRollupIndexCaps = async () => {
+    if (this.dataViews.getRollupsEnabled() === false) {
+      return {};
+    }
     let rollupIndicesCaps: RollupIndicesCapsResponse = {};
     try {
       rollupIndicesCaps = await this.http.get<RollupIndicesCapsResponse>('/api/rollup/indices');
@@ -308,8 +311,12 @@ export class DataViewEditorService {
     getFieldsOptions: GetFieldsOptions,
     requireTimestampField: boolean
   ) => {
-    const fields = await ensureMinimumTime(this.dataViews.getFieldsForWildcard(getFieldsOptions));
-    return extractTimeFields(fields as DataViewField[], requireTimestampField);
+    try {
+      const fields = await ensureMinimumTime(this.dataViews.getFieldsForWildcard(getFieldsOptions));
+      return extractTimeFields(fields as DataViewField[], requireTimestampField);
+    } catch (e) {
+      return [];
+    }
   };
 
   private getTimestampOptionsForWildcardCached = async (
@@ -374,7 +381,7 @@ export class DataViewEditorService {
     );
 
     // necessary to get new observable value if the field hasn't changed
-    this.loadIndices();
+    await this.loadIndices();
 
     // Wait until we have fetched the indices.
     // The result will then be sent to the field validator(s) (when calling await provider(););

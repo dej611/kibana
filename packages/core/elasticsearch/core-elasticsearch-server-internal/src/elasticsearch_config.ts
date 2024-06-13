@@ -144,7 +144,10 @@ export const configSchema = schema.object({
     }
   ),
   apiVersion: schema.string({ defaultValue: DEFAULT_API_VERSION }),
-  healthCheck: schema.object({ delay: schema.duration({ defaultValue: 2500 }) }),
+  healthCheck: schema.object({
+    delay: schema.duration({ defaultValue: 2500 }),
+    startupDelay: schema.duration({ defaultValue: 500 }),
+  }),
   ignoreVersionMismatch: offeringBasedSchema({
     serverless: schema.boolean({ defaultValue: true }),
     traditional: schema.conditional(
@@ -183,6 +186,7 @@ export const configSchema = schema.object({
     }),
     { defaultValue: [] }
   ),
+  dnsCacheTtl: schema.duration({ defaultValue: 0, min: 0 }),
 });
 
 const deprecations: ConfigDeprecationProvider = () => [
@@ -301,10 +305,13 @@ export class ElasticsearchConfig implements IElasticsearchConfig {
    */
   public readonly skipStartupConnectionCheck: boolean;
   /**
-   * The interval between health check requests Kibana sends to the Elasticsearch.
+   * The interval between health check requests Kibana sends to the Elasticsearch before the first green signal.
+   */
+  public readonly healthCheckStartupDelay: Duration;
+  /**
+   * The interval between health check requests Kibana sends to the Elasticsearch after the first green signal.
    */
   public readonly healthCheckDelay: Duration;
-
   /**
    * Whether to allow kibana to connect to a non-compatible elasticsearch node.
    */
@@ -421,6 +428,12 @@ export class ElasticsearchConfig implements IElasticsearchConfig {
    */
   public readonly apisToRedactInLogs: ElasticsearchApiToRedactInLogs[];
 
+  /**
+   * The maximum time to retain the DNS lookup resolutions.
+   * Set to 0 to disable the cache (default Node.js behavior)
+   */
+  public readonly dnsCacheTtl: Duration;
+
   constructor(rawConfig: ElasticsearchConfigType) {
     this.ignoreVersionMismatch = rawConfig.ignoreVersionMismatch;
     this.apiVersion = rawConfig.apiVersion;
@@ -435,6 +448,7 @@ export class ElasticsearchConfig implements IElasticsearchConfig {
     this.sniffOnConnectionFault = rawConfig.sniffOnConnectionFault;
     this.sniffInterval = rawConfig.sniffInterval;
     this.healthCheckDelay = rawConfig.healthCheck.delay;
+    this.healthCheckStartupDelay = rawConfig.healthCheck.startupDelay;
     this.username = rawConfig.username;
     this.password = rawConfig.password;
     this.serviceAccountToken = rawConfig.serviceAccountToken;
@@ -445,6 +459,7 @@ export class ElasticsearchConfig implements IElasticsearchConfig {
     this.compression = rawConfig.compression;
     this.skipStartupConnectionCheck = rawConfig.skipStartupConnectionCheck;
     this.apisToRedactInLogs = rawConfig.apisToRedactInLogs;
+    this.dnsCacheTtl = rawConfig.dnsCacheTtl;
 
     const { alwaysPresentCertificate, verificationMode } = rawConfig.ssl;
     const { key, keyPassphrase, certificate, certificateAuthorities } = readKeyAndCerts(rawConfig);
@@ -465,6 +480,10 @@ const readKeyAndCerts = (rawConfig: ElasticsearchConfigType) => {
   let keyPassphrase: string | undefined;
   let certificate: string | undefined;
   let certificateAuthorities: string[] | undefined;
+
+  const readFile = (file: string) => {
+    return readFileSync(file, 'utf8');
+  };
 
   const addCAs = (ca: string[] | undefined) => {
     if (ca && ca.length) {
@@ -521,8 +540,4 @@ const readKeyAndCerts = (rawConfig: ElasticsearchConfigType) => {
     certificate,
     certificateAuthorities,
   };
-};
-
-const readFile = (file: string) => {
-  return readFileSync(file, 'utf8');
 };

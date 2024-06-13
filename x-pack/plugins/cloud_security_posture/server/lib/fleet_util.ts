@@ -4,7 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
-import { map, uniq } from 'lodash';
+import { flatMap, uniq } from 'lodash';
 import type { SavedObjectsClientContract, Logger } from '@kbn/core/server';
 import type {
   AgentPolicyServiceInterface,
@@ -31,7 +31,7 @@ import {
   BENCHMARK_PACKAGE_POLICY_PREFIX,
   BenchmarksQueryParams,
   DEFAULT_BENCHMARKS_PER_PAGE,
-} from '../../common/schemas/benchmark';
+} from '../../common/types/benchmarks/v1';
 
 export const PACKAGE_POLICY_SAVED_OBJECT_TYPE = 'ingest-package-policies';
 
@@ -82,7 +82,7 @@ export const getCspAgentPolicies = async (
   packagePolicies: PackagePolicy[],
   agentPolicyService: AgentPolicyServiceInterface
 ): Promise<AgentPolicy[]> =>
-  agentPolicyService.getByIds(soClient, uniq(map(packagePolicies, 'policy_id')), {
+  agentPolicyService.getByIds(soClient, uniq(flatMap(packagePolicies, 'policy_ids')), {
     withPackagePolicies: true,
     ignoreMissing: true,
   });

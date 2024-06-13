@@ -6,6 +6,10 @@
  */
 
 import { elasticsearchServiceMock, savedObjectsClientMock } from '@kbn/core/server/mocks';
+import { loggerMock } from '@kbn/logging-mocks';
+
+import type { Logger } from '@kbn/core/server';
+import { securityMock } from '@kbn/security-plugin/server/mocks';
 
 import { ENROLLMENT_API_KEYS_INDEX } from '../../constants';
 
@@ -27,10 +31,20 @@ jest.mock('uuid', () => {
 
 const mockedAgentPolicyService = agentPolicyService as jest.Mocked<typeof agentPolicyService>;
 const mockedAuditLoggingService = auditLoggingService as jest.Mocked<typeof auditLoggingService>;
+
 const mockedAppContextService = appContextService as jest.Mocked<typeof appContextService>;
+mockedAppContextService.getSecuritySetup.mockImplementation(() => ({
+  ...securityMock.createSetup(),
+}));
+
+let mockedLogger: jest.Mocked<Logger>;
 
 describe('enrollment api keys', () => {
   beforeEach(() => {
+    mockedLogger = loggerMock.create();
+    mockedAppContextService.getLogger.mockReturnValue(mockedLogger);
+  });
+  afterEach(() => {
     jest.resetAllMocks();
   });
 
@@ -63,6 +77,40 @@ describe('enrollment api keys', () => {
         message:
           'User creating enrollment API key [name=test-api-key (mock-uuid)] [policy_id=test-agent-policy]',
       });
+    });
+
+    it('should set namespaces if agent policy specify a space ID', async () => {
+      const soClient = savedObjectsClientMock.create();
+      const esClient = elasticsearchServiceMock.createClusterClient().asInternalUser;
+
+      esClient.create.mockResolvedValue({
+        _id: 'test-enrollment-api-key-id',
+      } as any);
+
+      esClient.security.createApiKey.mockResolvedValue({
+        api_key: 'test-api-key-value',
+        id: 'test-api-key-id',
+      } as any);
+
+      mockedAgentPolicyService.get.mockResolvedValue({
+        id: 'test-agent-policy',
+        space_id: 'test123',
+      } as any);
+
+      await generateEnrollmentAPIKey(soClient, esClient, {
+        name: 'test-api-key',
+        expiration: '7d',
+        agentPolicyId: 'test-agent-policy',
+        forceRecreate: true,
+      });
+
+      expect(esClient.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          body: expect.objectContaining({
+            namespaces: ['test123'],
+          }),
+        })
+      );
     });
   });
 
