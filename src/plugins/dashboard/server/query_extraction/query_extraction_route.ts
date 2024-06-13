@@ -61,7 +61,8 @@ export const setupQueryExtractionRoute = (
 
           const supportedPanels = panels.filter(({ type }) => type === 'lens');
 
-          const queriesByPanel: Array<{ title?: string; queries: object[] }> = [];
+          const queriesByPanel: Array<{ title?: string; queries: object[]; dataViews: object[] }> =
+            [];
 
           for (const panel of supportedPanels) {
             const panelState = convertSavedDashboardPanelToPanelState<LensByValueInput>(panel);
@@ -76,7 +77,7 @@ export const setupQueryExtractionRoute = (
               // savedObjectId: (input as LensByReferenceInput)?.savedObjectId,
             };
 
-            const queries = await extractQueries(
+            const { queries, dataViews } = await extractQueries(
               savedVis,
               {
                 elasticsearch: (await context.core).elasticsearch.client.asCurrentUser,
@@ -88,6 +89,7 @@ export const setupQueryExtractionRoute = (
             queriesByPanel.push({
               title: panel.title,
               queries,
+              dataViews,
             });
           }
 

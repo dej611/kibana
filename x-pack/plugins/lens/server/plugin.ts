@@ -55,6 +55,7 @@ import {
 import { getDatasourceExpressionsByLayers } from '../common/expression_helpers';
 import { TextBasedDatasourceCommon } from '../common/datasources/text_based/text_based_languages';
 import { getCommonFormBasedDatasource } from '../common/datasources/form_based/form_based';
+import { nonNullable } from '../common/utils';
 
 export interface PluginSetupContract {
   taskManager?: TaskManagerSetupContract;
@@ -93,7 +94,7 @@ export interface LensServerPluginSetup {
     doc: Document,
     clients: { savedObjects: SavedObjectsClientContract; elasticsearch: ElasticsearchClient },
     request: KibanaRequest
-  ) => Promise<object[]>;
+  ) => Promise<{ queries: object[]; dataViews: object[] }>;
 }
 
 export class LensServerPlugin implements Plugin<LensServerPluginSetup, {}, {}, {}> {
@@ -224,17 +225,20 @@ export class LensServerPlugin implements Plugin<LensServerPluginSetup, {}, {}, {
 
       const requests: Array<object | undefined> = [];
 
-      observables.map((obs) =>
+      for (const obs of observables) {
         obs.subscribe(() => {
           requests.push(...requestAdapter.getRequests().map(({ json }) => json));
-        })
-      );
+        });
+      }
 
       const promises = observables.map((obs) => lastValueFrom(obs));
 
       await Promise.all(promises);
 
-      return requests.filter(Boolean) as object[];
+      return {
+        queries: requests.filter(nonNullable),
+        dataViews: Object.values(indexPatterns).map(({ id, name }) => ({ id, name })),
+      };
     };
 
     return {
