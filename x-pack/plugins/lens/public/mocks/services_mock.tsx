@@ -28,6 +28,7 @@ import { presentationUtilPluginMock } from '@kbn/presentation-util-plugin/public
 import { uiActionsPluginMock } from '@kbn/ui-actions-plugin/public/mocks';
 import type { EventAnnotationServiceType } from '@kbn/event-annotation-plugin/public';
 
+import { TopNavMenuItems, TopNavMenuProps } from '@kbn/navigation-plugin/public';
 import { LensAppServices } from '../app_plugin/types';
 import { mockDataPlugin } from './data_plugin_mock';
 import { getLensInspectorService } from '../lens_inspector_service';
@@ -104,12 +105,6 @@ export function makeDefaultServices(
   dataViewsMock.getIdsWithTitle.mockImplementation(jest.fn(async () => []));
 
   const navigationStartMock = navigationPluginMock.createStartContract();
-
-  jest
-    .spyOn(navigationStartMock.ui.AggregateQueryTopNavMenu.prototype, 'constructor')
-    .mockImplementation(() => {
-      return <div className="topNavMenu" />;
-    });
 
   return {
     ...startMock,

@@ -8,7 +8,6 @@
 import { renderHook, act } from '@testing-library/react-hooks';
 import faker from 'faker';
 import { UseNavigateBackToAppProps, useNavigateBackToApp } from './app_helpers';
-import { Subject } from 'rxjs';
 import { defaultDoc, makeDefaultServices } from '../mocks/services_mock';
 import { cloneDeep } from 'lodash';
 import { LensDocument } from '../persistence';
@@ -17,8 +16,7 @@ function getLensDocumentMock(someProps?: Partial<LensDocument>) {
   return cloneDeep({ ...defaultDoc, ...someProps });
 }
 
-const sessionIdSubject = new Subject<string>();
-const getApplicationMock = () => makeDefaultServices(sessionIdSubject, 'sessionId-1').application;
+const getApplicationMock = () => makeDefaultServices('sessionId-1').application;
 
 describe('App hlpers', () => {
   function getDefaultProps(
