@@ -36,6 +36,11 @@ import { initializeIntegrations } from './initializers/initialize_integrations';
 import { initializeStateManagement } from './initializers/initialize_state_management';
 import { LensEmbeddableComponent } from './renderer/lens_embeddable_component';
 
+const isProduction =
+  typeof window === 'object'
+    ? process.env.NODE_ENV === 'production'
+    : !process.env.NODE_ENV || process.env.NODE_ENV === 'production';
+
 export const createLensEmbeddableFactory = (
   services: LensEmbeddableStartServices
 ): EmbeddableFactory<LensSerializedState, LensApi> => {
@@ -202,6 +207,8 @@ export const createLensEmbeddableFactory = (
         }
       );
 
+       const { inspect } = !isProduction ? await import('@rxjs-insights/devtools') : { inspect: undefined };
+
       // Compute the expression using the provided parameters
       // Inside a subscription will be updated based on each unifiedSearch change
       // and as side effect update few observables as  expressionParams$, expressionAbortController$ and renderCount$ with the new values upon updates
@@ -211,7 +218,9 @@ export const createLensEmbeddableFactory = (
         api,
         parentApi,
         internalApi,
-        services
+        services,
+        undefined,
+        inspect
       );
 
       const onUnmount = () => {

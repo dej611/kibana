@@ -25,12 +25,13 @@ const useEuiAmsterdamRelease = process.env.EUI_AMSTERDAM === 'true';
 /** @returns {import('webpack').Configuration} */
 module.exports = (_, argv) => {
   const outputPath = argv.outputPath ? Path.resolve(argv.outputPath) : UiSharedDepsNpm.distDir;
+  const env = process.env.NODE_ENV || 'development';
 
   return {
     externals: {
       module: 'module',
     },
-    mode: process.env.NODE_ENV || 'development',
+    mode: env,
     entry: {
       'kbn-ui-shared-deps-npm': [
         // polyfill code
@@ -98,7 +99,6 @@ module.exports = (_, argv) => {
         'react-router',
         'react',
         'reselect',
-        'rxjs',
         'styled-components',
         'tslib',
         'uuid',

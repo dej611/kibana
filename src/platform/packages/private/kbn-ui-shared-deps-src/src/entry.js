@@ -71,7 +71,6 @@ export const ReactUse = {
 Moment.tz.load(require('moment-timezone/data/packed/latest.json'));
 
 // big deps which are locked to a single version
-export const Rxjs = require('rxjs');
 export const ElasticNumeral = require('@elastic/numeral');
 export const ElasticCharts = require('@elastic/charts');
 export const ElasticEui = require('@elastic/eui');

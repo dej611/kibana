@@ -104,7 +104,6 @@ const externals = {
   /**
    * big deps which are locked to a single version
    */
-  rxjs: '__kbnSharedDeps__.Rxjs',
   numeral: '__kbnSharedDeps__.ElasticNumeral',
   '@elastic/numeral': '__kbnSharedDeps__.ElasticNumeral',
   '@elastic/charts': '__kbnSharedDeps__.ElasticCharts',

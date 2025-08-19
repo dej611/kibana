@@ -19,6 +19,11 @@ import {
 } from './plugin_context';
 import { RuntimePluginContractResolver } from './plugin_contract_resolver';
 
+const isProduction =
+  typeof window === 'object'
+    ? process.env.NODE_ENV === 'production'
+    : !process.env.NODE_ENV || process.env.NODE_ENV === 'production';
+
 /** @internal */
 export type PluginsServiceSetupDeps = InternalCoreSetup;
 /** @internal */
@@ -87,6 +92,12 @@ export class PluginsService
   public async setup(deps: PluginsServiceSetupDeps): Promise<InternalPluginsServiceSetup> {
     const runtimeDependencies = buildPluginRuntimeDependencyMap(this.plugins);
     this.runtimeResolver.setDependencyMap(runtimeDependencies);
+
+    if(!isProduction){
+      const { connect } = await import('@rxjs-insights/devtools/connect');
+      const res = await connect();
+      console.log('RxJS Insights connected:', res);
+    }
 
     // Setup each plugin with required and optional plugin contracts
     const contracts = new Map<string, unknown>();

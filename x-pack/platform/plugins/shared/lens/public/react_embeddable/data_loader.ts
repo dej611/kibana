@@ -19,6 +19,7 @@ import {
   merge,
   tap,
   map,
+  identity,
 } from 'rxjs';
 import fastIsEqual from 'fast-deep-equal';
 import { pick } from 'lodash';
@@ -82,7 +83,8 @@ export function loadEmbeddableData(
   parentApi: unknown,
   internalApi: LensInternalApi,
   services: LensEmbeddableStartServices,
-  metaInfo?: SharingSavedObjectProps
+  metaInfo?: SharingSavedObjectProps,
+  inspect: <T>(target: T) => T = identity
 ) {
   const { onLoad, onBeforeBadgesRender, ...callbacks } = apiHasLensComponentCallbacks(parentApi)
     ? parentApi
@@ -309,6 +311,10 @@ export function loadEmbeddableData(
       }
     }),
   ];
+  for (const subscription of subscriptions) {
+    inspect(subscription);
+  }
+
   // There are few key moments when errors are checked and displayed:
   // * at setup time (here) before the first expression evaluation
   // * at runtime => when the expression is running and ES/Kibana server could emit errors)

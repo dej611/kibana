@@ -23,6 +23,7 @@ import {
   STATS_OPTIONS_DEFAULT_USEFUL_FILTER,
 } from '@kbn/optimizer-webpack-helpers';
 import { NodeLibsBrowserPlugin } from '@kbn/node-libs-browser-webpack-plugin';
+import { RxjsInsightsPlugin } from '@rxjs-insights/plugin-webpack5';
 
 import type { Bundle, BundleRemotes, WorkerConfig } from '../common';
 import { parseDllManifest } from '../common';
@@ -345,6 +346,10 @@ export function getWebpackConfig(
       // This was default on webpack v4
       unsafeCache: true,
     },
+
+    plugins: [
+      new RxjsInsightsPlugin({installModule: require('path').join(__dirname, 'rxjs_dev_module.js')})
+    ],
   };
 
   const distributableConfig: webpack.Configuration = {
