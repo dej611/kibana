@@ -62,6 +62,7 @@ export function getLensAttributeService(http: HttpStart): LensAttributesService 
     ) => {
       const result = await lensDocumentService.save({
         ...attributes,
+        visualizationType: attributes.visualizationType ?? null,
         state: attributes.state as LensSavedObjectAttributes['state'],
         references,
         savedObjectId,

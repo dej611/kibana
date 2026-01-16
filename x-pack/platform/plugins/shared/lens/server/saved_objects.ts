@@ -83,6 +83,9 @@ export function setupSavedObjects(
         visualizationType: {
           type: 'keyword',
         },
+        version: {
+          type: 'integer',
+        },
         state: {
           dynamic: false,
           properties: {},

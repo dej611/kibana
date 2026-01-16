@@ -12,6 +12,8 @@ import type { LensConfigBuilder } from '@kbn/lens-embeddable-utils/config_builde
 
 export type * from './routes/types';
 
+export type * from './routes/types';
+
 export interface RegisterAPIRoutesArgs {
   http: HttpServiceSetup;
   contentManagement: ContentManagementServerSetup;

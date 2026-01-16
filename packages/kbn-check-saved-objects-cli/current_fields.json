@@ -868,6 +868,7 @@
     "description",
     "state",
     "title",
+    "version",
     "visualizationType"
   ],
   "lens-ui-telemetry": [

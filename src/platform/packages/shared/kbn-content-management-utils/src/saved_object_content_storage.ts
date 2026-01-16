@@ -32,7 +32,7 @@ import type {
 } from './types';
 import { tagsToFindOptions } from './utils';
 
-export type PartialSavedObject<T> = Omit<SavedObject<Partial<T>>, 'references'> & {
+type PartialSavedObject<T> = Omit<SavedObject<Partial<T>>, 'references'> & {
   references: SavedObjectReference[] | undefined;
 };
 

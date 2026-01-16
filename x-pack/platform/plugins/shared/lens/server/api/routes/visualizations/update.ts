@@ -6,6 +6,7 @@
  */
 
 import { boomify, isBoom } from '@hapi/boom';
+import type { TypeOf } from '@kbn/config-schema';
 
 import { isLensLegacyAttributes } from '@kbn/lens-embeddable-utils/config_builder/utils';
 import {

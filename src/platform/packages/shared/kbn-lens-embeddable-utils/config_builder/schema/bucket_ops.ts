@@ -85,7 +85,7 @@ export const bucketDateHistogramOperationSchema = schema.object({
   ),
 });
 
-export const bucketTermsOperationSchema = schema.object({
+export const bucketTermsOperationSchema = schema.object(formatSchema).extends({
   operation: schema.literal('terms'),
   ...formatSchema,
   ...labelSharedProp,
@@ -259,7 +259,7 @@ export const bucketFiltersOperationSchema = schema.object({
   filters: schema.arrayOf(filterWithLabelSchema, { maxSize: 100 }),
 });
 
-export const bucketHistogramOperationSchema = schema.object({
+export const bucketHistogramOperationSchema = schema.object(formatSchema).extends({
   operation: schema.literal('histogram'),
   ...formatSchema,
   ...labelSharedProp,
