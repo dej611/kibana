@@ -12,20 +12,22 @@
 
 import dagre, { graphlib } from '@dagrejs/dagre';
 import { Position } from '@xyflow/react';
+import { memoize } from 'lodash';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { getTriggerLabel } from '../../../shared/lib/graph_utils';
 
-export type NodeType =
-  | 'if'
-  | 'merge'
-  | 'parallel'
-  | 'action'
-  | 'foreach'
-  | 'atomic'
-  | 'http'
-  | 'trigger';
+export type NodeType = 'if' | 'merge' | 'parallel' | 'action' | 'foreach' | 'atomic' | 'trigger';
 
-export const flowNodeTypes = ['if', 'merge', 'parallel', 'foreach', 'atomic', 'http', 'trigger'];
+export const flowNodeTypes = new Set(['if', 'merge', 'parallel', 'foreach', 'atomic', 'trigger']);
+
+function slugify(name: string | undefined) {
+  if (name == null) {
+    return;
+  }
+  return name.toLowerCase().replace(/\s+/g, '-');
+}
+
+const memoizedSlugify = memoize(slugify);
 
 export function transformYamlToNodesAndEdges(
   triggers: WorkflowYaml['triggers'],
@@ -34,10 +36,10 @@ export function transformYamlToNodesAndEdges(
   const nodes: any[] = [];
   const edges: any[] = [];
 
-  const firstStepId = steps?.[0]?.name.toLowerCase().replace(/\s+/g, '-');
+  const firstStepId = slugify(steps?.[0]?.name);
 
   for (const trigger of triggers) {
-    const id = trigger.type.toLowerCase().replace(/\s+/g, '-');
+    const id = memoizedSlugify(trigger.type);
     const name = trigger.type;
     nodes.push({
       id,
@@ -48,8 +50,8 @@ export function transformYamlToNodesAndEdges(
         label: getTriggerLabel(trigger.type),
       },
       style: {
-        width: 250,
-        height: 64,
+        width: 100,
+        height: 84,
       },
     });
     edges.push({
@@ -61,10 +63,10 @@ export function transformYamlToNodesAndEdges(
 
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    const id = step.name.toLowerCase().replace(/\s+/g, '-');
+    const id = memoizedSlugify(step.name);
     const name = step.name;
 
-    const nodeType = flowNodeTypes.includes(step.type) ? step.type : 'action';
+    const nodeType = flowNodeTypes.has(step.type) ? step.type : 'action';
 
     nodes.push({
       id,
@@ -75,15 +77,15 @@ export function transformYamlToNodesAndEdges(
       },
       type: nodeType,
       style: {
-        width: 250,
-        height: 64,
+        width: 100,
+        height: 84,
       },
     });
 
     // Create edge to next step at the same level
     if (i < steps.length - 1) {
       const nextStep = steps[i + 1];
-      const nextId = nextStep.name.toLowerCase().replace(/\s+/g, '-');
+      const nextId = memoizedSlugify(nextStep.name);
       edges.push({
         id: `${id}:${nextId}`,
         source: id,
@@ -102,7 +104,7 @@ export function transformYamlToNodesAndEdges(
 
       // Create edge from if step to first nested step
       if (step.steps.length > 0) {
-        const firstNestedId = step.steps[0].name.toLowerCase().replace(/\s+/g, '-');
+        const firstNestedId = memoizedSlugify(step.steps[0].name);
         edges.push({
           id: `${id}:${firstNestedId}`,
           source: id,
@@ -121,7 +123,7 @@ export function transformYamlToNodesAndEdges(
 
         // Create edge from if step to first else step
         if (step.else.length > 0) {
-          const firstElseId = step.else[0].name.toLowerCase().replace(/\s+/g, '-');
+          const firstElseId = memoizedSlugify(step.else[0].name);
           edges.push({
             id: `${id}:${firstElseId}-else`,
             source: id,
@@ -141,7 +143,7 @@ export function transformYamlToNodesAndEdges(
 
       // Create edge from foreach step to first nested step
       if (step.steps.length > 0) {
-        const firstNestedId = step.steps[0].name.toLowerCase().replace(/\s+/g, '-');
+        const firstNestedId = memoizedSlugify(step.steps[0].name);
         edges.push({
           id: `${id}:${firstNestedId}`,
           source: id,
@@ -160,7 +162,7 @@ export function transformYamlToNodesAndEdges(
 
       // Create edge from atomic step to first nested step
       if ((step.steps as any[]).length > 0) {
-        const firstNestedId = (step.steps as any[])[0].name.toLowerCase().replace(/\s+/g, '-');
+        const firstNestedId = memoizedSlugify((step.steps as any[])[0].name);
         edges.push({
           id: `${id}:${firstNestedId}`,
           source: id,
@@ -180,7 +182,7 @@ export function transformYamlToNodesAndEdges(
 
         // Create edge from parallel step to first step in each branch
         if (branch.steps.length > 0) {
-          const firstBranchId = branch.steps[0].name.toLowerCase().replace(/\s+/g, '-');
+          const firstBranchId = memoizedSlugify(branch.steps[0].name);
           edges.push({
             id: `${id}:${firstBranchId}`,
             source: id,
@@ -200,7 +202,7 @@ export function transformYamlToNodesAndEdges(
 
       // Create edge from merge step to first nested step
       if (step.steps.length > 0) {
-        const firstNestedId = step.steps[0].name.toLowerCase().replace(/\s+/g, '-');
+        const firstNestedId = memoizedSlugify(step.steps[0].name);
         edges.push({
           id: `${id}:${firstNestedId}`,
           source: id,
@@ -216,20 +218,14 @@ export function transformYamlToNodesAndEdges(
   };
 }
 
-export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml) {
-  const { nodes, edges } = transformYamlToNodesAndEdges(
-    workflowDefinition?.triggers ?? [],
-    workflowDefinition?.steps ?? []
-  );
-
+export function applyDagreLayout(nodes: any[], edges: any[]) {
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
-  // Set graph direction and spacing
   dagreGraph.setGraph({
-    rankdir: 'TB',
+    rankdir: 'LR',
     nodesep: 40,
-    ranksep: 40,
+    ranksep: 60,
     edgesep: 40,
   });
 
@@ -260,7 +256,6 @@ export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml) {
         width: dagreNode.width as number,
         height: dagreNode.height as number,
       },
-      // Dagre provides positions with the center of the node as origin
       position: {
         x: dagreNode.x - dagreNode.width / 2,
         y: dagreNode.y - dagreNode.height / 2,
@@ -272,4 +267,13 @@ export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml) {
     nodes: layoutedNodes,
     edges,
   };
+}
+
+export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml) {
+  const { nodes, edges } = transformYamlToNodesAndEdges(
+    workflowDefinition?.triggers ?? [],
+    workflowDefinition?.steps ?? []
+  );
+
+  return applyDagreLayout(nodes, edges);
 }

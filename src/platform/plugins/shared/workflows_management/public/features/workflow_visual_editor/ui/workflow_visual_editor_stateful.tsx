@@ -21,7 +21,11 @@ import {
   selectStepExecutions,
 } from '../../../entities/workflows/store/workflow_detail/selectors';
 
-export const WorkflowVisualEditorStateful = () => {
+export const WorkflowVisualEditorStateful = ({
+  onAddStepBetween,
+}: {
+  onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
+}) => {
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowYaml = useSelector(selectEditorYaml) ?? '';
   const connectorsData = useAvailableConnectors();
@@ -81,6 +85,7 @@ export const WorkflowVisualEditorStateful = () => {
     <WorkflowVisualEditor
       workflow={workflowYamlObject as unknown as WorkflowYaml}
       stepExecutions={stepExecutions}
+      onAddStepBetween={onAddStepBetween}
     />
   );
 };

@@ -8,17 +8,10 @@
  */
 
 import type { EuiThemeComputed, UseEuiTheme } from '@elastic/eui';
-import {
-  EuiFlexGroup,
-  EuiFlexItem,
-  EuiIcon,
-  euiShadow,
-  transparentize,
-  useEuiTheme,
-} from '@elastic/eui';
+import { EuiIcon, euiShadow, transparentize, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import type { Node } from '@xyflow/react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, NodeToolbar, Position } from '@xyflow/react';
 import React from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { ExecutionStatus } from '@kbn/workflows';
@@ -28,53 +21,27 @@ import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
 import type { NodeType } from '../lib/get_layouted_nodes_and_edges';
 import { flowNodeTypes } from '../lib/get_layouted_nodes_and_edges';
 
-const triggerNodeTypes = ['manual', 'alert', 'scheduled'];
+const triggerNodeTypes = new Set(['manual', 'alert', 'scheduled']);
+
+const NODE_SIZE = 64;
 
 function getIconColors(nodeType: NodeType, euiTheme: EuiThemeComputed) {
-  if (flowNodeTypes.includes(nodeType)) {
+  if (flowNodeTypes.has(nodeType)) {
     return {
       backgroundColor: transparentize(euiTheme.colors.warning, 0.1),
-      color: euiTheme.colors.warning,
+      iconColor: euiTheme.colors.warning,
     };
   }
-  if (triggerNodeTypes.includes(nodeType)) {
+  if (triggerNodeTypes.has(nodeType)) {
     return {
       backgroundColor: transparentize(euiTheme.colors.vis.euiColorVis6, 0.1),
-      color: euiTheme.colors.vis.euiColorVis6,
+      iconColor: euiTheme.colors.vis.euiColorVis6,
     };
   }
   return {
     backgroundColor: euiTheme.colors.backgroundBasePlain,
-    color: euiTheme.colors.borderBaseSubdued,
+    iconColor: euiTheme.colors.borderBaseSubdued,
   };
-}
-
-function NodeIcon({ nodeType }: { nodeType: NodeType }) {
-  const { euiTheme } = useEuiTheme();
-  const { backgroundColor, color } = getIconColors(nodeType, euiTheme);
-  const stepType = nodeType.split('.')[0];
-  const isFlowNode = flowNodeTypes.includes(nodeType);
-  const isTriggerNode = triggerNodeTypes.includes(nodeType);
-  return (
-    <div
-      css={{
-        width: '36px',
-        height: '36px',
-        borderRadius: isFlowNode ? '8px' : '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: `1px solid ${color}`,
-        backgroundColor,
-      }}
-    >
-      <StepIcon
-        stepType={stepType}
-        executionStatus={undefined}
-        color={isTriggerNode || isFlowNode ? color : undefined}
-      />
-    </div>
-  );
 }
 
 interface WorkflowNodeData {
@@ -93,85 +60,106 @@ const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiTh
 
 // @ts-expect-error - TODO: fix this
 export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
-  const euiThemeContext = useEuiTheme();
-  const { euiTheme } = euiThemeContext;
+  const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
-  const isTriggerNode = triggerNodeTypes.includes(node.data.stepType);
+  const isTriggerNode = triggerNodeTypes.has(node.data.stepType);
+  const isFlowNode = flowNodeTypes.has(node.data.stepType);
+  const { backgroundColor, iconColor } = getIconColors(node.data.stepType, euiTheme);
+  const label = node.data.label || node.data.stepType;
+  const { status } = node.data.stepExecution ?? {};
+
   return (
-    <EuiFlexGroup
-      css={{
-        width: '100%',
-        height: '100%',
-      }}
-    >
-      {!isTriggerNode && <Handle type="target" position={Position.Top} />}
-      <EuiFlexItem
-        css={[
-          styles.node,
-          {
-            border: `1px solid ${getNodeBorderColor(node.data.stepExecution?.status, euiTheme)}`,
-          },
-        ]}
-      >
-        <EuiFlexGroup css={{ flex: 1, width: '100%' }} alignItems="center" gutterSize="m">
-          <EuiFlexItem grow={false}>
-            <NodeIcon nodeType={node.data.stepType} />
-          </EuiFlexItem>
-          <EuiFlexItem css={{ flex: 1 }}>
-            <EuiFlexGroup
-              alignItems="flexStart"
-              direction="column"
-              css={{ gap: '4px', flex: 1, width: '100%' }}
-            >
-              <EuiFlexItem css={{ width: '100%' }}>
-                <span
-                  css={{
-                    fontSize: '14px',
-                    fontWeight: 'bold',
-                    color: euiTheme.colors.textHeading,
-                    lineHeight: '1.25',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  {node.data.label}
-                  {node.data.stepExecution?.status === ExecutionStatus.COMPLETED && (
-                    <EuiIcon type="checkInCircleFilled" color="#16C5C0" />
-                  )}
-                  {node.data.stepExecution?.status === ExecutionStatus.FAILED && (
-                    <EuiIcon type="alert" color={euiTheme.colors.danger} />
-                  )}
-                </span>
-                <div
-                  css={{
-                    fontSize: '12px',
-                    color: euiTheme.colors.textSubdued,
-                  }}
-                >
-                  {node.data.stepType}
-                </div>
-              </EuiFlexItem>
-            </EuiFlexGroup>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiFlexItem>
-      <Handle type="source" position={Position.Bottom} />
-    </EuiFlexGroup>
+    <>
+      <NodeToolbar position={Position.Top} align="center">
+        <button type="button" className="xy-theme__button">
+          {'Delete'}
+        </button>
+      </NodeToolbar>
+      <div css={styles.outerWrapper}>
+        {!isTriggerNode && <Handle type="target" position={Position.Left} />}
+        <div css={[styles.box, { border: `1px solid ${getNodeBorderColor(status, euiTheme)}` }]}>
+          <div
+            css={[
+              styles.iconCircle,
+              {
+                backgroundColor,
+                borderColor: iconColor,
+                // borderRadius: isFlowNode ? '8px' : '50%',
+              },
+            ]}
+          >
+            <StepIcon
+              stepType={node.data.stepType.split('.')[0]}
+              executionStatus={undefined}
+              color={isTriggerNode || isFlowNode ? iconColor : undefined}
+            />
+          </div>
+          {status === ExecutionStatus.COMPLETED && (
+            <div css={styles.statusBadge}>
+              <EuiIcon type="checkInCircleFilled" size="xl" color="#16C5C0" aria-hidden={true} />
+            </div>
+          )}
+          {status === ExecutionStatus.FAILED && (
+            <div css={styles.statusBadge}>
+              <EuiIcon
+                type="errorFilled"
+                size="l"
+                color={euiTheme.colors.danger}
+                aria-hidden={true}
+              />
+            </div>
+          )}
+        </div>
+        <span css={styles.label}>{label}</span>
+        <Handle type="source" position={Position.Right} />
+      </div>
+    </>
   );
 }
 
 const componentStyles = {
-  node: (euiThemeContext: UseEuiTheme) => css`
+  outerWrapper: css`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
     width: 100%;
-    height: 100%;
+  `,
+  box: (euiThemeContext: UseEuiTheme) => css`
+    width: ${NODE_SIZE}px;
+    height: ${NODE_SIZE}px;
+    border-radius: 12px;
     background-color: ${euiThemeContext.euiTheme.colors.backgroundBasePlain};
-    border-radius: 8px;
-    padding: 8px 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
+    position: relative;
     ${euiShadow(euiThemeContext, 'xs', { direction: 'down' })}
+  `,
+  iconCircle: css`
+    width: ${NODE_SIZE}px;
+    height: ${NODE_SIZE}px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid;
+  `,
+  statusBadge: ({ euiTheme }: UseEuiTheme) => css`
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: ${euiTheme.colors.backgroundBasePlain};
+    // border-radius: 50%;
+    line-height: 0;
+  `,
+  label: ({ euiTheme }: UseEuiTheme) => css`
+    font-size: 12px;
+    color: ${euiTheme.colors.textHeading};
+    text-align: center;
+    line-height: 1.3;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   `,
 };

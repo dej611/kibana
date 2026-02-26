@@ -12,6 +12,7 @@ import { EuiFlexGroup, EuiFlexItem, EuiLoadingSpinner } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React, { useCallback, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
+import { isScalar, parseDocument } from 'yaml';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import type { monaco } from '@kbn/monaco';
@@ -22,6 +23,7 @@ import {
 } from '@kbn/workflows';
 import { useContextOverrideData } from './use_context_override_data';
 import { WorkflowDetailConnectorFlyout } from './workflow_detail_connector_flyout';
+import { getStepNodesWithType } from '../../../../common/lib/yaml';
 import { useWorkflowActions } from '../../../entities/workflows/model/use_workflow_actions';
 import { selectYamlString } from '../../../entities/workflows/store/workflow_detail/selectors';
 import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
@@ -72,6 +74,40 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     WORKFLOWS_UI_EXECUTION_GRAPH_SETTING_ID,
     false
   );
+
+  // Visual editor → YAML editor bridge
+  const handleAddStepBetween = useCallback((sourceStepName: string, targetStepName: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const document = parseDocument(model.getValue());
+    const stepNodes = getStepNodesWithType(document);
+
+    const targetStep = stepNodes.find(
+      (node) => isScalar(node.get('name', true)) && node.get('name', true)?.value === targetStepName
+    );
+
+    if (targetStep?.range) {
+      const targetStartPos = model.getPositionAt(targetStep.range[0]);
+      const lineAbove = Math.max(1, targetStartPos.lineNumber - 1);
+      editor.setPosition({ lineNumber: lineAbove, column: 1 });
+      editor.focus();
+    } else {
+      const sourceStep = stepNodes.find(
+        (node) =>
+          isScalar(node.get('name', true)) && node.get('name', true)?.value === sourceStepName
+      );
+      if (sourceStep?.range) {
+        const endPos = model.getPositionAt(sourceStep.range[2]);
+        editor.setPosition(endPos);
+        editor.focus();
+      }
+    }
+
+    editor.getAction('workflows.editor.action.openActionsPopover')?.run();
+  }, []);
 
   // Modal handlers
   const closeModal = useCallback(() => {
@@ -144,7 +180,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         {isVisualEditorEnabled && (
           <EuiFlexItem css={styles.visualEditor}>
             <React.Suspense fallback={<EuiLoadingSpinner />}>
-              <WorkflowVisualEditor />
+              <WorkflowVisualEditor onAddStepBetween={handleAddStepBetween} />
             </React.Suspense>
           </EuiFlexItem>
         )}

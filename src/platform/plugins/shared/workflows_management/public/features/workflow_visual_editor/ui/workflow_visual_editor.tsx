@@ -8,9 +8,9 @@
  */
 
 import { useEuiTheme, useResizeObserver } from '@elastic/eui';
-import type { ColorMode, NodeTypes, ReactFlowInstance } from '@xyflow/react';
-import { Background, Controls, ReactFlow } from '@xyflow/react';
-import React, { useEffect, useMemo, useRef } from 'react';
+import type { ColorMode, EdgeTypes, NodeTypes, ReactFlowInstance } from '@xyflow/react';
+import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import '@xyflow/react/dist/style.css';
 import { WorkflowGraphEdge } from './workflow_edge';
@@ -25,6 +25,7 @@ const nodeTypes = {
   action: WorkflowGraphNode,
   foreach: WorkflowGraphNode,
   atomic: WorkflowGraphNode,
+  // default: WorkflowGraphNode,
 };
 const edgeTypes = {
   workflowEdge: WorkflowGraphEdge,
@@ -33,12 +34,13 @@ const edgeTypes = {
 export function WorkflowVisualEditor({
   workflow,
   stepExecutions,
+  onAddStepBetween,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
+  onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
-  // TODO: call fitView(), when container is resized
   const containerRef = useRef<HTMLDivElement | null>(null);
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
   const dimensions = useResizeObserver(containerRef.current);
@@ -59,7 +61,7 @@ export function WorkflowVisualEditor({
     if (!stepExecutions) {
       return null;
     }
-    return stepExecutions?.reduce((acc, stepExecution) => {
+    return stepExecutions.reduce((acc, stepExecution) => {
       acc[stepExecution.stepId] = stepExecution;
       return acc;
     }, {} as Record<string, WorkflowStepExecutionDto>);
@@ -84,29 +86,54 @@ export function WorkflowVisualEditor({
     return { nodes: finalNodes, edges: initialEdges };
   }, [initialNodes, initialEdges, stepExecutionMap]);
 
+  const handleEdgeAddNode = useCallback(
+    (_edgeId: string, sourceNodeId: string, targetNodeId: string) => {
+      const sourceNode = nodes.find((n) => n.id === sourceNodeId);
+      const targetNode = nodes.find((n) => n.id === targetNodeId);
+      const sourceLabel = (sourceNode?.data as Record<string, unknown>)?.label as string;
+      const targetLabel = (targetNode?.data as Record<string, unknown>)?.label as string;
+      if (sourceLabel && targetLabel) {
+        onAddStepBetween?.(sourceLabel, targetLabel);
+      }
+    },
+    [nodes, onAddStepBetween]
+  );
+
+  const edgesWithCallbacks = useMemo(
+    () =>
+      edges.map((edge) => ({
+        ...edge,
+        data: { ...edge.data, onAddNode: handleEdgeAddNode },
+      })),
+    [edges, handleEdgeAddNode]
+  );
+
   return (
     <div ref={containerRef} css={{ height: '100%', width: '100%' }}>
-      <ReactFlow
-        onInit={(instance) => {
-          reactFlowInstanceRef.current = instance as ReactFlowInstance;
-        }}
-        nodes={nodes}
-        edges={edges}
-        nodeTypes={nodeTypes as unknown as NodeTypes}
-        edgeTypes={edgeTypes}
-        fitView
-        fitViewOptions={{ padding: 1 }}
-        proOptions={{
-          hideAttribution: true,
-        }}
-        colorMode={colorMode.toLowerCase() as ColorMode}
-      >
-        <Controls orientation="horizontal" />
-        <Background
-          bgColor={euiTheme.colors.backgroundBasePlain}
-          color={euiTheme.colors.textSubdued}
-        />
-      </ReactFlow>
+      <ReactFlowProvider>
+        <ReactFlow
+          onInit={(instance) => {
+            reactFlowInstanceRef.current = instance as unknown as ReactFlowInstance;
+          }}
+          nodes={nodes}
+          edges={edgesWithCallbacks}
+          nodeTypes={nodeTypes as unknown as NodeTypes}
+          edgeTypes={edgeTypes as unknown as EdgeTypes}
+          defaultEdgeOptions={{ type: 'workflowEdge' }}
+          fitView
+          fitViewOptions={{ padding: 1 }}
+          proOptions={{
+            hideAttribution: true,
+          }}
+          colorMode={colorMode.toLowerCase() as ColorMode}
+        >
+          <Controls orientation="horizontal" />
+          <Background
+            bgColor={euiTheme.colors.backgroundBasePlain}
+            color={euiTheme.colors.textSubdued}
+          />
+        </ReactFlow>
+      </ReactFlowProvider>
     </div>
   );
 }
