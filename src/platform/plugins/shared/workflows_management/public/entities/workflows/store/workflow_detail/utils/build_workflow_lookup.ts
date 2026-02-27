@@ -27,6 +27,13 @@ export interface StepPropInfo {
   valueNode: YAML.Scalar<unknown>;
 }
 
+export interface TriggerInfo {
+  triggerType: string;
+  triggerYamlNode: YAML.YAMLMap<unknown, unknown>;
+  lineStart: number;
+  lineEnd: number;
+}
+
 /**
  * Lookup table containing parsed workflow elements from a YAML document.
  * This interface serves as an index for quickly accessing workflow components
@@ -37,6 +44,8 @@ export interface StepPropInfo {
 export interface WorkflowLookup {
   /** Map of step IDs to their corresponding step information and metadata */
   steps: Record<string, StepInfo>;
+  /** Map of trigger types to their corresponding trigger information and metadata */
+  triggers: Record<string, TriggerInfo>;
 }
 
 /**
@@ -67,10 +76,12 @@ export function buildWorkflowLookup(
   lineCounter: LineCounter
 ): WorkflowLookup {
   const steps: Record<string, StepInfo> = {};
+  const triggers: Record<string, TriggerInfo> = {};
 
   if (!YAML.isMap(yamlDocument?.contents)) {
     return {
       steps: {},
+      triggers: {},
     };
   }
 
@@ -84,8 +95,35 @@ export function buildWorkflowLookup(
     );
   }
 
+  const triggersNode = (yamlDocument.contents as any).get('triggers');
+  if (YAML.isSeq(triggersNode)) {
+    triggersNode.items.forEach((item) => {
+      if (!YAML.isMap(item) || !item.range) return;
+      let triggerType: string | undefined;
+      item.items.forEach((pair) => {
+        if (
+          YAML.isPair(pair) &&
+          YAML.isScalar(pair.key) &&
+          pair.key.value === 'type' &&
+          YAML.isScalar(pair.value)
+        ) {
+          triggerType = pair.value.value as string;
+        }
+      });
+      if (triggerType) {
+        triggers[triggerType] = {
+          triggerType,
+          triggerYamlNode: item,
+          lineStart: lineCounter.linePos(item.range![0]).line,
+          lineEnd: lineCounter.linePos(item.range![2] - 1).line,
+        };
+      }
+    });
+  }
+
   return {
     steps,
+    triggers,
   };
 }
 

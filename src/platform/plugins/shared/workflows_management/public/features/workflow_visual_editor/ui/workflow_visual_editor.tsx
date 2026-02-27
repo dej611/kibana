@@ -8,7 +8,7 @@
  */
 
 import { useEuiTheme, useResizeObserver } from '@elastic/eui';
-import type { ColorMode, EdgeTypes, NodeTypes, ReactFlowInstance } from '@xyflow/react';
+import type { ColorMode, EdgeTypes, Node, NodeTypes, ReactFlowInstance } from '@xyflow/react';
 import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
@@ -35,10 +35,12 @@ export function WorkflowVisualEditor({
   workflow,
   stepExecutions,
   onAddStepBetween,
+  onNodeClick,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
   onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
+  onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -99,6 +101,24 @@ export function WorkflowVisualEditor({
     [nodes, onAddStepBetween]
   );
 
+  const handleNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      const data = node.data as Record<string, unknown>;
+      if (node.type === 'trigger') {
+        const triggerType = data?.stepType as string;
+        if (triggerType) {
+          onNodeClick?.(triggerType, 'trigger');
+        }
+      } else {
+        const stepName = data?.label as string;
+        if (stepName) {
+          onNodeClick?.(stepName, 'step');
+        }
+      }
+    },
+    [onNodeClick]
+  );
+
   const edgesWithCallbacks = useMemo(
     () =>
       edges.map((edge) => ({
@@ -115,6 +135,7 @@ export function WorkflowVisualEditor({
           onInit={(instance) => {
             reactFlowInstanceRef.current = instance as unknown as ReactFlowInstance;
           }}
+          onNodeClick={handleNodeClick}
           nodes={nodes}
           edges={edgesWithCallbacks}
           nodeTypes={nodeTypes as unknown as NodeTypes}

@@ -25,12 +25,16 @@ import { useContextOverrideData } from './use_context_override_data';
 import { WorkflowDetailConnectorFlyout } from './workflow_detail_connector_flyout';
 import { getStepNodesWithType } from '../../../../common/lib/yaml';
 import { useWorkflowActions } from '../../../entities/workflows/model/use_workflow_actions';
-import { selectYamlString } from '../../../entities/workflows/store/workflow_detail/selectors';
+import {
+  selectEditorWorkflowLookup,
+  selectYamlString,
+} from '../../../entities/workflows/store/workflow_detail/selectors';
 import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
 import { TestStepModal } from '../../../features/run_workflow/ui/test_step_modal';
 import { useKibana } from '../../../hooks/use_kibana';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
 import type { ContextOverrideData } from '../../../shared/utils/build_step_context_override/build_step_context_override';
+import { navigateToErrorPosition } from '../../../widgets/workflow_yaml_editor/lib/utils';
 
 const WorkflowYAMLEditor = React.lazy(() =>
   import('../../../widgets/workflow_yaml_editor').then((module) => ({
@@ -54,6 +58,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
 
   // Redux selectors, only used in current workflow tab, not in executions tab
   const workflowYaml = useSelector(selectYamlString) ?? '';
+  const workflowLookup = useSelector(selectEditorWorkflowLookup);
 
   // Hooks
   const { uiSettings, notifications } = useKibana().services;
@@ -108,6 +113,20 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
 
     editor.getAction('workflows.editor.action.openActionsPopover')?.run();
   }, []);
+
+  const handleNodeClick = useCallback(
+    (identifier: string, nodeType: 'step' | 'trigger') => {
+      const editor = editorRef.current;
+      if (!editor || !workflowLookup) return;
+      const info =
+        nodeType === 'trigger'
+          ? workflowLookup.triggers[identifier]
+          : workflowLookup.steps[identifier];
+      if (!info) return;
+      navigateToErrorPosition(editor, info.lineStart, 1);
+    },
+    [workflowLookup]
+  );
 
   // Modal handlers
   const closeModal = useCallback(() => {
@@ -180,7 +199,10 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         {isVisualEditorEnabled && (
           <EuiFlexItem css={styles.visualEditor}>
             <React.Suspense fallback={<EuiLoadingSpinner />}>
-              <WorkflowVisualEditor onAddStepBetween={handleAddStepBetween} />
+              <WorkflowVisualEditor
+                onAddStepBetween={handleAddStepBetween}
+                onNodeClick={handleNodeClick}
+              />
             </React.Suspense>
           </EuiFlexItem>
         )}
