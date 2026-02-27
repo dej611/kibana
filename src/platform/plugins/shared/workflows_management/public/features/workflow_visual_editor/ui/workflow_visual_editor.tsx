@@ -8,9 +8,22 @@
  */
 
 import { useEuiTheme, useResizeObserver } from '@elastic/eui';
-import type { ColorMode, EdgeTypes, Node, NodeTypes, ReactFlowInstance } from '@xyflow/react';
-import { Background, Controls, ReactFlow, ReactFlowProvider } from '@xyflow/react';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import type {
+  ColorMode,
+  EdgeTypes,
+  Node,
+  NodeTypes,
+  OnNodesChange,
+  ReactFlowInstance,
+} from '@xyflow/react';
+import {
+  applyNodeChanges,
+  Background,
+  Controls,
+  ReactFlow,
+  ReactFlowProvider,
+} from '@xyflow/react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import '@xyflow/react/dist/style.css';
 import { WorkflowGraphEdge } from './workflow_edge';
@@ -57,7 +70,10 @@ export function WorkflowVisualEditor({
     }
   }, [dimensions]);
 
-  const { nodes: initialNodes, edges: initialEdges } = getLayoutedNodesAndEdges(workflow);
+  const { nodes: layoutNodes, edges } = useMemo(
+    () => getLayoutedNodesAndEdges(workflow),
+    [workflow]
+  );
 
   const stepExecutionMap = useMemo(() => {
     if (!stepExecutions) {
@@ -69,11 +85,11 @@ export function WorkflowVisualEditor({
     }, {} as Record<string, WorkflowStepExecutionDto>);
   }, [stepExecutions]);
 
-  const { nodes, edges } = useMemo(() => {
+  const derivedNodes = useMemo(() => {
     if (!stepExecutionMap) {
-      return { nodes: initialNodes, edges: initialEdges };
+      return layoutNodes;
     }
-    const finalNodes = initialNodes.map((node) => {
+    return layoutNodes.map((node) => {
       if (stepExecutionMap[node.data.label]) {
         return {
           ...node,
@@ -85,8 +101,17 @@ export function WorkflowVisualEditor({
       }
       return node;
     });
-    return { nodes: finalNodes, edges: initialEdges };
-  }, [initialNodes, initialEdges, stepExecutionMap]);
+  }, [layoutNodes, stepExecutionMap]);
+
+  const [nodes, setNodes] = useState(derivedNodes);
+
+  useEffect(() => {
+    setNodes(derivedNodes);
+  }, [derivedNodes]);
+
+  const onNodesChange: OnNodesChange = useCallback((changes) => {
+    setNodes((nds) => applyNodeChanges(changes, nds));
+  }, []);
 
   const handleEdgeAddNode = useCallback(
     (_edgeId: string, sourceNodeId: string, targetNodeId: string) => {
@@ -136,6 +161,7 @@ export function WorkflowVisualEditor({
             reactFlowInstanceRef.current = instance as unknown as ReactFlowInstance;
           }}
           onNodeClick={handleNodeClick}
+          onNodesChange={onNodesChange}
           nodes={nodes}
           edges={edgesWithCallbacks}
           nodeTypes={nodeTypes as unknown as NodeTypes}

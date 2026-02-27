@@ -8,7 +8,14 @@
  */
 
 import type { EuiThemeComputed, UseEuiTheme } from '@elastic/eui';
-import { EuiIcon, euiShadow, transparentize, useEuiTheme } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  EuiIcon,
+  euiShadow,
+  EuiToolTip,
+  transparentize,
+  useEuiTheme,
+} from '@elastic/eui';
 import { css } from '@emotion/react';
 import type { Node } from '@xyflow/react';
 import { Handle, NodeToolbar, Position } from '@xyflow/react';
@@ -71,9 +78,11 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
   return (
     <>
       <NodeToolbar position={Position.Top} align="center">
-        <button type="button" className="xy-theme__button">
-          {'Delete'}
-        </button>
+        <div css={styles.toolbar} className="nodrag nopan">
+          <EuiToolTip content="Delete step" position="top" disableScreenReaderOutput>
+            <EuiButtonIcon iconType="trash" color="danger" aria-label="Delete step" size="xs" />
+          </EuiToolTip>
+        </div>
       </NodeToolbar>
       <div css={styles.outerWrapper}>
         {!isTriggerNode && <Handle type="target" position={Position.Left} />}
@@ -118,6 +127,16 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
 }
 
 const componentStyles = {
+  toolbar: (euiThemeContext: UseEuiTheme) => css`
+    display: flex;
+    align-items: center;
+    gap: ${euiThemeContext.euiTheme.size.xs};
+    background-color: ${euiThemeContext.euiTheme.colors.backgroundBasePlain};
+    border: 1px solid ${euiThemeContext.euiTheme.colors.borderBaseSubdued};
+    border-radius: ${euiThemeContext.euiTheme.border.radius.medium};
+    padding: ${euiThemeContext.euiTheme.size.xs};
+    ${euiShadow(euiThemeContext, 's')}
+  `,
   outerWrapper: css`
     display: flex;
     flex-direction: column;
