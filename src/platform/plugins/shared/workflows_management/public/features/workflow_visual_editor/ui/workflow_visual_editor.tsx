@@ -27,6 +27,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import '@xyflow/react/dist/style.css';
 import { WorkflowGraphEdge } from './workflow_edge';
+import { WorkflowForeachGroupNode } from './workflow_foreach_group_node';
 import { WorkflowGraphNode } from './workflow_node';
 import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
@@ -39,6 +40,7 @@ const nodeTypes = {
   action: WorkflowGraphNode,
   foreach: WorkflowGraphNode,
   atomic: WorkflowGraphNode,
+  foreachGroup: WorkflowForeachGroupNode,
   placeholder: WorkflowPlaceholderNode,
 };
 const edgeTypes = {
