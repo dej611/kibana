@@ -28,6 +28,7 @@ import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import '@xyflow/react/dist/style.css';
 import { WorkflowGraphEdge } from './workflow_edge';
 import { WorkflowGraphNode } from './workflow_node';
+import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
 
 const nodeTypes = {
@@ -38,7 +39,7 @@ const nodeTypes = {
   action: WorkflowGraphNode,
   foreach: WorkflowGraphNode,
   atomic: WorkflowGraphNode,
-  // default: WorkflowGraphNode,
+  placeholder: WorkflowPlaceholderNode,
 };
 const edgeTypes = {
   workflowEdge: WorkflowGraphEdge,
@@ -48,12 +49,14 @@ export function WorkflowVisualEditor({
   workflow,
   stepExecutions,
   onAddStepBetween,
+  onAddStepAfter,
   onNodeClick,
   onRunStep,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
   onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
+  onAddStepAfter?: (leafStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
 }) {
@@ -93,13 +96,17 @@ export function WorkflowVisualEditor({
         ...node,
         data: {
           ...node.data,
-          onRunStep,
-          ...(stepExecutionMap?.[node.data.label]
-            ? { stepExecution: stepExecutionMap[node.data.label] }
-            : {}),
+          ...(node.type === 'placeholder'
+            ? { onAddStepAfter }
+            : {
+                onRunStep,
+                ...(stepExecutionMap?.[node.data.label]
+                  ? { stepExecution: stepExecutionMap[node.data.label] }
+                  : {}),
+              }),
         },
       })),
-    [layoutNodes, stepExecutionMap, onRunStep]
+    [layoutNodes, stepExecutionMap, onRunStep, onAddStepAfter]
   );
 
   const [nodes, setNodes] = useState(derivedNodes);
@@ -127,6 +134,7 @@ export function WorkflowVisualEditor({
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
+      if (node.type === 'placeholder') return;
       const data = node.data as Record<string, unknown>;
       if (node.type === 'trigger') {
         const triggerType = data?.stepType as string;

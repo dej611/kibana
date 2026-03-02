@@ -114,6 +114,28 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     editor.getAction('workflows.editor.action.openActionsPopover')?.run();
   }, []);
 
+  const handleAddStepAfter = useCallback((leafStepName: string) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const model = editor.getModel();
+    if (!model) return;
+
+    const document = parseDocument(model.getValue());
+    const stepNodes = getStepNodesWithType(document);
+
+    const sourceStep = stepNodes.find(
+      (node) => isScalar(node.get('name', true)) && node.get('name', true)?.value === leafStepName
+    );
+
+    if (sourceStep?.range) {
+      const endPos = model.getPositionAt(sourceStep.range[2]);
+      editor.setPosition(endPos);
+      editor.focus();
+    }
+
+    editor.getAction('workflows.editor.action.openActionsPopover')?.run();
+  }, []);
+
   const handleNodeClick = useCallback(
     (identifier: string, nodeType: 'step' | 'trigger') => {
       const editor = editorRef.current;
@@ -208,6 +230,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
             <React.Suspense fallback={<EuiLoadingSpinner />}>
               <WorkflowVisualEditor
                 onAddStepBetween={handleAddStepBetween}
+                onAddStepAfter={handleAddStepAfter}
                 onNodeClick={handleNodeClick}
                 onRunStep={handleVisualEditorRunStep}
               />

@@ -1,0 +1,102 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the "Elastic License
+ * 2.0", the "GNU Affero General Public License v3.0 only", and the "Server Side
+ * Public License v 1"; you may not use this file except in compliance with, at
+ * your election, the "Elastic License 2.0", the "GNU Affero General Public
+ * License v3.0 only", or the "Server Side Public License, v 1".
+ */
+
+import type { UseEuiTheme } from '@elastic/eui';
+import { EuiIcon, transparentize, useEuiTheme } from '@elastic/eui';
+import { css } from '@emotion/react';
+import type { Node } from '@xyflow/react';
+import { Handle, Position } from '@xyflow/react';
+import React, { useCallback } from 'react';
+import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+
+const PLACEHOLDER_SIZE = 64;
+
+export interface WorkflowPlaceholderNodeData {
+  leafStepName: string;
+  onAddStepAfter?: (leafStepName: string) => void;
+}
+
+// @ts-expect-error - TODO: fix this
+export function WorkflowPlaceholderNode(node: Node<WorkflowPlaceholderNodeData>) {
+  const { euiTheme } = useEuiTheme();
+  const styles = useMemoCss(componentStyles);
+
+  const handleClick = useCallback(() => {
+    node.data.onAddStepAfter?.(node.data.leafStepName);
+  }, [node.data]);
+
+  return (
+    <div css={styles.outerWrapper}>
+      <Handle type="target" position={Position.Left} />
+      <button
+        type="button"
+        css={[
+          styles.box,
+          {
+            borderColor: euiTheme.colors.borderBaseSubdued,
+            '&:hover': {
+              borderColor: euiTheme.colors.primary,
+              backgroundColor: transparentize(euiTheme.colors.primary, 0.05),
+            },
+          },
+        ]}
+        className="nodrag nopan"
+        onClick={handleClick}
+        aria-label="Add step"
+      >
+        <EuiIcon
+          type="plusInCircle"
+          size="l"
+          color="subdued"
+          css={styles.icon}
+          aria-hidden={true}
+        />
+      </button>
+      <span css={styles.label}>Add step</span>
+    </div>
+  );
+}
+
+const componentStyles = {
+  outerWrapper: css`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  `,
+  box: ({ euiTheme }: UseEuiTheme) => css`
+    width: ${PLACEHOLDER_SIZE}px;
+    height: ${PLACEHOLDER_SIZE}px;
+    border-radius: 12px;
+    background-color: transparent;
+    border: 2px dashed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 150ms ease-in-out, background-color 150ms ease-in-out;
+    padding: 0;
+    outline: none;
+
+    &:focus-visible {
+      outline: 2px solid ${euiTheme.colors.primary};
+      outline-offset: 2px;
+    }
+  `,
+  icon: css`
+    pointer-events: none;
+  `,
+  label: ({ euiTheme }: UseEuiTheme) => css`
+    font-size: 12px;
+    color: ${euiTheme.colors.textSubdued};
+    text-align: center;
+    line-height: 1.3;
+  `,
+};

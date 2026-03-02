@@ -218,6 +218,30 @@ export function transformYamlToNodesAndEdges(
   };
 }
 
+export function appendPlaceholderNodes(nodes: any[], edges: any[]) {
+  const sourceIds = new Set(edges.map((edge) => edge.source));
+
+  const leafNodes = nodes.filter((node) => node.type !== 'trigger' && !sourceIds.has(node.id));
+
+  const placeholderNodes = leafNodes.map((node) => ({
+    id: `${node.id}-placeholder`,
+    type: 'placeholder',
+    data: { leafStepName: node.data.label },
+    style: { width: 100, height: 84 },
+  }));
+
+  const placeholderEdges = leafNodes.map((node) => ({
+    id: `${node.id}:${node.id}-placeholder`,
+    source: node.id,
+    target: `${node.id}-placeholder`,
+  }));
+
+  return {
+    nodes: [...nodes, ...placeholderNodes],
+    edges: [...edges, ...placeholderEdges],
+  };
+}
+
 export function applyDagreLayout(nodes: any[], edges: any[]) {
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
@@ -275,5 +299,6 @@ export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml) {
     workflowDefinition?.steps ?? []
   );
 
-  return applyDagreLayout(nodes, edges);
+  const withPlaceholders = appendPlaceholderNodes(nodes, edges);
+  return applyDagreLayout(withPlaceholders.nodes, withPlaceholders.edges);
 }
