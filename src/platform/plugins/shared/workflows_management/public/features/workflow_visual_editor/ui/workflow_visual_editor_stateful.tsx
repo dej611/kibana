@@ -24,9 +24,11 @@ import {
 export const WorkflowVisualEditorStateful = ({
   onAddStepBetween,
   onNodeClick,
+  onRunStep,
 }: {
   onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
+  onRunStep?: (stepName: string) => void;
 }) => {
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowYaml = useSelector(selectEditorYaml) ?? '';
@@ -89,6 +91,7 @@ export const WorkflowVisualEditorStateful = ({
       stepExecutions={stepExecutions}
       onAddStepBetween={onAddStepBetween}
       onNodeClick={onNodeClick}
+      onRunStep={onRunStep}
     />
   );
 };

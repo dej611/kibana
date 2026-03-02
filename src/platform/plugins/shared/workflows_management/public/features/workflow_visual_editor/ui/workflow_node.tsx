@@ -19,7 +19,7 @@ import {
 import { css } from '@emotion/react';
 import type { Node } from '@xyflow/react';
 import { Handle, NodeToolbar, Position } from '@xyflow/react';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { ExecutionStatus } from '@kbn/workflows';
 import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
@@ -51,11 +51,12 @@ function getIconColors(nodeType: NodeType, euiTheme: EuiThemeComputed) {
   };
 }
 
-interface WorkflowNodeData {
+export interface WorkflowNodeData {
   stepType: NodeType;
   label: string;
   step: WorkflowYaml['steps'][number];
   stepExecution?: EsWorkflowStepExecution;
+  onRunStep?: (stepName: string) => void;
 }
 
 const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiThemeComputed) => {
@@ -74,11 +75,25 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
   const { backgroundColor, iconColor } = getIconColors(node.data.stepType, euiTheme);
   const label = node.data.label || node.data.stepType;
   const { status } = node.data.stepExecution ?? {};
+  const { onRunStep } = node.data;
+
+  const handleRunStep = useCallback(() => {
+    onRunStep?.(node.data.label);
+  }, [onRunStep, node.data.label]);
 
   return (
     <>
       <NodeToolbar position={Position.Top} align="center">
         <div css={styles.toolbar} className="nodrag nopan">
+          <EuiToolTip content="Run from this step" position="top" disableScreenReaderOutput>
+            <EuiButtonIcon
+              iconType="playFilled"
+              color="success"
+              aria-label="Run from this step"
+              size="xs"
+              onClick={handleRunStep}
+            />
+          </EuiToolTip>
           <EuiToolTip content="Delete step" position="top" disableScreenReaderOutput>
             <EuiButtonIcon iconType="trash" color="danger" aria-label="Delete step" size="xs" />
           </EuiToolTip>

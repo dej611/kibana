@@ -184,6 +184,13 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     [getContextOverrideData, submitStepRun]
   );
 
+  const handleVisualEditorRunStep = useCallback(
+    (stepName: string) => {
+      handleStepRun({ stepId: stepName, actionType: 'run' });
+    },
+    [handleStepRun]
+  );
+
   return (
     <>
       <EuiFlexGroup gutterSize="none" style={{ height: '100%' }}>
@@ -202,6 +209,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
               <WorkflowVisualEditor
                 onAddStepBetween={handleAddStepBetween}
                 onNodeClick={handleNodeClick}
+                onRunStep={handleVisualEditorRunStep}
               />
             </React.Suspense>
           </EuiFlexItem>

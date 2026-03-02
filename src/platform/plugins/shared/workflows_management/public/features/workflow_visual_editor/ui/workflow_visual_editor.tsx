@@ -49,11 +49,13 @@ export function WorkflowVisualEditor({
   stepExecutions,
   onAddStepBetween,
   onNodeClick,
+  onRunStep,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
   onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
+  onRunStep?: (stepName: string) => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -85,23 +87,20 @@ export function WorkflowVisualEditor({
     }, {} as Record<string, WorkflowStepExecutionDto>);
   }, [stepExecutions]);
 
-  const derivedNodes = useMemo(() => {
-    if (!stepExecutionMap) {
-      return layoutNodes;
-    }
-    return layoutNodes.map((node) => {
-      if (stepExecutionMap[node.data.label]) {
-        return {
-          ...node,
-          data: {
-            ...node.data,
-            stepExecution: stepExecutionMap[node.data.label],
-          },
-        };
-      }
-      return node;
-    });
-  }, [layoutNodes, stepExecutionMap]);
+  const derivedNodes = useMemo(
+    () =>
+      layoutNodes.map((node) => ({
+        ...node,
+        data: {
+          ...node.data,
+          onRunStep,
+          ...(stepExecutionMap?.[node.data.label]
+            ? { stepExecution: stepExecutionMap[node.data.label] }
+            : {}),
+        },
+      })),
+    [layoutNodes, stepExecutionMap, onRunStep]
+  );
 
   const [nodes, setNodes] = useState(derivedNodes);
 
