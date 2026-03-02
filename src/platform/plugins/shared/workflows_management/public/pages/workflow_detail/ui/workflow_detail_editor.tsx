@@ -11,26 +11,36 @@ import type { UseEuiTheme } from '@elastic/eui';
 import { EuiFlexGroup, EuiFlexItem, EuiLoadingSpinner } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React, { useCallback, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { isScalar, parseDocument } from 'yaml';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import type { monaco } from '@kbn/monaco';
-import type { StepContext } from '@kbn/workflows';
+import type { StepContext, WorkflowYaml } from '@kbn/workflows';
 import {
   WORKFLOWS_UI_EXECUTION_GRAPH_SETTING_ID,
   WORKFLOWS_UI_VISUAL_EDITOR_SETTING_ID,
 } from '@kbn/workflows';
+import type { WorkflowDetailDto } from '@kbn/workflows/types/latest';
 import { useContextOverrideData } from './use_context_override_data';
 import { WorkflowDetailConnectorFlyout } from './workflow_detail_connector_flyout';
-import { getStepNodesWithType } from '../../../../common/lib/yaml';
+import {
+  getStepNodesWithType,
+  parseWorkflowYamlToJSON,
+  stringifyWorkflowDefinition,
+} from '../../../../common/lib/yaml';
+import { getWorkflowZodSchemaLoose } from '../../../../common/schema';
+import { useAvailableConnectors } from '../../../entities/connectors/model/use_available_connectors';
 import { useWorkflowActions } from '../../../entities/workflows/model/use_workflow_actions';
+import { setYamlString } from '../../../entities/workflows/store';
 import {
   selectEditorWorkflowLookup,
-  selectYamlString,
+  selectYamlString as selectYamlStringSelector,
 } from '../../../entities/workflows/store/workflow_detail/selectors';
 import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
 import { TestStepModal } from '../../../features/run_workflow/ui/test_step_modal';
+import { buildExtractedWorkflows } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
+import { ExtractSubWorkflowModal } from '../../../features/workflow_visual_editor/ui/extract_sub_workflow_modal';
 import { useKibana } from '../../../hooks/use_kibana';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
 import type { ContextOverrideData } from '../../../shared/utils/build_step_context_override/build_step_context_override';
@@ -52,23 +62,31 @@ interface WorkflowDetailEditorProps {
   highlightDiff?: boolean;
 }
 
+interface ExtractModalState {
+  selectedStepNames: string[];
+  topLevelRange: [number, number];
+}
+
 export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ highlightDiff }) => {
   const styles = useMemoCss(componentStyles);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const dispatch = useDispatch();
 
   // Redux selectors, only used in current workflow tab, not in executions tab
-  const workflowYaml = useSelector(selectYamlString) ?? '';
+  const workflowYaml = useSelector(selectYamlStringSelector) ?? '';
   const workflowLookup = useSelector(selectEditorWorkflowLookup);
 
   // Hooks
-  const { uiSettings, notifications } = useKibana().services;
+  const { uiSettings, notifications, http } = useKibana().services;
   const { setSelectedExecution } = useWorkflowUrlState();
   const getContextOverrideData = useContextOverrideData();
   const { runIndividualStep } = useWorkflowActions();
+  const connectorsData = useAvailableConnectors();
 
   // Local state
   const [testStepId, setTestStepId] = useState<string | null>(null);
   const [contextOverride, setContextOverride] = useState<ContextOverrideData | null>(null);
+  const [extractModalState, setExtractModalState] = useState<ExtractModalState | null>(null);
 
   // UI settings
   const isVisualEditorEnabled = uiSettings?.get<boolean>(
@@ -213,6 +231,73 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     [handleStepRun]
   );
 
+  const handleExtractSubWorkflow = useCallback(
+    (selectedStepNames: string[], topLevelRange: [number, number]) => {
+      setExtractModalState({ selectedStepNames, topLevelRange });
+    },
+    []
+  );
+
+  const handleExtractConfirm = useCallback(
+    async (newWorkflowName: string) => {
+      if (!extractModalState || !connectorsData) return;
+
+      const parseResult = parseWorkflowYamlToJSON(
+        workflowYaml,
+        getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
+      );
+      if (parseResult.error || !parseResult.data) {
+        throw new Error('Current workflow YAML is invalid');
+      }
+
+      const workflow = parseResult.data as unknown as WorkflowYaml;
+      const { topLevelRange } = extractModalState;
+
+      const { newWorkflowDefinition, updatedWorkflowDefinition } = buildExtractedWorkflows(
+        workflow,
+        topLevelRange,
+        newWorkflowName
+      );
+
+      const newWorkflowYaml = stringifyWorkflowDefinition(
+        newWorkflowDefinition as Record<string, unknown>
+      );
+
+      const created: WorkflowDetailDto = await http.post('/api/workflows', {
+        body: JSON.stringify({ yaml: newWorkflowYaml }),
+      });
+
+      const updatedSteps = (updatedWorkflowDefinition.steps as Array<Record<string, unknown>>).map(
+        (step) => {
+          if (step.type === 'workflow.execute') {
+            const withBlock = step.with as Record<string, unknown>;
+            if (withBlock?.['workflow-id'] === 'PLACEHOLDER') {
+              return { ...step, with: { ...withBlock, 'workflow-id': created.id } };
+            }
+          }
+          return step;
+        }
+      );
+
+      const finalDefinition = { ...updatedWorkflowDefinition, steps: updatedSteps };
+      const updatedYamlString = stringifyWorkflowDefinition(
+        finalDefinition as Record<string, unknown>
+      );
+
+      dispatch(setYamlString(updatedYamlString));
+      setExtractModalState(null);
+
+      notifications.toasts.addSuccess(
+        i18n.translate('workflows.extractSubWorkflow.success', {
+          defaultMessage: 'Sub-workflow "{name}" created',
+          values: { name: newWorkflowName },
+        }),
+        { toastLifeTimeMs: 5000 }
+      );
+    },
+    [extractModalState, workflowYaml, connectorsData, http, dispatch, notifications.toasts]
+  );
+
   return (
     <>
       <EuiFlexGroup gutterSize="none" style={{ height: '100%' }}>
@@ -233,6 +318,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
                 onAddStepAfter={handleAddStepAfter}
                 onNodeClick={handleNodeClick}
                 onRunStep={handleVisualEditorRunStep}
+                onExtractSubWorkflow={handleExtractSubWorkflow}
               />
             </React.Suspense>
           </EuiFlexItem>
@@ -254,6 +340,14 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         />
       )}
       <WorkflowDetailConnectorFlyout editorRef={editorRef} />
+      {extractModalState && (
+        <ExtractSubWorkflowModal
+          selectedStepNames={extractModalState.selectedStepNames}
+          defaultName={`${workflowYaml ? 'Sub-workflow' : 'New workflow'}`}
+          onConfirm={handleExtractConfirm}
+          onCancel={() => setExtractModalState(null)}
+        />
+      )}
     </>
   );
 });

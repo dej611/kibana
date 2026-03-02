@@ -127,7 +127,7 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
             ]}
           >
             <StepIcon
-              stepType={node.data.stepType.split('.')[0]}
+              stepType={isTriggerNode ? `trigger_${node.data.stepType}` : node.data.stepType}
               executionStatus={undefined}
               color={isTriggerNode || isFlowNode ? iconColor : undefined}
             />

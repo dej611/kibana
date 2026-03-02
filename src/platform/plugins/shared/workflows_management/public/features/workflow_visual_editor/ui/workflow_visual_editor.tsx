@@ -32,6 +32,10 @@ import { WorkflowGraphEdge } from './workflow_edge';
 import { WorkflowForeachGroupNode } from './workflow_foreach_group_node';
 import { WorkflowGraphNode } from './workflow_node';
 import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
+import type { SelectionBounds } from './workflow_selection_toolbar';
+import { WorkflowSelectionToolbar } from './workflow_selection_toolbar';
+import type { SelectionValidation, ValidSelection } from '../lib/extract_sub_workflow';
+import { validateContiguousSelection } from '../lib/extract_sub_workflow';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
 
 const nodeTypes = {
@@ -56,7 +60,7 @@ export function WorkflowVisualEditor({
   onAddStepAfter,
   onNodeClick,
   onRunStep,
-  onSelectionChange,
+  onExtractSubWorkflow,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
@@ -64,7 +68,7 @@ export function WorkflowVisualEditor({
   onAddStepAfter?: (leafStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
-  onSelectionChange?: OnSelectionChangeFunc;
+  onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -125,6 +129,76 @@ export function WorkflowVisualEditor({
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
+
+  const [selectionState, setSelectionState] = useState<SelectionValidation | null>(null);
+  const [selectionBounds, setSelectionBounds] = useState<SelectionBounds | null>(null);
+  const [isBoxSelecting, setIsBoxSelecting] = useState(false);
+
+  const handleSelectionStart = useCallback(() => {
+    setIsBoxSelecting(true);
+  }, []);
+
+  const handleSelectionEnd = useCallback(() => {
+    setIsBoxSelecting(false);
+  }, []);
+
+  const handleSelectionChange = useCallback<OnSelectionChangeFunc>(
+    ({ nodes: selectedNodes }) => {
+      const stepNodes = selectedNodes.filter(
+        (n) => n.type !== 'trigger' && n.type !== 'placeholder'
+      );
+      const stepNames = stepNodes
+        .map((n) => (n.data as Record<string, unknown>).label as string)
+        .filter(Boolean);
+
+      if (stepNames.length === 0) {
+        setSelectionState(null);
+        setSelectionBounds(null);
+        return;
+      }
+
+      const uniqueNames = [...new Set(stepNames)];
+      const validation = validateContiguousSelection(workflow, uniqueNames);
+      setSelectionState(validation);
+
+      if (validation.valid) {
+        const nodesById = new Map(nodes.map((n) => [n.id, n]));
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        for (const node of selectedNodes) {
+          let absX = node.position.x;
+          let absY = node.position.y;
+          if (node.parentId) {
+            const parent = nodesById.get(node.parentId);
+            if (parent) {
+              absX += parent.position.x;
+              absY += parent.position.y;
+            }
+          }
+          const w = (node.measured?.width ?? (node.style?.width as number)) || 100;
+          const h = (node.measured?.height ?? (node.style?.height as number)) || 84;
+          minX = Math.min(minX, absX);
+          minY = Math.min(minY, absY);
+          maxX = Math.max(maxX, absX + w);
+          maxY = Math.max(maxY, absY + h);
+        }
+
+        setSelectionBounds({ minX, minY, maxX, maxY });
+      } else {
+        setSelectionBounds(null);
+      }
+    },
+    [workflow, nodes]
+  );
+
+  const handleExtract = useCallback(() => {
+    if (!selectionState?.valid || !onExtractSubWorkflow) return;
+    const { resolvedStepNames, topLevelRange } = selectionState as ValidSelection;
+    onExtractSubWorkflow(resolvedStepNames, topLevelRange);
+  }, [selectionState, onExtractSubWorkflow]);
 
   const handleEdgeAddNode = useCallback(
     (_edgeId: string, sourceNodeId: string, targetNodeId: string) => {
@@ -192,9 +266,18 @@ export function WorkflowVisualEditor({
           selectionMode={SelectionMode.Full}
           panOnDrag={[1, 2]}
           panOnScroll
-          onSelectionChange={onSelectionChange}
+          onSelectionChange={handleSelectionChange}
+          onSelectionStart={handleSelectionStart}
+          onSelectionEnd={handleSelectionEnd}
         >
           <Controls orientation="horizontal" />
+          {!isBoxSelecting && selectionState?.valid && selectionBounds && onExtractSubWorkflow && (
+            <WorkflowSelectionToolbar
+              selectedStepCount={selectionState.resolvedStepNames.length}
+              selectionBounds={selectionBounds}
+              onExtract={handleExtract}
+            />
+          )}
           <Background
             bgColor={euiTheme.colors.backgroundBasePlain}
             color={euiTheme.colors.textSubdued}
