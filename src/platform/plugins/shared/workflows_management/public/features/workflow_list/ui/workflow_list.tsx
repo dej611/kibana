@@ -43,6 +43,7 @@ import {
 } from '../../../shared/utils/workflow_utils';
 import { WorkflowsTriggersList } from '../../../widgets/worflows_triggers_list/worflows_triggers_list';
 import { WorkflowTags } from '../../../widgets/workflow_tags/workflow_tags';
+import type { WorkflowTriggerTab } from '../../run_workflow/ui/types';
 import { WorkflowExecuteModal } from '../../run_workflow/ui/workflow_execute_modal';
 import { WORKFLOWS_TABLE_PAGE_SIZE_OPTIONS } from '../constants';
 
@@ -90,35 +91,21 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
     setSelectedItems([]);
   }, []);
 
-  const onRefresh = useCallback(
-    async (previousWorkflowsOverride?: WorkflowListDto) => {
-      // Use the override when provided (e.g. pre-optimistic data captured before mutate),
-      // otherwise fall back to the current ref which may already reflect the optimistic update
-      const previousWorkflows = previousWorkflowsOverride ?? workflowsRef.current;
-      const result = await refetch();
+  const onRefresh = useCallback(async () => {
+    const result = await refetch();
 
-      if (previousWorkflows && result.data && areSimilarResults(result.data, previousWorkflows)) {
-        const sorted = keepPreviousWorkflowOrder({
-          previousData: previousWorkflows,
-          freshData: result.data,
-        });
-        queryClient.setQueryData(['workflows', search], sorted);
-      }
-
-      const currentSelectedItems = selectedItemsRef.current;
-      if (result.data?.results && currentSelectedItems.length > 0) {
-        const selectedIds = new Set(currentSelectedItems.map((item) => item.id));
-        const updatedSelectedItems = result.data.results.filter((workflow) =>
-          selectedIds.has(workflow.id)
-        );
-        setSelectedItems(updatedSelectedItems);
-      }
-    },
-    [refetch, queryClient, search]
-  );
+    const currentSelectedItems = selectedItemsRef.current;
+    if (result.data?.results && currentSelectedItems.length > 0) {
+      const selectedIds = new Set(currentSelectedItems.map((item) => item.id));
+      const updatedSelectedItems = result.data.results.filter((workflow) =>
+        selectedIds.has(workflow.id)
+      );
+      setSelectedItems(updatedSelectedItems);
+    }
+  }, [refetch]);
 
   const handleRunWorkflow = useCallback(
-    (id: string, event: Record<string, unknown>, triggerTab?: 'manual' | 'alert' | 'index') => {
+    (id: string, event: Record<string, unknown>, triggerTab?: WorkflowTriggerTab) => {
       runWorkflow.mutate(
         { id, inputs: event, triggerTab },
         {
@@ -531,7 +518,7 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
           definition={executeWorkflow.definition}
           workflowId={executeWorkflow.id}
           onClose={() => setExecuteWorkflow(null)}
-          onSubmit={(event) => handleRunWorkflow(executeWorkflow.id, event)}
+          onSubmit={(data, triggerTab) => handleRunWorkflow(executeWorkflow.id, data, triggerTab)}
         />
       )}
       {workflowToDelete && (
