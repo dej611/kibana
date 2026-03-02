@@ -14,6 +14,7 @@ import type {
   Node,
   NodeTypes,
   OnNodesChange,
+  OnSelectionChangeFunc,
   ReactFlowInstance,
 } from '@xyflow/react';
 import {
@@ -22,6 +23,7 @@ import {
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
 } from '@xyflow/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
@@ -54,6 +56,7 @@ export function WorkflowVisualEditor({
   onAddStepAfter,
   onNodeClick,
   onRunStep,
+  onSelectionChange,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
@@ -61,6 +64,7 @@ export function WorkflowVisualEditor({
   onAddStepAfter?: (leafStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
+  onSelectionChange?: OnSelectionChangeFunc;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -96,6 +100,7 @@ export function WorkflowVisualEditor({
     () =>
       layoutNodes.map((node) => ({
         ...node,
+        selectable: node.type !== 'placeholder',
         data: {
           ...node.data,
           ...(node.type === 'placeholder'
@@ -182,6 +187,12 @@ export function WorkflowVisualEditor({
             hideAttribution: true,
           }}
           colorMode={colorMode.toLowerCase() as ColorMode}
+          nodesDraggable={false}
+          selectionOnDrag
+          selectionMode={SelectionMode.Full}
+          panOnDrag={[1, 2]}
+          panOnScroll
+          onSelectionChange={onSelectionChange}
         >
           <Controls orientation="horizontal" />
           <Background

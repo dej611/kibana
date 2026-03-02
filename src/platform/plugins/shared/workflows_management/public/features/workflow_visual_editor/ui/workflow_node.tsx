@@ -103,7 +103,19 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
       </NodeToolbar>
       <div css={styles.outerWrapper}>
         {!isTriggerNode && <Handle type="target" position={Position.Left} />}
-        <div css={[styles.box, { border: `1px solid ${getNodeBorderColor(status, euiTheme)}` }]}>
+        <div
+          css={[
+            styles.box,
+            {
+              border: `2px solid ${
+                node.selected ? euiTheme.colors.primary : getNodeBorderColor(status, euiTheme)
+              }`,
+              ...(node.selected
+                ? { boxShadow: `0 0 0 2px ${transparentize(euiTheme.colors.primary, 0.3)}` }
+                : {}),
+            },
+          ]}
+        >
           <div
             css={[
               styles.iconCircle,

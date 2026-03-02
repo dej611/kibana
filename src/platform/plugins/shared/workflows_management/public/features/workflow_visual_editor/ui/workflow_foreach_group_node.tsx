@@ -32,7 +32,16 @@ export function WorkflowForeachGroupNode(node: Node<WorkflowForeachGroupNodeData
   const iconColor = euiTheme.colors.warning;
 
   return (
-    <div css={styles.container}>
+    <div
+      css={[
+        styles.container,
+        node.selected && {
+          borderColor: euiTheme.colors.primary,
+          borderStyle: 'solid',
+          boxShadow: `0 0 0 2px ${transparentize(euiTheme.colors.primary, 0.3)}`,
+        },
+      ]}
+    >
       <Handle type="target" position={Position.Left} style={{ top: '50%' }} />
       <div css={styles.labelBar}>
         <StepIcon stepType="foreach" executionStatus={undefined} color={iconColor} />
