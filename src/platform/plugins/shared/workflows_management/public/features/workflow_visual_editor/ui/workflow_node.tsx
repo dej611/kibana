@@ -83,9 +83,9 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
 
   return (
     <>
-      <NodeToolbar position={Position.Top} align="center">
+      <NodeToolbar position={Position.Right} align="center">
         <div css={styles.toolbar} className="nodrag nopan">
-          <EuiToolTip content="Run from this step" position="top" disableScreenReaderOutput>
+          <EuiToolTip content="Run from this step" position="left" disableScreenReaderOutput>
             <EuiButtonIcon
               iconType="playFilled"
               color="success"
@@ -94,9 +94,11 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
               onClick={handleRunStep}
             />
           </EuiToolTip>
-          <EuiToolTip content="Delete step" position="top" disableScreenReaderOutput>
-            <EuiButtonIcon iconType="trash" color="danger" aria-label="Delete step" size="xs" />
-          </EuiToolTip>
+          <div css={styles.toolbarDivider}>
+            <EuiToolTip content="Delete step" position="left" disableScreenReaderOutput>
+              <EuiButtonIcon iconType="trash" color="danger" aria-label="Delete step" size="xs" />
+            </EuiToolTip>
+          </div>
         </div>
       </NodeToolbar>
       <div css={styles.outerWrapper}>
@@ -144,6 +146,7 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
 const componentStyles = {
   toolbar: (euiThemeContext: UseEuiTheme) => css`
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: ${euiThemeContext.euiTheme.size.xs};
     background-color: ${euiThemeContext.euiTheme.colors.backgroundBasePlain};
@@ -151,6 +154,13 @@ const componentStyles = {
     border-radius: ${euiThemeContext.euiTheme.border.radius.medium};
     padding: ${euiThemeContext.euiTheme.size.xs};
     ${euiShadow(euiThemeContext, 's')}
+  `,
+  toolbarDivider: (euiThemeContext: UseEuiTheme) => css`
+    width: 100%;
+    border-top: 1px solid ${euiThemeContext.euiTheme.colors.borderBaseSubdued};
+    padding-top: ${euiThemeContext.euiTheme.size.xs};
+    display: flex;
+    justify-content: center;
   `,
   outerWrapper: css`
     display: flex;
