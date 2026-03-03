@@ -314,14 +314,15 @@ export function WorkflowVisualEditor({
   const edgesWithCallbacks = useMemo(
     () =>
       edges.map((edge) => {
-        const isBranchEdge = Boolean(edge.label);
+        const isBranchEdge = Boolean(edge.branchType);
         const targetsPlaceholder = edge.target.endsWith('-placeholder');
         const showAddButton = !isBranchEdge && !targetsPlaceholder;
         return {
           ...edge,
           data: {
             ...(showAddButton ? { onAddNode: handleEdgeAddNode } : {}),
-            label: edge.label,
+            branchType: edge.branchType,
+            branchIndex: edge.branchIndex,
           },
         };
       }),

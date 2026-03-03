@@ -6,16 +6,46 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import { EuiBadge, EuiButtonIcon, useEuiTheme } from '@elastic/eui';
+import type { EuiThemeComputed } from '@elastic/eui';
+import { EuiButtonIcon, EuiIcon, useEuiTheme } from '@elastic/eui';
 import type { EdgeProps } from '@xyflow/react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import type { EdgeBranchType } from '../model/types';
 
 const IDLE_OPACITY = 0.3;
+const ICON_SIZE = 16;
 
 export interface WorkflowEdgeData {
   onAddNode?: (edgeId: string, source: string, target: string) => void;
-  label?: string;
+  branchType?: EdgeBranchType;
+  branchIndex?: number;
+}
+
+const VIS_COLORS_KEYS = [
+  'euiColorVis0',
+  'euiColorVis1',
+  'euiColorVis2',
+  'euiColorVis3',
+  'euiColorVis4',
+  'euiColorVis5',
+] as const;
+
+function getBranchEdgeStyle(
+  branchType: EdgeBranchType,
+  branchIndex: number | undefined,
+  euiTheme: EuiThemeComputed
+): { stroke: string; strokeDasharray?: string } {
+  switch (branchType) {
+    case 'then':
+      return { stroke: euiTheme.colors.success };
+    case 'else':
+      return { stroke: euiTheme.colors.warning, strokeDasharray: '6 4' };
+    case 'parallel': {
+      const idx = ((branchIndex ?? 1) - 1) % VIS_COLORS_KEYS.length;
+      return { stroke: euiTheme.colors.vis[VIS_COLORS_KEYS[idx]] };
+    }
+  }
 }
 
 export function WorkflowGraphEdge({
@@ -35,6 +65,7 @@ export function WorkflowGraphEdge({
   const { euiTheme } = useEuiTheme();
   const [isHovered, setIsHovered] = useState(false);
   const edgeData = data as WorkflowEdgeData | undefined;
+  const { branchType, branchIndex } = edgeData ?? {};
 
   const [edgePath, centerX, centerY] = getBezierPath({
     sourceX,
@@ -49,14 +80,31 @@ export function WorkflowGraphEdge({
     edgeData?.onAddNode?.(id, source, target);
   }, [edgeData, id, source, target]);
 
-  const labelX = sourceX + (centerX - sourceX) * 0.5;
-  const labelY = sourceY + (centerY - sourceY) * 0.5;
+  const edgeStyle = useMemo(() => {
+    if (!branchType) return style;
+    const branchStyle = getBranchEdgeStyle(branchType, branchIndex, euiTheme);
+    return { ...style, ...branchStyle };
+  }, [style, branchType, branchIndex, euiTheme]);
+
+  const branchIcon = useMemo((): { type: string; color: string } | null => {
+    if (!branchType) return null;
+    switch (branchType) {
+      case 'then':
+        return { type: 'checkCircleFill', color: euiTheme.colors.success };
+      case 'else':
+        return { type: 'errorFill', color: euiTheme.colors.warning };
+      case 'parallel': {
+        const idx = ((branchIndex ?? 1) - 1) % VIS_COLORS_KEYS.length;
+        return { type: 'dot', color: euiTheme.colors.vis[VIS_COLORS_KEYS[idx]] };
+      }
+    }
+  }, [branchType, branchIndex, euiTheme]);
 
   const showAddButton = Boolean(edgeData?.onAddNode);
 
   return (
     <>
-      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />
+      <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={edgeStyle} />
       {showAddButton && (
         <path
           d={edgePath}
@@ -69,23 +117,6 @@ export function WorkflowGraphEdge({
         />
       )}
       <EdgeLabelRenderer>
-        {edgeData?.label && (
-          <div
-            className="nodrag nopan"
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              pointerEvents: 'none',
-            }}
-          >
-            <EuiBadge
-              color={euiTheme.colors.backgroundBaseSubdued}
-              style={{ fontSize: 10, lineHeight: 1 }}
-            >
-              {edgeData.label}
-            </EuiBadge>
-          </div>
-        )}
         {showAddButton && (
           <div
             className="nodrag nopan"

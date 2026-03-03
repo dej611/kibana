@@ -71,5 +71,12 @@ const componentStyles = {
   `,
   handle: css`
     top: 50%;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    pointer-events: none;
   `,
 };

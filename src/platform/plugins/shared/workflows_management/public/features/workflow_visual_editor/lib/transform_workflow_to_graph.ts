@@ -9,7 +9,7 @@
 
 import type { WorkflowYaml } from '@kbn/workflows';
 import { getTriggerLabel } from '../../../shared/lib/graph_utils';
-import type { ForeachGroup, GraphEdge, PreLayoutNode, Step } from '../model/types';
+import type { EdgeBranchType, ForeachGroup, GraphEdge, PreLayoutNode, Step } from '../model/types';
 import { DEFAULT_NODE_STYLE, isFlowNodeType, isStep } from '../model/types';
 
 const MAX_FOREACH_GROUP_DEPTH = 1;
@@ -52,7 +52,11 @@ function processNestedSteps(
   steps: Step[],
   depth: number,
   ids: IdAllocator,
-  options?: { edgeSuffix?: string; edgeLabel?: string }
+  options?: {
+    edgeSuffix?: string;
+    branchType?: EdgeBranchType;
+    branchIndex?: number;
+  }
 ): TransformResult {
   const result = transformYamlToNodesAndEdgesInternal([], steps, depth, ids);
 
@@ -67,7 +71,8 @@ function processNestedSteps(
           id: `${parentId}:${firstNestedId}${suffix ? `-${suffix}` : ''}`,
           source: parentId,
           target: firstNestedId,
-          ...(options?.edgeLabel ? { label: options.edgeLabel } : {}),
+          ...(options?.branchType ? { branchType: options.branchType } : {}),
+          ...(options?.branchIndex != null ? { branchIndex: options.branchIndex } : {}),
         },
       ],
     };
@@ -159,7 +164,7 @@ function transformYamlToNodesAndEdgesInternal(
       if (step.type === 'if' && 'steps' in step && step.steps) {
         const hasElseBranch = 'else' in step && step.else;
         const ifResult = processNestedSteps(id, getValidSteps(step, 'steps'), depth, ids, {
-          edgeLabel: hasElseBranch ? 'then' : undefined,
+          branchType: hasElseBranch ? 'then' : undefined,
         });
         nodes.push(...ifResult.nodes);
         edges.push(...ifResult.edges);
@@ -171,7 +176,7 @@ function transformYamlToNodesAndEdgesInternal(
             getValidSteps(step, 'else'),
             depth,
             ids,
-            { edgeSuffix: 'else', edgeLabel: 'else' }
+            { edgeSuffix: 'else', branchType: 'else' }
           );
           nodes.push(...elseResult.nodes);
           edges.push(...elseResult.edges);
@@ -195,7 +200,8 @@ function transformYamlToNodesAndEdgesInternal(
             : [];
           const branchResult = processNestedSteps(id, branchSteps, depth, ids, {
             edgeSuffix: multipleBranches ? `b${branchIdx}` : undefined,
-            edgeLabel: multipleBranches ? `Branch ${branchIdx + 1}` : undefined,
+            branchType: multipleBranches ? 'parallel' : undefined,
+            branchIndex: multipleBranches ? branchIdx + 1 : undefined,
           });
           nodes.push(...branchResult.nodes);
           edges.push(...branchResult.edges);

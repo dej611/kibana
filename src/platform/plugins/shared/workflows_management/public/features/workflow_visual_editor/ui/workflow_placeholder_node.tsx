@@ -34,7 +34,7 @@ export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholder
 
   return (
     <div css={styles.outerWrapper}>
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Left} css={styles.handle} />
       <button
         type="button"
         css={[
@@ -99,5 +99,14 @@ const componentStyles = {
     color: ${euiTheme.colors.textSubdued};
     text-align: center;
     line-height: 1.3;
+  `,
+  handle: css`
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    pointer-events: none;
   `,
 };

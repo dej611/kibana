@@ -122,7 +122,7 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
         </div>
       </NodeToolbar>
       <div css={styles.outerWrapper}>
-        {!isTriggerNode && <Handle type="target" position={Position.Left} />}
+        {!isTriggerNode && <Handle type="target" position={Position.Left} css={styles.handle} />}
         <div
           css={[
             styles.box,
@@ -181,7 +181,7 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
             {label}
           </span>
         </EuiToolTip>
-        <Handle type="source" position={Position.Right} />
+        <Handle type="source" position={Position.Right} css={styles.handle} />
       </div>
     </>
   );
@@ -248,5 +248,14 @@ const componentStyles = {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  `,
+  handle: css`
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    min-height: 0;
+    border: none;
+    pointer-events: none;
   `,
 };

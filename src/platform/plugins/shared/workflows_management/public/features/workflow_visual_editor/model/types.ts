@@ -111,12 +111,15 @@ export interface PreLayoutNode {
   extent?: 'parent';
 }
 
+export type EdgeBranchType = 'then' | 'else' | 'parallel';
+
 /** Edge as produced by the YAML-to-graph transform (invariant across layout). */
 export interface GraphEdge {
   id: string;
   source: string;
   target: string;
-  label?: string;
+  branchType?: EdgeBranchType;
+  branchIndex?: number;
 }
 
 /** Node after dagre layout has assigned a position. */
