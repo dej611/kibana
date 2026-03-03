@@ -120,6 +120,7 @@ export function WorkflowVisualEditor({
   onAddStepAfter,
   onNodeClick,
   onRunStep,
+  onDeleteStep,
   onExtractSubWorkflow,
 }: {
   workflow: WorkflowYaml;
@@ -128,6 +129,7 @@ export function WorkflowVisualEditor({
   onAddStepAfter?: (leafStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
+  onDeleteStep?: (stepName: string) => void;
   onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
@@ -180,6 +182,7 @@ export function WorkflowVisualEditor({
               ? { onAddStepAfter }
               : {
                   onRunStep,
+                  onDeleteStep,
                   ...(label && stepExecutionMap?.[label]
                     ? { stepExecution: stepExecutionMap[label] }
                     : {}),
@@ -187,7 +190,7 @@ export function WorkflowVisualEditor({
           },
         };
       }),
-    [layoutNodes, stepExecutionMap, onRunStep, onAddStepAfter]
+    [layoutNodes, stepExecutionMap, onRunStep, onDeleteStep, onAddStepAfter]
   );
 
   const [nodes, setNodes] = useState<Node[]>(derivedNodes);

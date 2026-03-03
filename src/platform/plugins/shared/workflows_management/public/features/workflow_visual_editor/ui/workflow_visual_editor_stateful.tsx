@@ -26,12 +26,14 @@ export const WorkflowVisualEditorStateful = ({
   onAddStepAfter,
   onNodeClick,
   onRunStep,
+  onDeleteStep,
   onExtractSubWorkflow,
 }: {
   onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
   onAddStepAfter?: (leafStepName: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
+  onDeleteStep?: (stepName: string) => void;
   onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
 }) => {
   const stepExecutions = useSelector(selectStepExecutions);
@@ -97,6 +99,7 @@ export const WorkflowVisualEditorStateful = ({
       onAddStepAfter={onAddStepAfter}
       onNodeClick={onNodeClick}
       onRunStep={onRunStep}
+      onDeleteStep={onDeleteStep}
       onExtractSubWorkflow={onExtractSubWorkflow}
     />
   );

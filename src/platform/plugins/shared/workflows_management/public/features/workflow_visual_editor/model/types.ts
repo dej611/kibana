@@ -70,6 +70,7 @@ export interface WorkflowStepNodeData extends Record<string, unknown> {
   step?: WorkflowYaml['steps'][number];
   stepExecution?: EsWorkflowStepExecution;
   onRunStep?: (stepName: string) => void;
+  onDeleteStep?: (stepName: string) => void;
 }
 
 /** Data attached to foreach-group graph nodes. */

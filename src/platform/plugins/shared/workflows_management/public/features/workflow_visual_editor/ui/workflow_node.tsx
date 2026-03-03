@@ -58,6 +58,7 @@ export interface WorkflowNodeData {
   step: WorkflowYaml['steps'][number];
   stepExecution?: EsWorkflowStepExecution;
   onRunStep?: (stepName: string) => void;
+  onDeleteStep?: (stepName: string) => void;
 }
 
 const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiThemeComputed) => {
@@ -75,11 +76,15 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
   const { backgroundColor, iconColor } = getIconColors(node.data.stepType, euiTheme);
   const label = node.data.label || node.data.stepType;
   const { status } = node.data.stepExecution ?? {};
-  const { onRunStep } = node.data;
+  const { onRunStep, onDeleteStep } = node.data;
 
   const handleRunStep = useCallback(() => {
     onRunStep?.(node.data.label);
   }, [onRunStep, node.data.label]);
+
+  const handleDeleteStep = useCallback(() => {
+    onDeleteStep?.(node.data.label);
+  }, [onDeleteStep, node.data.label]);
 
   return (
     <>
@@ -96,7 +101,13 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
           </EuiToolTip>
           <div css={styles.toolbarDivider}>
             <EuiToolTip content="Delete step" position="left" disableScreenReaderOutput>
-              <EuiButtonIcon iconType="trash" color="danger" aria-label="Delete step" size="xs" />
+              <EuiButtonIcon
+                iconType="trash"
+                color="danger"
+                aria-label="Delete step"
+                size="xs"
+                onClick={handleDeleteStep}
+              />
             </EuiToolTip>
           </div>
         </div>
