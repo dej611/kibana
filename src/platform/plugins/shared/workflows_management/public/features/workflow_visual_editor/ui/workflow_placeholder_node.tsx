@@ -10,7 +10,7 @@
 import type { UseEuiTheme } from '@elastic/eui';
 import { EuiIcon, transparentize, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { Node } from '@xyflow/react';
+import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import React, { useCallback } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
@@ -18,18 +18,19 @@ import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 const PLACEHOLDER_SIZE = 64;
 
 export interface WorkflowPlaceholderNodeData {
+  [key: string]: unknown;
   leafStepName: string;
   onAddStepAfter?: (leafStepName: string) => void;
 }
 
-// @ts-expect-error - TODO: fix this
-export function WorkflowPlaceholderNode(node: Node<WorkflowPlaceholderNodeData>) {
+export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholderNodeData>>) {
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
 
+  const { onAddStepAfter, leafStepName } = node.data;
   const handleClick = useCallback(() => {
-    node.data.onAddStepAfter?.(node.data.leafStepName);
-  }, [node.data]);
+    onAddStepAfter?.(leafStepName);
+  }, [onAddStepAfter, leafStepName]);
 
   return (
     <div css={styles.outerWrapper}>
@@ -58,7 +59,7 @@ export function WorkflowPlaceholderNode(node: Node<WorkflowPlaceholderNodeData>)
           aria-hidden={true}
         />
       </button>
-      <span css={styles.label}>Add step</span>
+      <span css={styles.label}>{'Add step'}</span>
     </div>
   );
 }

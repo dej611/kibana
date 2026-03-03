@@ -185,10 +185,11 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         });
         setSelectedExecution(response.workflowExecutionId);
         closeModal();
-      } catch (error) {
+      } catch (error: unknown) {
+        const kibanaError = error as { body?: { message?: string } } | undefined;
         const errorMessage =
-          error.body?.message ||
-          error.message ||
+          kibanaError?.body?.message ||
+          (error instanceof Error ? error.message : undefined) ||
           'An unexpected error occurred while running the step';
         notifications.toasts.addError(new Error(errorMessage), {
           title: i18n.translate('workflows.detail.submitStepRun.error', {
@@ -253,33 +254,26 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
       const workflow = parseResult.data as unknown as WorkflowYaml;
       const { topLevelRange } = extractModalState;
 
-      const { newWorkflowDefinition, updatedWorkflowDefinition } = buildExtractedWorkflows(
+      const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflows(
         workflow,
         topLevelRange,
         newWorkflowName
       );
 
-      const newWorkflowYaml = stringifyWorkflowDefinition(
-        newWorkflowDefinition as Record<string, unknown>
-      );
+      const newWorkflowYaml = stringifyWorkflowDefinition(newWorkflowDefinition);
 
       const created: WorkflowDetailDto = await http.post('/api/workflows', {
         body: JSON.stringify({ yaml: newWorkflowYaml }),
       });
 
-      const updatedSteps = (updatedWorkflowDefinition.steps as Array<Record<string, unknown>>).map(
-        (step) => {
-          if (step.type === 'workflow.execute') {
-            const withBlock = step.with as Record<string, unknown>;
-            if (withBlock?.['workflow-id'] === 'PLACEHOLDER') {
-              return { ...step, with: { ...withBlock, 'workflow-id': created.id } };
-            }
-          }
-          return step;
-        }
-      );
+      const executeStep = updatedSteps[executeStepIndex];
+      const withBlock = executeStep.with as Record<string, unknown> | undefined;
+      if (withBlock) {
+        withBlock['workflow-id'] = created.id;
+      }
 
-      const finalDefinition = { ...updatedWorkflowDefinition, steps: updatedSteps };
+      const { steps: _steps, ...workflowWithoutSteps } = workflow;
+      const finalDefinition = { ...workflowWithoutSteps, steps: updatedSteps };
       const updatedYamlString = stringifyWorkflowDefinition(
         finalDefinition as Record<string, unknown>
       );

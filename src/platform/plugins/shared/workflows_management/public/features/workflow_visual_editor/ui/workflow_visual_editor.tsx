@@ -11,11 +11,11 @@ import { useEuiTheme, useResizeObserver } from '@elastic/eui';
 import type {
   ColorMode,
   EdgeTypes,
+  FitViewOptions,
   Node,
   NodeTypes,
   OnNodesChange,
   OnSelectionChangeFunc,
-  ReactFlowInstance,
 } from '@xyflow/react';
 import {
   applyNodeChanges,
@@ -37,8 +37,41 @@ import { WorkflowSelectionToolbar } from './workflow_selection_toolbar';
 import type { SelectionValidation, ValidSelection } from '../lib/extract_sub_workflow';
 import { validateContiguousSelection } from '../lib/extract_sub_workflow';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
+import type { LayoutedNode } from '../model/types';
 
-const nodeTypes = {
+/**
+ * Produces a stable string fingerprint of the workflow's graph topology
+ * (step names, types, and nesting structure). Only changes when the graph
+ * structure changes, not when step parameters or other YAML content change.
+ */
+function computeTopologyFingerprint(workflow: WorkflowYaml): string {
+  const parts: string[] = [];
+  for (const trigger of workflow.triggers ?? []) {
+    parts.push(`t:${trigger.type}`);
+  }
+  function walkSteps(steps: WorkflowYaml['steps'], prefix: string) {
+    for (const step of steps) {
+      parts.push(`${prefix}${step.name}:${step.type}`);
+      if ('steps' in step && Array.isArray(step.steps)) {
+        walkSteps(step.steps as WorkflowYaml['steps'], `${prefix}  `);
+      }
+      if ('else' in step && Array.isArray(step.else)) {
+        walkSteps(step.else as WorkflowYaml['steps'], `${prefix}  e:`);
+      }
+      if ('branches' in step && Array.isArray(step.branches)) {
+        for (const branch of step.branches) {
+          if (Array.isArray(branch.steps)) {
+            walkSteps(branch.steps as WorkflowYaml['steps'], `${prefix}  b:`);
+          }
+        }
+      }
+    }
+  }
+  walkSteps(workflow.steps ?? [], '');
+  return parts.join('\n');
+}
+
+const nodeTypes: NodeTypes = {
   trigger: WorkflowGraphNode,
   if: WorkflowGraphNode,
   merge: WorkflowGraphNode,
@@ -49,9 +82,30 @@ const nodeTypes = {
   foreachGroup: WorkflowForeachGroupNode,
   placeholder: WorkflowPlaceholderNode,
 };
-const edgeTypes = {
+
+const edgeTypes: EdgeTypes = {
   workflowEdge: WorkflowGraphEdge,
 };
+
+const DEFAULT_EDGE_OPTIONS = { type: 'workflowEdge' } as const;
+const FIT_VIEW_OPTIONS = { padding: 1 } as const;
+const PRO_OPTIONS = { hideAttribution: true } as const;
+
+function getNodeLabel(node: LayoutedNode | Node): string | undefined {
+  const { data } = node;
+  if ('label' in data && typeof data.label === 'string') {
+    return data.label;
+  }
+  return undefined;
+}
+
+function getNodeStepType(node: Node): string | undefined {
+  const { data } = node;
+  if ('stepType' in data && typeof data.stepType === 'string') {
+    return data.stepType;
+  }
+  return undefined;
+}
 
 export function WorkflowVisualEditor({
   workflow,
@@ -72,7 +126,7 @@ export function WorkflowVisualEditor({
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const reactFlowInstanceRef = useRef<{ fitView: (options?: FitViewOptions) => Promise<boolean> } | null>(null);
   const dimensions = useResizeObserver(containerRef.current);
 
   useEffect(() => {
@@ -85,42 +139,53 @@ export function WorkflowVisualEditor({
     }
   }, [dimensions]);
 
+  const topologyFingerprint = useMemo(() => computeTopologyFingerprint(workflow), [workflow]);
+  const workflowRef = useRef(workflow);
+  workflowRef.current = workflow;
+
   const { nodes: layoutNodes, edges } = useMemo(
-    () => getLayoutedNodesAndEdges(workflow),
-    [workflow]
+    () => getLayoutedNodesAndEdges(workflowRef.current),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-layout only when topology changes
+    [topologyFingerprint]
   );
 
   const stepExecutionMap = useMemo(() => {
     if (!stepExecutions) {
       return null;
     }
-    return stepExecutions.reduce((acc, stepExecution) => {
-      acc[stepExecution.stepId] = stepExecution;
-      return acc;
-    }, {} as Record<string, WorkflowStepExecutionDto>);
+    return stepExecutions.reduce<Record<string, WorkflowStepExecutionDto>>(
+      (acc, stepExecution) => {
+        acc[stepExecution.stepId] = stepExecution;
+        return acc;
+      },
+      {}
+    );
   }, [stepExecutions]);
 
   const derivedNodes = useMemo(
     () =>
-      layoutNodes.map((node) => ({
-        ...node,
-        selectable: node.type !== 'placeholder',
-        data: {
-          ...node.data,
-          ...(node.type === 'placeholder'
-            ? { onAddStepAfter }
-            : {
-                onRunStep,
-                ...(stepExecutionMap?.[node.data.label]
-                  ? { stepExecution: stepExecutionMap[node.data.label] }
-                  : {}),
-              }),
-        },
-      })),
+      layoutNodes.map((node) => {
+        const label = getNodeLabel(node);
+        return {
+          ...node,
+          selectable: node.type !== 'placeholder',
+          data: {
+            ...node.data,
+            ...(node.type === 'placeholder'
+              ? { onAddStepAfter }
+              : {
+                  onRunStep,
+                  ...(label && stepExecutionMap?.[label]
+                    ? { stepExecution: stepExecutionMap[label] }
+                    : {}),
+                }),
+          },
+        };
+      }),
     [layoutNodes, stepExecutionMap, onRunStep, onAddStepAfter]
   );
 
-  const [nodes, setNodes] = useState(derivedNodes);
+  const [nodes, setNodes] = useState<Node[]>(derivedNodes);
 
   useEffect(() => {
     setNodes(derivedNodes);
@@ -133,6 +198,8 @@ export function WorkflowVisualEditor({
   const [selectionState, setSelectionState] = useState<SelectionValidation | null>(null);
   const [selectionBounds, setSelectionBounds] = useState<SelectionBounds | null>(null);
   const [isBoxSelecting, setIsBoxSelecting] = useState(false);
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
 
   const handleSelectionStart = useCallback(() => {
     setIsBoxSelecting(true);
@@ -148,8 +215,8 @@ export function WorkflowVisualEditor({
         (n) => n.type !== 'trigger' && n.type !== 'placeholder'
       );
       const stepNames = stepNodes
-        .map((n) => (n.data as Record<string, unknown>).label as string)
-        .filter(Boolean);
+        .map((n) => getNodeLabel(n))
+        .filter((name): name is string => Boolean(name));
 
       if (stepNames.length === 0) {
         setSelectionState(null);
@@ -162,7 +229,8 @@ export function WorkflowVisualEditor({
       setSelectionState(validation);
 
       if (validation.valid) {
-        const nodesById = new Map(nodes.map((n) => [n.id, n]));
+        const currentNodes = nodesRef.current;
+        const nodesById = new Map(currentNodes.map((n) => [n.id, n]));
         let minX = Infinity;
         let minY = Infinity;
         let maxX = -Infinity;
@@ -178,8 +246,8 @@ export function WorkflowVisualEditor({
               absY += parent.position.y;
             }
           }
-          const w = (node.measured?.width ?? (node.style?.width as number)) || 100;
-          const h = (node.measured?.height ?? (node.style?.height as number)) || 84;
+          const w = node.measured?.width ?? (typeof node.style?.width === 'number' ? node.style.width : 100);
+          const h = node.measured?.height ?? (typeof node.style?.height === 'number' ? node.style.height : 84);
           minX = Math.min(minX, absX);
           minY = Math.min(minY, absY);
           maxX = Math.max(maxX, absX + w);
@@ -191,39 +259,39 @@ export function WorkflowVisualEditor({
         setSelectionBounds(null);
       }
     },
-    [workflow, nodes]
+    [workflow]
   );
 
   const handleExtract = useCallback(() => {
     if (!selectionState?.valid || !onExtractSubWorkflow) return;
-    const { resolvedStepNames, topLevelRange } = selectionState as ValidSelection;
+    const { resolvedStepNames, topLevelRange } = selectionState satisfies ValidSelection;
     onExtractSubWorkflow(resolvedStepNames, topLevelRange);
   }, [selectionState, onExtractSubWorkflow]);
 
   const handleEdgeAddNode = useCallback(
     (_edgeId: string, sourceNodeId: string, targetNodeId: string) => {
-      const sourceNode = nodes.find((n) => n.id === sourceNodeId);
-      const targetNode = nodes.find((n) => n.id === targetNodeId);
-      const sourceLabel = (sourceNode?.data as Record<string, unknown>)?.label as string;
-      const targetLabel = (targetNode?.data as Record<string, unknown>)?.label as string;
+      const currentNodes = nodesRef.current;
+      const sourceNode = currentNodes.find((n) => n.id === sourceNodeId);
+      const targetNode = currentNodes.find((n) => n.id === targetNodeId);
+      const sourceLabel = sourceNode ? getNodeLabel(sourceNode) : undefined;
+      const targetLabel = targetNode ? getNodeLabel(targetNode) : undefined;
       if (sourceLabel && targetLabel) {
         onAddStepBetween?.(sourceLabel, targetLabel);
       }
     },
-    [nodes, onAddStepBetween]
+    [onAddStepBetween]
   );
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
       if (node.type === 'placeholder') return;
-      const data = node.data as Record<string, unknown>;
       if (node.type === 'trigger') {
-        const triggerType = data?.stepType as string;
+        const triggerType = getNodeStepType(node);
         if (triggerType) {
           onNodeClick?.(triggerType, 'trigger');
         }
       } else {
-        const stepName = data?.label as string;
+        const stepName = getNodeLabel(node);
         if (stepName) {
           onNodeClick?.(stepName, 'step');
         }
@@ -236,7 +304,7 @@ export function WorkflowVisualEditor({
     () =>
       edges.map((edge) => ({
         ...edge,
-        data: { ...edge.data, onAddNode: handleEdgeAddNode },
+        data: { onAddNode: handleEdgeAddNode },
       })),
     [edges, handleEdgeAddNode]
   );
@@ -246,20 +314,18 @@ export function WorkflowVisualEditor({
       <ReactFlowProvider>
         <ReactFlow
           onInit={(instance) => {
-            reactFlowInstanceRef.current = instance as unknown as ReactFlowInstance;
+            reactFlowInstanceRef.current = instance;
           }}
           onNodeClick={handleNodeClick}
           onNodesChange={onNodesChange}
           nodes={nodes}
           edges={edgesWithCallbacks}
-          nodeTypes={nodeTypes as unknown as NodeTypes}
-          edgeTypes={edgeTypes as unknown as EdgeTypes}
-          defaultEdgeOptions={{ type: 'workflowEdge' }}
+          nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
+          defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
           fitView
-          fitViewOptions={{ padding: 1 }}
-          proOptions={{
-            hideAttribution: true,
-          }}
+          fitViewOptions={FIT_VIEW_OPTIONS}
+          proOptions={PRO_OPTIONS}
           colorMode={colorMode.toLowerCase() as ColorMode}
           nodesDraggable={false}
           selectionOnDrag

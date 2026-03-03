@@ -10,7 +10,7 @@
 import type { UseEuiTheme } from '@elastic/eui';
 import { transparentize, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { Node } from '@xyflow/react';
+import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import React from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
@@ -18,14 +18,14 @@ import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
 
 export interface WorkflowForeachGroupNodeData {
+  [key: string]: unknown;
   label: string;
   stepType: string;
   step: WorkflowYaml['steps'][number];
   stepExecution?: EsWorkflowStepExecution;
 }
 
-// @ts-expect-error - TODO: fix this
-export function WorkflowForeachGroupNode(node: Node<WorkflowForeachGroupNodeData>) {
+export function WorkflowForeachGroupNode(node: NodeProps<Node<WorkflowForeachGroupNodeData>>) {
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
   const label = node.data.label || 'foreach';
@@ -42,12 +42,12 @@ export function WorkflowForeachGroupNode(node: Node<WorkflowForeachGroupNodeData
         },
       ]}
     >
-      <Handle type="target" position={Position.Left} style={{ top: '50%' }} />
+      <Handle type="target" position={Position.Left} css={styles.handle} />
       <div css={styles.labelBar}>
         <StepIcon stepType="foreach" executionStatus={undefined} color={iconColor} />
         <span css={styles.labelText}>{label}</span>
       </div>
-      <Handle type="source" position={Position.Right} style={{ top: '50%' }} />
+      <Handle type="source" position={Position.Right} css={styles.handle} />
     </div>
   );
 }
@@ -76,5 +76,8 @@ const componentStyles = {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  `,
+  handle: css`
+    top: 50%;
   `,
 };

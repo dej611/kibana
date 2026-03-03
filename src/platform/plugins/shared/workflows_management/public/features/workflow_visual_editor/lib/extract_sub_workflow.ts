@@ -79,10 +79,6 @@ export function validateContiguousSelection(
     return { valid: false, reason: 'No steps selected' };
   }
 
-  if (selectedStepNames.length === 1) {
-    return { valid: false, reason: 'Single step selected' };
-  }
-
   const stepNameToIndex = buildStepNameToTopLevelIndex(workflow.steps);
   const topLevelIndices = new Set<number>();
 
@@ -116,24 +112,27 @@ export function validateContiguousSelection(
   };
 }
 
+export interface ExtractResult {
+  newWorkflowDefinition: Record<string, unknown>;
+  updatedSteps: Array<Record<string, unknown>>;
+  /** Index of the workflow.execute step in `updatedSteps`. */
+  executeStepIndex: number;
+}
+
 /**
  * Given the current workflow, a contiguous range of top-level step indices, and
  * a name for the new workflow, produces:
- *   - `newWorkflowDefinition`: a workflow containing the extracted steps
- *   - `updatedWorkflowDefinition`: the current workflow with the range replaced
- *     by a single `workflow.execute` step
- *
- * The `workflow-id` in the replacement step is set to `PLACEHOLDER` and must be
- * replaced with the real ID after the new workflow is created via the API.
+ *   - `newWorkflowDefinition`: a workflow definition containing the extracted steps
+ *   - `updatedSteps`: the parent workflow's steps with the extracted range replaced
+ *     by a `workflow.execute` step (with a placeholder `workflow-id`)
+ *   - `executeStepIndex`: the index of the replacement step so the caller can set
+ *     the real workflow ID without scanning
  */
 export function buildExtractedWorkflows(
   workflow: WorkflowYaml,
   topLevelRange: [number, number],
   newWorkflowName: string
-): {
-  newWorkflowDefinition: Record<string, unknown>;
-  updatedWorkflowDefinition: Record<string, unknown>;
-} {
+): ExtractResult {
   const [startIdx, endIdx] = topLevelRange;
   const extractedSteps = workflow.steps.slice(startIdx, endIdx + 1);
 
@@ -145,7 +144,7 @@ export function buildExtractedWorkflows(
     steps: extractedSteps,
   };
 
-  const executeStep = {
+  const executeStep: Record<string, unknown> = {
     name: newWorkflowName,
     type: 'workflow.execute',
     with: {
@@ -153,17 +152,13 @@ export function buildExtractedWorkflows(
     },
   };
 
-  const updatedSteps = [
-    ...workflow.steps.slice(0, startIdx),
-    executeStep,
-    ...workflow.steps.slice(endIdx + 1),
-  ];
+  const before = workflow.steps.slice(0, startIdx) as Array<Record<string, unknown>>;
+  const after = workflow.steps.slice(endIdx + 1) as Array<Record<string, unknown>>;
+  const updatedSteps = [...before, executeStep, ...after];
 
-  const { steps: _steps, ...workflowWithoutSteps } = workflow;
-  const updatedWorkflowDefinition: Record<string, unknown> = {
-    ...workflowWithoutSteps,
-    steps: updatedSteps,
+  return {
+    newWorkflowDefinition,
+    updatedSteps,
+    executeStepIndex: startIdx,
   };
-
-  return { newWorkflowDefinition, updatedWorkflowDefinition };
 }

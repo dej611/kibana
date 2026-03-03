@@ -54,7 +54,13 @@ export const ExtractSubWorkflowModal: React.FC<ExtractSubWorkflowModalProps> = (
     try {
       await onConfirm(name.trim());
     } catch (e) {
-      setError(e.message ?? 'An unexpected error occurred');
+      const message =
+        e instanceof Error
+          ? e.message
+          : typeof e === 'object' && e !== null && 'body' in e
+          ? (e as { body?: { message?: string } }).body?.message
+          : undefined;
+      setError(message ?? 'An unexpected error occurred');
       setIsLoading(false);
     }
   }, [name, isNameValid, onConfirm]);

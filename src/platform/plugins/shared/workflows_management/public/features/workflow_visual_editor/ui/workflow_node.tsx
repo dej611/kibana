@@ -17,7 +17,7 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { Node } from '@xyflow/react';
+import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, NodeToolbar, Position } from '@xyflow/react';
 import React, { useCallback } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
@@ -25,15 +25,15 @@ import { ExecutionStatus } from '@kbn/workflows';
 import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
 import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
-import type { NodeType } from '../lib/get_layouted_nodes_and_edges';
-import { flowNodeTypes } from '../lib/get_layouted_nodes_and_edges';
+import type { WorkflowStepType } from '../model/types';
+import { FLOW_NODE_TYPES } from '../model/types';
 
 const triggerNodeTypes = new Set(['manual', 'alert', 'scheduled']);
 
 const NODE_SIZE = 64;
 
-function getIconColors(nodeType: NodeType, euiTheme: EuiThemeComputed) {
-  if (flowNodeTypes.has(nodeType)) {
+function getIconColors(nodeType: WorkflowStepType, euiTheme: EuiThemeComputed) {
+  if (FLOW_NODE_TYPES.has(nodeType)) {
     return {
       backgroundColor: transparentize(euiTheme.colors.warning, 0.1),
       iconColor: euiTheme.colors.warning,
@@ -52,7 +52,8 @@ function getIconColors(nodeType: NodeType, euiTheme: EuiThemeComputed) {
 }
 
 export interface WorkflowNodeData {
-  stepType: NodeType;
+  [key: string]: unknown;
+  stepType: WorkflowStepType;
   label: string;
   step: WorkflowYaml['steps'][number];
   stepExecution?: EsWorkflowStepExecution;
@@ -66,12 +67,11 @@ const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiTh
   return getExecutionStatusColors(euiTheme, status ?? null).color;
 };
 
-// @ts-expect-error - TODO: fix this
-export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
+export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
   const isTriggerNode = triggerNodeTypes.has(node.data.stepType);
-  const isFlowNode = flowNodeTypes.has(node.data.stepType);
+  const isFlowNode = FLOW_NODE_TYPES.has(node.data.stepType);
   const { backgroundColor, iconColor } = getIconColors(node.data.stepType, euiTheme);
   const label = node.data.label || node.data.stepType;
   const { status } = node.data.stepExecution ?? {};
@@ -122,7 +122,6 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
               {
                 backgroundColor,
                 borderColor: iconColor,
-                // borderRadius: isFlowNode ? '8px' : '50%',
               },
             ]}
           >
@@ -134,7 +133,12 @@ export function WorkflowGraphNode(node: Node<WorkflowNodeData>) {
           </div>
           {status === ExecutionStatus.COMPLETED && (
             <div css={styles.statusBadge}>
-              <EuiIcon type="checkInCircleFilled" size="xl" color="#16C5C0" aria-hidden={true} />
+              <EuiIcon
+                type="checkInCircleFilled"
+                size="xl"
+                color={euiTheme.colors.success}
+                aria-hidden={true}
+              />
             </div>
           )}
           {status === ExecutionStatus.FAILED && (
@@ -205,7 +209,6 @@ const componentStyles = {
     top: -6px;
     right: -6px;
     background-color: ${euiTheme.colors.backgroundBasePlain};
-    // border-radius: 50%;
     line-height: 0;
   `,
   label: ({ euiTheme }: UseEuiTheme) => css`

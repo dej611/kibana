@@ -163,7 +163,7 @@ describe('buildExtractedWorkflows', () => {
       { name: 'step-d', type: 'action' },
     ]);
 
-    const { newWorkflowDefinition, updatedWorkflowDefinition } = buildExtractedWorkflows(
+    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflows(
       workflow,
       [1, 2],
       'extracted-workflow'
@@ -180,7 +180,6 @@ describe('buildExtractedWorkflows', () => {
       ],
     });
 
-    const updatedSteps = updatedWorkflowDefinition.steps as Array<Record<string, unknown>>;
     expect(updatedSteps).toHaveLength(3);
     expect(updatedSteps[0]).toEqual({ name: 'step-a', type: 'action' });
     expect(updatedSteps[1]).toEqual({
@@ -189,6 +188,7 @@ describe('buildExtractedWorkflows', () => {
       with: { 'workflow-id': 'PLACEHOLDER' },
     });
     expect(updatedSteps[2]).toEqual({ name: 'step-d', type: 'action' });
+    expect(executeStepIndex).toBe(1);
   });
 
   it('extracts all steps when the full range is selected', () => {
@@ -197,33 +197,25 @@ describe('buildExtractedWorkflows', () => {
       { name: 'step-b', type: 'action' },
     ]);
 
-    const { newWorkflowDefinition, updatedWorkflowDefinition } = buildExtractedWorkflows(
+    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflows(
       workflow,
       [0, 1],
       'all-steps'
     );
 
     expect((newWorkflowDefinition.steps as unknown[]).length).toBe(2);
-    expect((updatedWorkflowDefinition.steps as unknown[]).length).toBe(1);
-    expect((updatedWorkflowDefinition.steps as Array<Record<string, unknown>>)[0].type).toBe(
-      'workflow.execute'
-    );
+    expect(updatedSteps.length).toBe(1);
+    expect(updatedSteps[0].type).toBe('workflow.execute');
+    expect(executeStepIndex).toBe(0);
   });
 
-  it('preserves workflow metadata in the updated definition', () => {
-    const workflow = {
-      ...makeWorkflow([{ name: 'step-a', type: 'action' }]),
-      description: 'my description',
-      tags: ['tag1'],
-    };
+  it('returns the correct executeStepIndex for leading extraction', () => {
+    const workflow = makeWorkflow([
+      { name: 'step-a', type: 'action' },
+      { name: 'step-b', type: 'action' },
+    ]);
 
-    const { updatedWorkflowDefinition } = buildExtractedWorkflows(
-      workflow as unknown as WorkflowYaml,
-      [0, 0],
-      'sub'
-    );
-
-    expect(updatedWorkflowDefinition.description).toBe('my description');
-    expect(updatedWorkflowDefinition.tags).toEqual(['tag1']);
+    const { executeStepIndex } = buildExtractedWorkflows(workflow, [0, 0], 'sub');
+    expect(executeStepIndex).toBe(0);
   });
 });
