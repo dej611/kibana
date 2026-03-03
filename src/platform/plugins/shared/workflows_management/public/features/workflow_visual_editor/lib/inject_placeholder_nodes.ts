@@ -8,8 +8,7 @@
  */
 
 import type { ForeachGroup, GraphEdge, PreLayoutNode } from '../model/types';
-
-const DEFAULT_NODE_STYLE = { width: 100, height: 84 };
+import { DEFAULT_NODE_STYLE, hasLabel } from '../model/types';
 
 function makePlaceholder(
   node: PreLayoutNode,
@@ -19,7 +18,7 @@ function makePlaceholder(
     node: {
       id: `${node.id}-placeholder`,
       type: 'placeholder',
-      data: { leafStepName: 'label' in node.data ? (node.data.label as string) : node.id },
+      data: { leafStepName: hasLabel(node.data) ? node.data.label : node.id },
       style: { ...DEFAULT_NODE_STYLE },
       ...(parentId ? { parentId, extent: 'parent' as const } : {}),
     },

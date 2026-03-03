@@ -7,9 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { CSSProperties } from 'react';
 import type { Position } from '@xyflow/react';
+import type { CSSProperties } from 'react';
 import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
+
+export type Step = WorkflowYaml['steps'][number];
+
+export const DEFAULT_NODE_STYLE = { width: 100, height: 84 } as const;
 
 export type WorkflowStepType =
   | 'if'
@@ -28,6 +32,36 @@ export const FLOW_NODE_TYPES = new Set<WorkflowStepType>([
   'atomic',
   'trigger',
 ]);
+
+export function isFlowNodeType(type: string): type is WorkflowStepType {
+  return FLOW_NODE_TYPES.has(type as WorkflowStepType);
+}
+
+export function isStep(value: unknown): value is Step {
+  return typeof value === 'object' && value !== null && 'name' in value && 'type' in value;
+}
+
+export function hasLabel(
+  data: Record<string, unknown>
+): data is Record<string, unknown> & { label: string } {
+  return 'label' in data && typeof data.label === 'string';
+}
+
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'object' && error !== null && 'body' in error) {
+    const body = (error as { body?: unknown }).body;
+    if (typeof body === 'object' && body !== null && 'message' in body) {
+      const msg = (body as { message?: unknown }).message;
+      if (typeof msg === 'string') {
+        return msg;
+      }
+    }
+  }
+  return 'An unexpected error occurred';
+}
 
 /** Data attached to step and trigger graph nodes. */
 export interface WorkflowStepNodeData extends Record<string, unknown> {

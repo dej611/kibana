@@ -9,13 +9,10 @@
 
 import type { WorkflowYaml } from '@kbn/workflows';
 import { getTriggerLabel } from '../../../shared/lib/graph_utils';
-import type { ForeachGroup, GraphEdge, PreLayoutNode } from '../model/types';
-import { FLOW_NODE_TYPES } from '../model/types';
+import type { ForeachGroup, GraphEdge, PreLayoutNode, Step } from '../model/types';
+import { DEFAULT_NODE_STYLE, isFlowNodeType, isStep } from '../model/types';
 
-const DEFAULT_NODE_STYLE = { width: 100, height: 84 };
 const MAX_FOREACH_GROUP_DEPTH = 1;
-
-type Step = WorkflowYaml['steps'][number];
 
 export function slugify(name: string): string {
   return name.toLowerCase().replace(/\s+/g, '-');
@@ -61,14 +58,27 @@ function processNestedSteps(
 
   if (result.nodes.length > 0) {
     const firstNestedId = result.nodes[0].id;
-    result.edges.push({
-      id: `${parentId}:${firstNestedId}${edgeSuffix ? `-${edgeSuffix}` : ''}`,
-      source: parentId,
-      target: firstNestedId,
-    });
+    return {
+      ...result,
+      edges: [
+        ...result.edges,
+        {
+          id: `${parentId}:${firstNestedId}${edgeSuffix ? `-${edgeSuffix}` : ''}`,
+          source: parentId,
+          target: firstNestedId,
+        },
+      ],
+    };
   }
 
   return result;
+}
+
+function getValidSteps(step: Step, property: 'steps' | 'else'): Step[] {
+  if (property in step && Array.isArray((step as Record<string, unknown>)[property])) {
+    return ((step as Record<string, unknown>)[property] as unknown[]).filter(isStep);
+  }
+  return [];
 }
 
 function transformYamlToNodesAndEdgesInternal(
@@ -96,7 +106,6 @@ function transformYamlToNodesAndEdgesInternal(
     });
   }
 
-  // Pre-allocate IDs for all steps so sequential edges can reference the next step
   const stepIds = steps.map((step) => ids.allocate(step.name));
 
   for (let i = 0; i < steps.length; i++) {
@@ -120,8 +129,7 @@ function transformYamlToNodesAndEdgesInternal(
         style: { ...DEFAULT_NODE_STYLE },
       });
 
-      const innerSteps =
-        'steps' in step && Array.isArray(step.steps) ? (step.steps as Step[]) : [];
+      const innerSteps = getValidSteps(step, 'steps');
       const {
         nodes: innerNodes,
         edges: innerEdges,
@@ -137,9 +145,7 @@ function transformYamlToNodesAndEdgesInternal(
       foreachGroups.push({ groupNodeId: id, innerNodes: taggedInnerNodes, innerEdges });
       foreachGroups.push(...nestedGroups);
     } else {
-      const nodeType = FLOW_NODE_TYPES.has(step.type as Parameters<typeof FLOW_NODE_TYPES.has>[0])
-        ? step.type
-        : 'action';
+      const nodeType = isFlowNodeType(step.type) ? step.type : 'action';
 
       nodes.push({
         id,
@@ -149,13 +155,19 @@ function transformYamlToNodesAndEdgesInternal(
       });
 
       if (step.type === 'if' && 'steps' in step && step.steps) {
-        const ifResult = processNestedSteps(id, step.steps as Step[], depth, ids);
+        const ifResult = processNestedSteps(id, getValidSteps(step, 'steps'), depth, ids);
         nodes.push(...ifResult.nodes);
         edges.push(...ifResult.edges);
         foreachGroups.push(...ifResult.foreachGroups);
 
         if ('else' in step && step.else) {
-          const elseResult = processNestedSteps(id, step.else as Step[], depth, ids, 'else');
+          const elseResult = processNestedSteps(
+            id,
+            getValidSteps(step, 'else'),
+            depth,
+            ids,
+            'else'
+          );
           nodes.push(...elseResult.nodes);
           edges.push(...elseResult.edges);
           foreachGroups.push(...elseResult.foreachGroups);
@@ -163,7 +175,7 @@ function transformYamlToNodesAndEdgesInternal(
       }
 
       if (step.type === 'atomic' && 'steps' in step && step.steps) {
-        const atomicResult = processNestedSteps(id, step.steps as Step[], depth, ids);
+        const atomicResult = processNestedSteps(id, getValidSteps(step, 'steps'), depth, ids);
         nodes.push(...atomicResult.nodes);
         edges.push(...atomicResult.edges);
         foreachGroups.push(...atomicResult.foreachGroups);
@@ -171,7 +183,10 @@ function transformYamlToNodesAndEdgesInternal(
 
       if (step.type === 'parallel' && 'branches' in step && step.branches) {
         for (const branch of step.branches) {
-          const branchResult = processNestedSteps(id, branch.steps as Step[], depth, ids);
+          const branchSteps = Array.isArray(branch.steps)
+            ? (branch.steps as unknown[]).filter(isStep)
+            : [];
+          const branchResult = processNestedSteps(id, branchSteps, depth, ids);
           nodes.push(...branchResult.nodes);
           edges.push(...branchResult.edges);
           foreachGroups.push(...branchResult.foreachGroups);
@@ -179,7 +194,7 @@ function transformYamlToNodesAndEdgesInternal(
       }
 
       if (step.type === 'merge' && 'steps' in step && step.steps) {
-        const mergeResult = processNestedSteps(id, step.steps as Step[], depth, ids);
+        const mergeResult = processNestedSteps(id, getValidSteps(step, 'steps'), depth, ids);
         nodes.push(...mergeResult.nodes);
         edges.push(...mergeResult.edges);
         foreachGroups.push(...mergeResult.foreachGroups);

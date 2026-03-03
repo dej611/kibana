@@ -39,7 +39,9 @@ import {
 } from '../../../entities/workflows/store/workflow_detail/selectors';
 import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
 import { TestStepModal } from '../../../features/run_workflow/ui/test_step_modal';
-import { buildExtractedWorkflows } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
+import { buildExtractedWorkflow } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
+import type { ExecuteStep } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
+import { getErrorMessage } from '../../../features/workflow_visual_editor/model/types';
 import { ExtractSubWorkflowModal } from '../../../features/workflow_visual_editor/ui/extract_sub_workflow_modal';
 import { useKibana } from '../../../hooks/use_kibana';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
@@ -186,11 +188,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         setSelectedExecution(response.workflowExecutionId);
         closeModal();
       } catch (error: unknown) {
-        const kibanaError = error as { body?: { message?: string } } | undefined;
-        const errorMessage =
-          kibanaError?.body?.message ||
-          (error instanceof Error ? error.message : undefined) ||
-          'An unexpected error occurred while running the step';
+        const errorMessage = getErrorMessage(error);
         notifications.toasts.addError(new Error(errorMessage), {
           title: i18n.translate('workflows.detail.submitStepRun.error', {
             defaultMessage: 'Failed to run step',
@@ -251,43 +249,62 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         throw new Error('Current workflow YAML is invalid');
       }
 
+      // The Zod schema validates the shape but returns `unknown`; safe to cast
+      // after successful validation.
       const workflow = parseResult.data as unknown as WorkflowYaml;
       const { topLevelRange } = extractModalState;
 
-      const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflows(
+      const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
         workflow,
         topLevelRange,
         newWorkflowName
       );
 
-      const newWorkflowYaml = stringifyWorkflowDefinition(newWorkflowDefinition);
+      const newWorkflowYaml = stringifyWorkflowDefinition(
+        newWorkflowDefinition as unknown as Record<string, unknown>
+      );
 
       const created: WorkflowDetailDto = await http.post('/api/workflows', {
         body: JSON.stringify({ yaml: newWorkflowYaml }),
       });
 
-      const executeStep = updatedSteps[executeStepIndex];
-      const withBlock = executeStep.with as Record<string, unknown> | undefined;
-      if (withBlock) {
-        withBlock['workflow-id'] = created.id;
+      try {
+        const executeStep = updatedSteps[executeStepIndex] as ExecuteStep;
+        const linkedSteps = [
+          ...updatedSteps.slice(0, executeStepIndex),
+          { ...executeStep, with: { ...executeStep.with, 'workflow-id': created.id } },
+          ...updatedSteps.slice(executeStepIndex + 1),
+        ];
+
+        const { steps: _steps, ...workflowWithoutSteps } = workflow;
+        const finalDefinition = { ...workflowWithoutSteps, steps: linkedSteps };
+        const updatedYamlString = stringifyWorkflowDefinition(
+          finalDefinition as unknown as Record<string, unknown>
+        );
+
+        dispatch(setYamlString(updatedYamlString));
+        setExtractModalState(null);
+
+        notifications.toasts.addSuccess(
+          i18n.translate('workflows.extractSubWorkflow.success', {
+            defaultMessage: 'Sub-workflow "{name}" created',
+            values: { name: newWorkflowName },
+          }),
+          { toastLifeTimeMs: 5000 }
+        );
+      } catch (linkageError: unknown) {
+        notifications.toasts.addWarning({
+          title: i18n.translate('workflows.extractSubWorkflow.linkageError.title', {
+            defaultMessage: 'Sub-workflow created but linking failed',
+          }),
+          text: i18n.translate('workflows.extractSubWorkflow.linkageError.text', {
+            defaultMessage:
+              'The sub-workflow "{name}" was created (ID: {id}) but could not be linked to the parent workflow. Please update the workflow.execute step manually.',
+            values: { name: newWorkflowName, id: created.id },
+          }),
+        });
+        setExtractModalState(null);
       }
-
-      const { steps: _steps, ...workflowWithoutSteps } = workflow;
-      const finalDefinition = { ...workflowWithoutSteps, steps: updatedSteps };
-      const updatedYamlString = stringifyWorkflowDefinition(
-        finalDefinition as Record<string, unknown>
-      );
-
-      dispatch(setYamlString(updatedYamlString));
-      setExtractModalState(null);
-
-      notifications.toasts.addSuccess(
-        i18n.translate('workflows.extractSubWorkflow.success', {
-          defaultMessage: 'Sub-workflow "{name}" created',
-          values: { name: newWorkflowName },
-        }),
-        { toastLifeTimeMs: 5000 }
-      );
     },
     [extractModalState, workflowYaml, connectorsData, http, dispatch, notifications.toasts]
   );
@@ -337,7 +354,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
       {extractModalState && (
         <ExtractSubWorkflowModal
           selectedStepNames={extractModalState.selectedStepNames}
-          defaultName={`${workflowYaml ? 'Sub-workflow' : 'New workflow'}`}
+          defaultName="Sub-workflow"
           onConfirm={handleExtractConfirm}
           onCancel={() => setExtractModalState(null)}
         />

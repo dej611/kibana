@@ -10,8 +10,7 @@
 import dagre, { graphlib } from '@dagrejs/dagre';
 import { Position } from '@xyflow/react';
 import type { ForeachGroup, GraphEdge, LayoutedNode, PreLayoutNode } from '../model/types';
-
-const DEFAULT_NODE_STYLE = { width: 100, height: 84 };
+import { DEFAULT_NODE_STYLE } from '../model/types';
 
 const GROUP_PADDING_TOP = 40;
 const GROUP_PADDING_X = 20;

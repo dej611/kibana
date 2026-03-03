@@ -35,9 +35,13 @@ import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 import type { SelectionBounds } from './workflow_selection_toolbar';
 import { WorkflowSelectionToolbar } from './workflow_selection_toolbar';
 import type { SelectionValidation, ValidSelection } from '../lib/extract_sub_workflow';
-import { validateContiguousSelection } from '../lib/extract_sub_workflow';
+import {
+  buildStepNameToTopLevelIndex,
+  validateContiguousSelection,
+} from '../lib/extract_sub_workflow';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
 import type { LayoutedNode } from '../model/types';
+import { hasLabel } from '../model/types';
 
 /**
  * Produces a stable string fingerprint of the workflow's graph topology
@@ -92,11 +96,7 @@ const FIT_VIEW_OPTIONS = { padding: 1 } as const;
 const PRO_OPTIONS = { hideAttribution: true } as const;
 
 function getNodeLabel(node: LayoutedNode | Node): string | undefined {
-  const { data } = node;
-  if ('label' in data && typeof data.label === 'string') {
-    return data.label;
-  }
-  return undefined;
+  return hasLabel(node.data) ? node.data.label : undefined;
 }
 
 function getNodeStepType(node: Node): string | undefined {
@@ -106,6 +106,12 @@ function getNodeStepType(node: Node): string | undefined {
   }
   return undefined;
 }
+
+const COLOR_MODE_MAP: Record<string, ColorMode> = {
+  light: 'light',
+  dark: 'dark',
+  system: 'system',
+};
 
 export function WorkflowVisualEditor({
   workflow,
@@ -126,7 +132,9 @@ export function WorkflowVisualEditor({
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const reactFlowInstanceRef = useRef<{ fitView: (options?: FitViewOptions) => Promise<boolean> } | null>(null);
+  const reactFlowInstanceRef = useRef<{
+    fitView: (options?: FitViewOptions) => Promise<boolean>;
+  } | null>(null);
   const dimensions = useResizeObserver(containerRef.current);
 
   useEffect(() => {
@@ -153,13 +161,10 @@ export function WorkflowVisualEditor({
     if (!stepExecutions) {
       return null;
     }
-    return stepExecutions.reduce<Record<string, WorkflowStepExecutionDto>>(
-      (acc, stepExecution) => {
-        acc[stepExecution.stepId] = stepExecution;
-        return acc;
-      },
-      {}
-    );
+    return stepExecutions.reduce<Record<string, WorkflowStepExecutionDto>>((acc, stepExecution) => {
+      acc[stepExecution.stepId] = stepExecution;
+      return acc;
+    }, {});
   }, [stepExecutions]);
 
   const derivedNodes = useMemo(
@@ -201,6 +206,11 @@ export function WorkflowVisualEditor({
   const nodesRef = useRef(nodes);
   nodesRef.current = nodes;
 
+  const stepNameToIndexRef = useRef(buildStepNameToTopLevelIndex(workflow.steps));
+  useEffect(() => {
+    stepNameToIndexRef.current = buildStepNameToTopLevelIndex(workflowRef.current.steps);
+  }, [topologyFingerprint]);
+
   const handleSelectionStart = useCallback(() => {
     setIsBoxSelecting(true);
   }, []);
@@ -209,58 +219,56 @@ export function WorkflowVisualEditor({
     setIsBoxSelecting(false);
   }, []);
 
-  const handleSelectionChange = useCallback<OnSelectionChangeFunc>(
-    ({ nodes: selectedNodes }) => {
-      const stepNodes = selectedNodes.filter(
-        (n) => n.type !== 'trigger' && n.type !== 'placeholder'
-      );
-      const stepNames = stepNodes
-        .map((n) => getNodeLabel(n))
-        .filter((name): name is string => Boolean(name));
+  const handleSelectionChange = useCallback<OnSelectionChangeFunc>(({ nodes: selectedNodes }) => {
+    const stepNodes = selectedNodes.filter((n) => n.type !== 'trigger' && n.type !== 'placeholder');
+    const stepNames = stepNodes
+      .map((n) => getNodeLabel(n))
+      .filter((name): name is string => Boolean(name));
 
-      if (stepNames.length === 0) {
-        setSelectionState(null);
-        setSelectionBounds(null);
-        return;
-      }
+    if (stepNames.length === 0) {
+      setSelectionState(null);
+      setSelectionBounds(null);
+      return;
+    }
 
-      const uniqueNames = [...new Set(stepNames)];
-      const validation = validateContiguousSelection(workflow, uniqueNames);
-      setSelectionState(validation);
+    const uniqueNames = [...new Set(stepNames)];
+    const validation = validateContiguousSelection(workflowRef.current, uniqueNames);
+    setSelectionState(validation);
 
-      if (validation.valid) {
-        const currentNodes = nodesRef.current;
-        const nodesById = new Map(currentNodes.map((n) => [n.id, n]));
-        let minX = Infinity;
-        let minY = Infinity;
-        let maxX = -Infinity;
-        let maxY = -Infinity;
+    if (validation.valid) {
+      const currentNodes = nodesRef.current;
+      const nodesById = new Map(currentNodes.map((n) => [n.id, n]));
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
 
-        for (const node of selectedNodes) {
-          let absX = node.position.x;
-          let absY = node.position.y;
-          if (node.parentId) {
-            const parent = nodesById.get(node.parentId);
-            if (parent) {
-              absX += parent.position.x;
-              absY += parent.position.y;
-            }
+      for (const node of selectedNodes) {
+        let absX = node.position.x;
+        let absY = node.position.y;
+        if (node.parentId) {
+          const parent = nodesById.get(node.parentId);
+          if (parent) {
+            absX += parent.position.x;
+            absY += parent.position.y;
           }
-          const w = node.measured?.width ?? (typeof node.style?.width === 'number' ? node.style.width : 100);
-          const h = node.measured?.height ?? (typeof node.style?.height === 'number' ? node.style.height : 84);
-          minX = Math.min(minX, absX);
-          minY = Math.min(minY, absY);
-          maxX = Math.max(maxX, absX + w);
-          maxY = Math.max(maxY, absY + h);
         }
-
-        setSelectionBounds({ minX, minY, maxX, maxY });
-      } else {
-        setSelectionBounds(null);
+        const w =
+          node.measured?.width ?? (typeof node.style?.width === 'number' ? node.style.width : 100);
+        const h =
+          node.measured?.height ??
+          (typeof node.style?.height === 'number' ? node.style.height : 84);
+        minX = Math.min(minX, absX);
+        minY = Math.min(minY, absY);
+        maxX = Math.max(maxX, absX + w);
+        maxY = Math.max(maxY, absY + h);
       }
-    },
-    [workflow]
-  );
+
+      setSelectionBounds({ minX, minY, maxX, maxY });
+    } else {
+      setSelectionBounds(null);
+    }
+  }, []);
 
   const handleExtract = useCallback(() => {
     if (!selectionState?.valid || !onExtractSubWorkflow) return;
@@ -326,7 +334,7 @@ export function WorkflowVisualEditor({
           fitView
           fitViewOptions={FIT_VIEW_OPTIONS}
           proOptions={PRO_OPTIONS}
-          colorMode={colorMode.toLowerCase() as ColorMode}
+          colorMode={COLOR_MODE_MAP[colorMode.toLowerCase()] ?? 'system'}
           nodesDraggable={false}
           selectionOnDrag
           selectionMode={SelectionMode.Full}

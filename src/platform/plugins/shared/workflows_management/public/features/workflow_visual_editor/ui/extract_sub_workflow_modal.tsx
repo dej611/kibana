@@ -27,6 +27,7 @@ import {
 } from '@elastic/eui';
 import React, { useCallback, useState } from 'react';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../model/types';
 
 interface ExtractSubWorkflowModalProps {
   selectedStepNames: string[];
@@ -53,14 +54,9 @@ export const ExtractSubWorkflowModal: React.FC<ExtractSubWorkflowModalProps> = (
     setError(null);
     try {
       await onConfirm(name.trim());
-    } catch (e) {
-      const message =
-        e instanceof Error
-          ? e.message
-          : typeof e === 'object' && e !== null && 'body' in e
-          ? (e as { body?: { message?: string } }).body?.message
-          : undefined;
-      setError(message ?? 'An unexpected error occurred');
+    } catch (e: unknown) {
+      setError(getErrorMessage(e));
+    } finally {
       setIsLoading(false);
     }
   }, [name, isNameValid, onConfirm]);

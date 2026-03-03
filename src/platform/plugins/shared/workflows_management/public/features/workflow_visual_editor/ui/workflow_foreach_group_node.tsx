@@ -14,16 +14,8 @@ import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import React from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
-import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
-
-export interface WorkflowForeachGroupNodeData {
-  [key: string]: unknown;
-  label: string;
-  stepType: string;
-  step: WorkflowYaml['steps'][number];
-  stepExecution?: EsWorkflowStepExecution;
-}
+import type { WorkflowForeachGroupNodeData } from '../model/types';
 
 export function WorkflowForeachGroupNode(node: NodeProps<Node<WorkflowForeachGroupNodeData>>) {
   const { euiTheme } = useEuiTheme();

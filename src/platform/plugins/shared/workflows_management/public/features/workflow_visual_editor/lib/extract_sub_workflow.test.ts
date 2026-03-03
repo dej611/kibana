@@ -9,7 +9,7 @@
 
 import type { WorkflowYaml } from '@kbn/workflows';
 import {
-  buildExtractedWorkflows,
+  buildExtractedWorkflow,
   buildStepNameToTopLevelIndex,
   validateContiguousSelection,
 } from './extract_sub_workflow';
@@ -154,7 +154,7 @@ describe('validateContiguousSelection', () => {
   });
 });
 
-describe('buildExtractedWorkflows', () => {
+describe('buildExtractedWorkflow', () => {
   it('extracts middle steps into a new workflow and replaces them', () => {
     const workflow = makeWorkflow([
       { name: 'step-a', type: 'action' },
@@ -163,7 +163,7 @@ describe('buildExtractedWorkflows', () => {
       { name: 'step-d', type: 'action' },
     ]);
 
-    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflows(
+    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
       workflow,
       [1, 2],
       'extracted-workflow'
@@ -197,14 +197,14 @@ describe('buildExtractedWorkflows', () => {
       { name: 'step-b', type: 'action' },
     ]);
 
-    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflows(
+    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
       workflow,
       [0, 1],
       'all-steps'
     );
 
-    expect((newWorkflowDefinition.steps as unknown[]).length).toBe(2);
-    expect(updatedSteps.length).toBe(1);
+    expect(newWorkflowDefinition.steps).toHaveLength(2);
+    expect(updatedSteps).toHaveLength(1);
     expect(updatedSteps[0].type).toBe('workflow.execute');
     expect(executeStepIndex).toBe(0);
   });
@@ -215,7 +215,7 @@ describe('buildExtractedWorkflows', () => {
       { name: 'step-b', type: 'action' },
     ]);
 
-    const { executeStepIndex } = buildExtractedWorkflows(workflow, [0, 0], 'sub');
+    const { executeStepIndex } = buildExtractedWorkflow(workflow, [0, 0], 'sub');
     expect(executeStepIndex).toBe(0);
   });
 });

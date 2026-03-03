@@ -8,8 +8,8 @@
  */
 
 import type { WorkflowYaml } from '@kbn/workflows';
-
-type Step = WorkflowYaml['steps'][number];
+import type { Step } from '../model/types';
+import { isStep } from '../model/types';
 
 /**
  * Recursively walks a step and collects all nested step names,
@@ -20,13 +20,17 @@ function collectNestedStepNames(step: Step, topLevelIndex: number, map: Map<stri
 
   if ('steps' in step && Array.isArray(step.steps)) {
     for (const child of step.steps) {
-      collectNestedStepNames(child as Step, topLevelIndex, map);
+      if (isStep(child)) {
+        collectNestedStepNames(child, topLevelIndex, map);
+      }
     }
   }
 
   if ('else' in step && Array.isArray(step.else)) {
     for (const child of step.else) {
-      collectNestedStepNames(child as Step, topLevelIndex, map);
+      if (isStep(child)) {
+        collectNestedStepNames(child, topLevelIndex, map);
+      }
     }
   }
 
@@ -34,7 +38,9 @@ function collectNestedStepNames(step: Step, topLevelIndex: number, map: Map<stri
     for (const branch of step.branches) {
       if (Array.isArray(branch.steps)) {
         for (const child of branch.steps) {
-          collectNestedStepNames(child as Step, topLevelIndex, map);
+          if (isStep(child)) {
+            collectNestedStepNames(child, topLevelIndex, map);
+          }
         }
       }
     }
@@ -112,9 +118,23 @@ export function validateContiguousSelection(
   };
 }
 
+export interface NewWorkflowDefinition {
+  name: string;
+  description: string;
+  enabled: boolean;
+  triggers: Array<{ type: string }>;
+  steps: Step[];
+}
+
+export interface ExecuteStep {
+  name: string;
+  type: 'workflow.execute';
+  with: { 'workflow-id': string };
+}
+
 export interface ExtractResult {
-  newWorkflowDefinition: Record<string, unknown>;
-  updatedSteps: Array<Record<string, unknown>>;
+  newWorkflowDefinition: NewWorkflowDefinition;
+  updatedSteps: Array<Step | ExecuteStep>;
   /** Index of the workflow.execute step in `updatedSteps`. */
   executeStepIndex: number;
 }
@@ -128,7 +148,7 @@ export interface ExtractResult {
  *   - `executeStepIndex`: the index of the replacement step so the caller can set
  *     the real workflow ID without scanning
  */
-export function buildExtractedWorkflows(
+export function buildExtractedWorkflow(
   workflow: WorkflowYaml,
   topLevelRange: [number, number],
   newWorkflowName: string
@@ -136,7 +156,7 @@ export function buildExtractedWorkflows(
   const [startIdx, endIdx] = topLevelRange;
   const extractedSteps = workflow.steps.slice(startIdx, endIdx + 1);
 
-  const newWorkflowDefinition: Record<string, unknown> = {
+  const newWorkflowDefinition: NewWorkflowDefinition = {
     name: newWorkflowName,
     description: `Sub-workflow extracted from ${workflow.name}`,
     enabled: true,
@@ -144,7 +164,7 @@ export function buildExtractedWorkflows(
     steps: extractedSteps,
   };
 
-  const executeStep: Record<string, unknown> = {
+  const executeStep: ExecuteStep = {
     name: newWorkflowName,
     type: 'workflow.execute',
     with: {
@@ -152,9 +172,9 @@ export function buildExtractedWorkflows(
     },
   };
 
-  const before = workflow.steps.slice(0, startIdx) as Array<Record<string, unknown>>;
-  const after = workflow.steps.slice(endIdx + 1) as Array<Record<string, unknown>>;
-  const updatedSteps = [...before, executeStep, ...after];
+  const before = workflow.steps.slice(0, startIdx);
+  const after = workflow.steps.slice(endIdx + 1);
+  const updatedSteps: Array<Step | ExecuteStep> = [...before, executeStep, ...after];
 
   return {
     newWorkflowDefinition,
