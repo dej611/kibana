@@ -34,7 +34,7 @@ export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholder
 
   return (
     <div css={styles.outerWrapper}>
-      <Handle type="target" position={Position.Left} css={styles.handle} />
+      <Handle type="target" position={node.targetPosition ?? Position.Left} css={styles.handle} />
       <button
         type="button"
         css={[
@@ -108,5 +108,15 @@ const componentStyles = {
     min-height: 0;
     border: none;
     pointer-events: none;
+
+    &.react-flow__handle-left,
+    &.react-flow__handle-right {
+      top: 50%;
+    }
+
+    &.react-flow__handle-top,
+    &.react-flow__handle-bottom {
+      left: 50%;
+    }
   `,
 };

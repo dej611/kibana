@@ -7,14 +7,14 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import type { EuiThemeComputed } from '@elastic/eui';
-import { EuiButtonIcon, EuiIcon, useEuiTheme } from '@elastic/eui';
+import { EuiButtonIcon, useEuiTheme } from '@elastic/eui';
 import type { EdgeProps } from '@xyflow/react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 import React, { useCallback, useMemo, useState } from 'react';
+import { i18n } from '@kbn/i18n';
 import type { EdgeBranchType } from '../model/types';
 
 const IDLE_OPACITY = 0.3;
-const ICON_SIZE = 16;
 
 export interface WorkflowEdgeData {
   onAddNode?: (edgeId: string, source: string, target: string) => void;
@@ -86,16 +86,28 @@ export function WorkflowGraphEdge({
     return { ...style, ...branchStyle };
   }, [style, branchType, branchIndex, euiTheme]);
 
-  const branchIcon = useMemo((): { type: string; color: string } | null => {
+  const branchLabel = useMemo((): { text: string; color: string } | null => {
     if (!branchType) return null;
     switch (branchType) {
       case 'then':
-        return { type: 'checkCircleFill', color: euiTheme.colors.success };
+        return {
+          text: i18n.translate('workflows.visualEditor.edge.then', { defaultMessage: 'Then' }),
+          color: euiTheme.colors.success,
+        };
       case 'else':
-        return { type: 'errorFill', color: euiTheme.colors.warning };
+        return {
+          text: i18n.translate('workflows.visualEditor.edge.else', { defaultMessage: 'Else' }),
+          color: euiTheme.colors.warning,
+        };
       case 'parallel': {
         const idx = ((branchIndex ?? 1) - 1) % VIS_COLORS_KEYS.length;
-        return { type: 'dot', color: euiTheme.colors.vis[VIS_COLORS_KEYS[idx]] };
+        return {
+          text: i18n.translate('workflows.visualEditor.edge.branch', {
+            defaultMessage: 'Branch {n}',
+            values: { n: branchIndex ?? 1 },
+          }),
+          color: euiTheme.colors.vis[VIS_COLORS_KEYS[idx]],
+        };
       }
     }
   }, [branchType, branchIndex, euiTheme]);
@@ -138,6 +150,33 @@ export function WorkflowGraphEdge({
               aria-label="Add step"
               onClick={handleAddNode}
             />
+          </div>
+        )}
+        {branchLabel && (
+          <div
+            className="nodrag nopan"
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -100%) translate(${centerX}px, ${centerY}px)`,
+              pointerEvents: 'none',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                color: branchLabel.color,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                padding: '1px 6px',
+                borderRadius: '3px',
+                backgroundColor: euiTheme.colors.backgroundBasePlain,
+                border: `1px solid ${branchLabel.color}`,
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {branchLabel.text}
+            </span>
           </div>
         )}
       </EdgeLabelRenderer>

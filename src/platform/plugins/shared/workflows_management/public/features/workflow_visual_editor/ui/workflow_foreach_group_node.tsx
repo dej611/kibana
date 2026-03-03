@@ -34,12 +34,12 @@ export function WorkflowForeachGroupNode(node: NodeProps<Node<WorkflowForeachGro
         },
       ]}
     >
-      <Handle type="target" position={Position.Left} css={styles.handle} />
+      <Handle type="target" position={node.targetPosition ?? Position.Left} css={styles.handle} />
       <div css={styles.labelBar}>
         <StepIcon stepType="foreach" executionStatus={undefined} color={iconColor} />
         <span css={styles.labelText}>{label}</span>
       </div>
-      <Handle type="source" position={Position.Right} css={styles.handle} />
+      <Handle type="source" position={node.sourcePosition ?? Position.Right} css={styles.handle} />
     </div>
   );
 }
@@ -70,7 +70,6 @@ const componentStyles = {
     text-overflow: ellipsis;
   `,
   handle: css`
-    top: 50%;
     opacity: 0;
     width: 1px;
     height: 1px;
@@ -78,5 +77,15 @@ const componentStyles = {
     min-height: 0;
     border: none;
     pointer-events: none;
+
+    &.react-flow__handle-left,
+    &.react-flow__handle-right {
+      top: 50%;
+    }
+
+    &.react-flow__handle-top,
+    &.react-flow__handle-bottom {
+      left: 50%;
+    }
   `,
 };

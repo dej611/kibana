@@ -9,7 +9,13 @@
 
 import dagre, { graphlib } from '@dagrejs/dagre';
 import { Position } from '@xyflow/react';
-import type { ForeachGroup, GraphEdge, LayoutedNode, PreLayoutNode } from '../model/types';
+import type {
+  ForeachGroup,
+  GraphEdge,
+  LayoutDirection,
+  LayoutedNode,
+  PreLayoutNode,
+} from '../model/types';
 import { DEFAULT_NODE_STYLE } from '../model/types';
 
 const GROUP_PADDING_TOP = 40;
@@ -18,13 +24,14 @@ const GROUP_PADDING_BOTTOM = 20;
 
 export function applyDagreLayout(
   nodes: PreLayoutNode[],
-  edges: GraphEdge[]
+  edges: GraphEdge[],
+  direction: LayoutDirection = 'LR'
 ): { nodes: LayoutedNode[]; edges: GraphEdge[] } {
   const dagreGraph = new graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
 
   dagreGraph.setGraph({
-    rankdir: 'LR',
+    rankdir: direction,
     nodesep: 40,
     ranksep: 60,
     edgesep: 40,
@@ -43,12 +50,13 @@ export function applyDagreLayout(
 
   dagre.layout(dagreGraph);
 
+  const isHorizontal = direction === 'LR';
   const layoutedNodes: LayoutedNode[] = nodes.map((node) => {
     const dagreNode = dagreGraph.node(node.id);
     return {
       ...node,
-      targetPosition: Position.Left,
-      sourcePosition: Position.Right,
+      targetPosition: isHorizontal ? Position.Left : Position.Top,
+      sourcePosition: isHorizontal ? Position.Right : Position.Bottom,
       style: {
         ...node.style,
         width: dagreNode.width,
@@ -64,7 +72,10 @@ export function applyDagreLayout(
   return { nodes: layoutedNodes, edges };
 }
 
-export function layoutForeachGroup(group: ForeachGroup): {
+export function layoutForeachGroup(
+  group: ForeachGroup,
+  direction: LayoutDirection = 'LR'
+): {
   layoutedInnerNodes: LayoutedNode[];
   innerEdges: GraphEdge[];
   groupWidth: number;
@@ -81,7 +92,8 @@ export function layoutForeachGroup(group: ForeachGroup): {
 
   const { nodes: layoutedInner, edges: layoutedInnerEdges } = applyDagreLayout(
     group.innerNodes,
-    group.innerEdges
+    group.innerEdges,
+    direction
   );
 
   let minX = Infinity;

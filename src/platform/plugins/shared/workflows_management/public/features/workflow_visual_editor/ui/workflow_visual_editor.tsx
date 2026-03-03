@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { useEuiTheme, useResizeObserver } from '@elastic/eui';
+import { EuiIcon, useEuiTheme, useResizeObserver } from '@elastic/eui';
 import type {
   ColorMode,
   EdgeTypes,
@@ -20,6 +20,7 @@ import type {
 import {
   applyNodeChanges,
   Background,
+  ControlButton,
   Controls,
   ReactFlow,
   ReactFlowProvider,
@@ -27,6 +28,7 @@ import {
 } from '@xyflow/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
+import { i18n } from '@kbn/i18n';
 import '@xyflow/react/dist/style.css';
 import { WorkflowGraphEdge } from './workflow_edge';
 import { WorkflowForeachGroupNode } from './workflow_foreach_group_node';
@@ -40,7 +42,7 @@ import {
   validateContiguousSelection,
 } from '../lib/extract_sub_workflow';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
-import type { LayoutedNode } from '../model/types';
+import type { LayoutDirection, LayoutedNode } from '../model/types';
 import { hasLabel } from '../model/types';
 
 /**
@@ -56,16 +58,23 @@ function computeTopologyFingerprint(workflow: WorkflowYaml): string {
   function walkSteps(steps: WorkflowYaml['steps'], prefix: string) {
     for (const step of steps) {
       parts.push(`${prefix}${step.name}:${step.type}`);
-      if ('steps' in step && Array.isArray(step.steps)) {
+      const hasNestedSteps = 'steps' in step && Array.isArray(step.steps);
+      if (hasNestedSteps) {
+        parts.push(`${prefix}  nested:${(step.steps as WorkflowYaml['steps']).length}`);
         walkSteps(step.steps as WorkflowYaml['steps'], `${prefix}  `);
       }
-      if ('else' in step && Array.isArray(step.else)) {
+      const hasElse = 'else' in step && Array.isArray(step.else);
+      if (hasElse) {
+        parts.push(`${prefix}  else:${(step.else as WorkflowYaml['steps']).length}`);
         walkSteps(step.else as WorkflowYaml['steps'], `${prefix}  e:`);
       }
       if ('branches' in step && Array.isArray(step.branches)) {
-        for (const branch of step.branches) {
+        const branches = step.branches as Array<{ steps?: WorkflowYaml['steps'] }>;
+        parts.push(`${prefix}  branches:${branches.length}`);
+        for (const [i, branch] of branches.entries()) {
           if (Array.isArray(branch.steps)) {
-            walkSteps(branch.steps as WorkflowYaml['steps'], `${prefix}  b:`);
+            parts.push(`${prefix}  b${i}:${branch.steps.length}`);
+            walkSteps(branch.steps as WorkflowYaml['steps'], `${prefix}  b${i}:`);
           }
         }
       }
@@ -113,6 +122,10 @@ const COLOR_MODE_MAP: Record<string, ColorMode> = {
   system: 'system',
 };
 
+const TOGGLE_LAYOUT_LABEL = i18n.translate('workflows.visualEditor.layout.toggleDirection', {
+  defaultMessage: 'Toggle layout direction',
+});
+
 export function WorkflowVisualEditor({
   workflow,
   stepExecutions,
@@ -121,6 +134,7 @@ export function WorkflowVisualEditor({
   onNodeClick,
   onRunStep,
   onDeleteStep,
+  onDeleteSteps,
   onExtractSubWorkflow,
 }: {
   workflow: WorkflowYaml;
@@ -130,6 +144,7 @@ export function WorkflowVisualEditor({
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
   onDeleteStep?: (stepName: string) => void;
+  onDeleteSteps?: (stepNames: string[]) => void;
   onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
@@ -149,14 +164,16 @@ export function WorkflowVisualEditor({
     }
   }, [dimensions]);
 
+  const [layoutDirection, setLayoutDirection] = useState<LayoutDirection>('LR');
+
   const topologyFingerprint = useMemo(() => computeTopologyFingerprint(workflow), [workflow]);
   const workflowRef = useRef(workflow);
   workflowRef.current = workflow;
 
   const { nodes: layoutNodes, edges } = useMemo(
-    () => getLayoutedNodesAndEdges(workflowRef.current),
+    () => getLayoutedNodesAndEdges(workflowRef.current, layoutDirection),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- re-layout only when topology changes
-    [topologyFingerprint]
+    [topologyFingerprint, layoutDirection]
   );
 
   const stepExecutionMap = useMemo(() => {
@@ -279,6 +296,57 @@ export function WorkflowVisualEditor({
     onExtractSubWorkflow(resolvedStepNames, topLevelRange);
   }, [selectionState, onExtractSubWorkflow]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isMeta = event.metaKey || event.ctrlKey;
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        const selectedStepNames = nodesRef.current
+          .filter(
+            (n) =>
+              n.selected &&
+              n.type !== 'placeholder' &&
+              n.type !== 'trigger' &&
+              n.type !== 'foreachGroup'
+          )
+          .map((n) => getNodeLabel(n))
+          .filter((name): name is string => Boolean(name));
+        if (selectedStepNames.length > 0) {
+          onDeleteSteps?.(selectedStepNames);
+        }
+        event.preventDefault();
+      }
+
+      if (event.key === 'Escape') {
+        setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+        setSelectionState(null);
+        setSelectionBounds(null);
+        event.preventDefault();
+      }
+
+      if (isMeta && event.key === 'a') {
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            selected: n.type !== 'placeholder',
+          }))
+        );
+        event.preventDefault();
+      }
+
+      if (isMeta && event.key === '0') {
+        reactFlowInstanceRef.current?.fitView({ padding: 1, maxZoom: 1, minZoom: 0.5 });
+        event.preventDefault();
+      }
+    };
+
+    container.addEventListener('keydown', handleKeyDown);
+    return () => container.removeEventListener('keydown', handleKeyDown);
+  }, [onDeleteSteps]);
+
   const handleEdgeAddNode = useCallback(
     (_edgeId: string, sourceNodeId: string, targetNodeId: string) => {
       const currentNodes = nodesRef.current;
@@ -330,7 +398,7 @@ export function WorkflowVisualEditor({
   );
 
   return (
-    <div ref={containerRef} css={{ height: '100%', width: '100%' }}>
+    <div ref={containerRef} css={{ height: '100%', width: '100%', outline: 'none' }} tabIndex={-1}>
       <ReactFlowProvider>
         <ReactFlow
           onInit={(instance) => {
@@ -356,7 +424,15 @@ export function WorkflowVisualEditor({
           onSelectionStart={handleSelectionStart}
           onSelectionEnd={handleSelectionEnd}
         >
-          <Controls orientation="horizontal" />
+          <Controls orientation="horizontal">
+            <ControlButton
+              onClick={() => setLayoutDirection((d) => (d === 'LR' ? 'TB' : 'LR'))}
+              title={TOGGLE_LAYOUT_LABEL}
+              aria-label={TOGGLE_LAYOUT_LABEL}
+            >
+              <EuiIcon type={layoutDirection === 'LR' ? 'sortRight' : 'sortDown'} size="s" />
+            </ControlButton>
+          </Controls>
           {!isBoxSelecting &&
             selectionState?.valid &&
             selectionState.resolvedStepNames.length > 1 &&

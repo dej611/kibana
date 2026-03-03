@@ -230,6 +230,56 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     [handleStepRun]
   );
 
+  const handleDeleteSteps = useCallback(
+    (stepNames: string[]) => {
+      if (!connectorsData || stepNames.length === 0) return;
+
+      const parseResult = parseWorkflowYamlToJSON(
+        workflowYaml,
+        getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
+      );
+      if (parseResult.error || !parseResult.data) return;
+
+      const workflow = parseResult.data as unknown as WorkflowYaml;
+      const namesToDelete = new Set(stepNames);
+
+      const filterSteps = (steps: WorkflowYaml['steps']): WorkflowYaml['steps'] => {
+        return steps
+          .filter((step) => !namesToDelete.has(step.name))
+          .map((step) => {
+            const s = step as Record<string, unknown>;
+            if ('steps' in s && Array.isArray(s.steps)) {
+              s.steps = filterSteps(s.steps as WorkflowYaml['steps']);
+            }
+            if ('else' in s && Array.isArray(s.else)) {
+              s.else = filterSteps(s.else as WorkflowYaml['steps']);
+            }
+            if ('branches' in s && Array.isArray(s.branches)) {
+              s.branches = (s.branches as Array<{ steps?: unknown[] }>).map((branch) => ({
+                ...branch,
+                ...(Array.isArray(branch.steps)
+                  ? { steps: filterSteps(branch.steps as WorkflowYaml['steps']) }
+                  : {}),
+              }));
+            }
+            return step;
+          });
+      };
+
+      const updatedWorkflow = { ...workflow, steps: filterSteps(workflow.steps) };
+      const updatedYaml = stringifyWorkflowDefinition(
+        updatedWorkflow as unknown as Record<string, unknown>
+      );
+      dispatch(setYamlString(updatedYaml));
+    },
+    [workflowYaml, connectorsData, dispatch]
+  );
+
+  const handleDeleteStep = useCallback(
+    (stepName: string) => handleDeleteSteps([stepName]),
+    [handleDeleteSteps]
+  );
+
   const handleExtractSubWorkflow = useCallback(
     (selectedStepNames: string[], topLevelRange: [number, number]) => {
       setExtractModalState({ selectedStepNames, topLevelRange });
@@ -293,16 +343,38 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
           { toastLifeTimeMs: 5000 }
         );
       } catch (linkageError: unknown) {
-        notifications.toasts.addWarning({
-          title: i18n.translate('workflows.extractSubWorkflow.linkageError.title', {
-            defaultMessage: 'Sub-workflow created but linking failed',
-          }),
-          text: i18n.translate('workflows.extractSubWorkflow.linkageError.text', {
-            defaultMessage:
-              'The sub-workflow "{name}" was created (ID: {id}) but could not be linked to the parent workflow. Please update the workflow.execute step manually.',
-            values: { name: newWorkflowName, id: created.id },
-          }),
-        });
+        let cleanedUp = false;
+        try {
+          await http.delete('/api/workflows', {
+            body: JSON.stringify({ ids: [created.id] }),
+          });
+          cleanedUp = true;
+        } catch {
+          // cleanup failed — fall through to notify about the orphan
+        }
+
+        if (cleanedUp) {
+          notifications.toasts.addWarning({
+            title: i18n.translate('workflows.extractSubWorkflow.linkageError.rolledBack.title', {
+              defaultMessage: 'Sub-workflow extraction failed',
+            }),
+            text: i18n.translate('workflows.extractSubWorkflow.linkageError.rolledBack.text', {
+              defaultMessage:
+                'Failed to link the sub-workflow to the parent workflow. The created sub-workflow has been removed. Please try again.',
+            }),
+          });
+        } else {
+          notifications.toasts.addWarning({
+            title: i18n.translate('workflows.extractSubWorkflow.linkageError.title', {
+              defaultMessage: 'Sub-workflow created but linking failed',
+            }),
+            text: i18n.translate('workflows.extractSubWorkflow.linkageError.text', {
+              defaultMessage:
+                'The sub-workflow "{name}" was created (ID: {id}) but could not be linked to the parent workflow. Please update the workflow.execute step manually.',
+              values: { name: newWorkflowName, id: created.id },
+            }),
+          });
+        }
         setExtractModalState(null);
       }
     },
@@ -329,6 +401,8 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
                 onAddStepAfter={handleAddStepAfter}
                 onNodeClick={handleNodeClick}
                 onRunStep={handleVisualEditorRunStep}
+                onDeleteStep={handleDeleteStep}
+                onDeleteSteps={handleDeleteSteps}
                 onExtractSubWorkflow={handleExtractSubWorkflow}
               />
             </React.Suspense>

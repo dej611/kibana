@@ -11,13 +11,16 @@ import type { WorkflowYaml } from '@kbn/workflows';
 import { applyDagreLayout, layoutForeachGroup } from './apply_graph_layout';
 import { appendPlaceholderNodes } from './inject_placeholder_nodes';
 import { transformYamlToNodesAndEdges } from './transform_workflow_to_graph';
-import type { GraphEdge, LayoutedNode, PreLayoutNode } from '../model/types';
+import type { GraphEdge, LayoutDirection, LayoutedNode, PreLayoutNode } from '../model/types';
 
 export { applyDagreLayout } from './apply_graph_layout';
 export { appendPlaceholderNodes } from './inject_placeholder_nodes';
 export { transformYamlToNodesAndEdges } from './transform_workflow_to_graph';
 
-export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml): {
+export function getLayoutedNodesAndEdges(
+  workflowDefinition: WorkflowYaml,
+  direction: LayoutDirection = 'LR'
+): {
   nodes: LayoutedNode[];
   edges: GraphEdge[];
 } {
@@ -49,7 +52,7 @@ export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml): {
       }
     }
 
-    const layout = layoutForeachGroup(group);
+    const layout = layoutForeachGroup(group, direction);
     groupLayouts.set(group.groupNodeId, layout);
   }
 
@@ -71,7 +74,8 @@ export function getLayoutedNodesAndEdges(workflowDefinition: WorkflowYaml): {
   // Phase 2: Layout the outer graph
   const { nodes: layoutedOuterNodes, edges: layoutedEdges } = applyDagreLayout(
     outerNodes,
-    withPlaceholderEdges
+    withPlaceholderEdges,
+    direction
   );
 
   // Phase 3: Assemble — parents first, then children (React Flow requirement)

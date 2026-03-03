@@ -136,3 +136,6 @@ export interface ForeachGroup {
   innerNodes: PreLayoutNode[];
   innerEdges: GraphEdge[];
 }
+
+/** Layout direction for the dagre graph. */
+export type LayoutDirection = 'LR' | 'TB';
