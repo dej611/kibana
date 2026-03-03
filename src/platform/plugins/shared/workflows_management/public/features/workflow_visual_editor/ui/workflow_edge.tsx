@@ -52,18 +52,22 @@ export function WorkflowGraphEdge({
   const labelX = sourceX + (centerX - sourceX) * 0.5;
   const labelY = sourceY + (centerY - sourceY) * 0.5;
 
+  const showAddButton = Boolean(edgeData?.onAddNode);
+
   return (
     <>
       <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />
-      <path
-        d={edgePath}
-        fill="none"
-        stroke="transparent"
-        strokeWidth={20}
-        style={{ pointerEvents: 'stroke' }}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      />
+      {showAddButton && (
+        <path
+          d={edgePath}
+          fill="none"
+          stroke="transparent"
+          strokeWidth={20}
+          style={{ pointerEvents: 'stroke' }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+        />
+      )}
       <EdgeLabelRenderer>
         {edgeData?.label && (
           <div
@@ -82,27 +86,29 @@ export function WorkflowGraphEdge({
             </EuiBadge>
           </div>
         )}
-        <div
-          className="nodrag nopan"
-          style={{
-            position: 'absolute',
-            transform: `translate(-50%, -50%) translate(${centerX}px, ${centerY}px)`,
-            opacity: isHovered ? 1 : IDLE_OPACITY,
-            transition: 'opacity 150ms ease-in-out',
-            pointerEvents: 'all',
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <EuiButtonIcon
-            display="empty"
-            color="text"
-            iconType="plusInCircleFilled"
-            size="s"
-            aria-label="Add step"
-            onClick={handleAddNode}
-          />
-        </div>
+        {showAddButton && (
+          <div
+            className="nodrag nopan"
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${centerX}px, ${centerY}px)`,
+              opacity: isHovered ? 1 : IDLE_OPACITY,
+              transition: 'opacity 150ms ease-in-out',
+              pointerEvents: 'all',
+            }}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+          >
+            <EuiButtonIcon
+              display="empty"
+              color="text"
+              iconType="plusInCircleFilled"
+              size="s"
+              aria-label="Add step"
+              onClick={handleAddNode}
+            />
+          </div>
+        )}
       </EdgeLabelRenderer>
     </>
   );

@@ -313,10 +313,18 @@ export function WorkflowVisualEditor({
 
   const edgesWithCallbacks = useMemo(
     () =>
-      edges.map((edge) => ({
-        ...edge,
-        data: { onAddNode: handleEdgeAddNode, label: edge.label },
-      })),
+      edges.map((edge) => {
+        const isBranchEdge = Boolean(edge.label);
+        const targetsPlaceholder = edge.target.endsWith('-placeholder');
+        const showAddButton = !isBranchEdge && !targetsPlaceholder;
+        return {
+          ...edge,
+          data: {
+            ...(showAddButton ? { onAddNode: handleEdgeAddNode } : {}),
+            label: edge.label,
+          },
+        };
+      }),
     [edges, handleEdgeAddNode]
   );
 
@@ -348,7 +356,11 @@ export function WorkflowVisualEditor({
           onSelectionEnd={handleSelectionEnd}
         >
           <Controls orientation="horizontal" />
-          {!isBoxSelecting && selectionState?.valid && selectionBounds && onExtractSubWorkflow && (
+          {!isBoxSelecting &&
+            selectionState?.valid &&
+            selectionState.resolvedStepNames.length > 1 &&
+            selectionBounds &&
+            onExtractSubWorkflow && (
             <WorkflowSelectionToolbar
               selectedStepCount={selectionState.resolvedStepNames.length}
               selectionBounds={selectionBounds}
