@@ -16,6 +16,7 @@ import { isScalar, parseDocument } from 'yaml';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import type { monaco } from '@kbn/monaco';
+import type { ActionConnector } from '@kbn/triggers-actions-ui-plugin/public';
 import type { StepContext, WorkflowYaml } from '@kbn/workflows';
 import {
   WORKFLOWS_UI_EXECUTION_GRAPH_SETTING_ID,
@@ -37,15 +38,19 @@ import {
   selectEditorWorkflowLookup,
   selectYamlString as selectYamlStringSelector,
 } from '../../../entities/workflows/store/workflow_detail/selectors';
+import { loadConnectorsThunk } from '../../../entities/workflows/store/workflow_detail/thunks/load_connectors_thunk';
 import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
 import { TestStepModal } from '../../../features/run_workflow/ui/test_step_modal';
+import type { PendingConnectorStepContext } from '../../../features/workflow_visual_editor';
 import { buildExtractedWorkflow } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
 import type { ExecuteStep } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
 import { getErrorMessage } from '../../../features/workflow_visual_editor/model/types';
 import { ExtractSubWorkflowModal } from '../../../features/workflow_visual_editor/ui/extract_sub_workflow_modal';
+import { useAsyncThunk } from '../../../hooks/use_async_thunk';
 import { useKibana } from '../../../hooks/use_kibana';
 import { useWorkflowUrlState } from '../../../hooks/use_workflow_url_state';
 import type { ContextOverrideData } from '../../../shared/utils/build_step_context_override/build_step_context_override';
+import { insertStepSnippet } from '../../../widgets/workflow_yaml_editor/lib/snippets/insert_step_snippet';
 import { navigateToErrorPosition } from '../../../widgets/workflow_yaml_editor/lib/utils';
 
 const WorkflowYAMLEditor = React.lazy(() =>
@@ -79,16 +84,19 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
   const workflowLookup = useSelector(selectEditorWorkflowLookup);
 
   // Hooks
-  const { uiSettings, notifications, http } = useKibana().services;
+  const { uiSettings, notifications, http, triggersActionsUi } = useKibana().services;
   const { setSelectedExecution } = useWorkflowUrlState();
   const getContextOverrideData = useContextOverrideData();
   const { runIndividualStep } = useWorkflowActions();
   const connectorsData = useAvailableConnectors();
+  const loadConnectors = useAsyncThunk(loadConnectorsThunk);
 
   // Local state
   const [testStepId, setTestStepId] = useState<string | null>(null);
   const [contextOverride, setContextOverride] = useState<ContextOverrideData | null>(null);
   const [extractModalState, setExtractModalState] = useState<ExtractModalState | null>(null);
+  const [pendingConnectorStep, setPendingConnectorStep] =
+    useState<PendingConnectorStepContext | null>(null);
 
   // UI settings
   const isVisualEditorEnabled = uiSettings?.get<boolean>(
@@ -100,60 +108,67 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     false
   );
 
-  // Visual editor → YAML editor bridge
-  const handleAddStepBetween = useCallback((sourceStepName: string, targetStepName: string) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const model = editor.getModel();
-    if (!model) return;
+  // Visual editor → YAML insertion bridge
+  const handleAddStepBetween = useCallback(
+    (sourceStepName: string, targetStepName: string, stepType: string, connectorId?: string) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const model = editor.getModel();
+      if (!model) return;
 
-    const document = parseDocument(model.getValue());
-    const stepNodes = getStepNodesWithType(document);
+      const document = parseDocument(model.getValue());
+      const stepNodes = getStepNodesWithType(document);
 
-    const targetStep = stepNodes.find(
-      (node) => isScalar(node.get('name', true)) && node.get('name', true)?.value === targetStepName
-    );
-
-    if (targetStep?.range) {
-      const targetStartPos = model.getPositionAt(targetStep.range[0]);
-      const lineAbove = Math.max(1, targetStartPos.lineNumber - 1);
-      editor.setPosition({ lineNumber: lineAbove, column: 1 });
-      editor.focus();
-    } else {
-      const sourceStep = stepNodes.find(
+      const targetStep = stepNodes.find(
         (node) =>
-          isScalar(node.get('name', true)) && node.get('name', true)?.value === sourceStepName
+          isScalar(node.get('name', true)) && node.get('name', true)?.value === targetStepName
       );
+
+      if (targetStep?.range) {
+        const targetStartPos = model.getPositionAt(targetStep.range[0]);
+        const lineAbove = Math.max(1, targetStartPos.lineNumber - 1);
+        editor.setPosition({ lineNumber: lineAbove, column: 1 });
+      } else {
+        const sourceStep = stepNodes.find(
+          (node) =>
+            isScalar(node.get('name', true)) && node.get('name', true)?.value === sourceStepName
+        );
+        if (sourceStep?.range) {
+          editor.setPosition(model.getPositionAt(sourceStep.range[2]));
+        }
+      }
+
+      insertStepSnippet(model, document, stepType, editor.getPosition(), editor, connectorId);
+    },
+    []
+  );
+
+  const handleAddStepAfter = useCallback(
+    (leafStepName: string, stepType: string, connectorId?: string) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const model = editor.getModel();
+      if (!model) return;
+
+      const document = parseDocument(model.getValue());
+      const stepNodes = getStepNodesWithType(document);
+
+      const sourceStep = stepNodes.find(
+        (node) => isScalar(node.get('name', true)) && node.get('name', true)?.value === leafStepName
+      );
+
       if (sourceStep?.range) {
         const endPos = model.getPositionAt(sourceStep.range[2]);
         editor.setPosition(endPos);
-        editor.focus();
       }
-    }
 
-    editor.getAction('workflows.editor.action.openActionsPopover')?.run();
-  }, []);
+      insertStepSnippet(model, document, stepType, editor.getPosition(), editor, connectorId);
+    },
+    []
+  );
 
-  const handleAddStepAfter = useCallback((leafStepName: string) => {
-    const editor = editorRef.current;
-    if (!editor) return;
-    const model = editor.getModel();
-    if (!model) return;
-
-    const document = parseDocument(model.getValue());
-    const stepNodes = getStepNodesWithType(document);
-
-    const sourceStep = stepNodes.find(
-      (node) => isScalar(node.get('name', true)) && node.get('name', true)?.value === leafStepName
-    );
-
-    if (sourceStep?.range) {
-      const endPos = model.getPositionAt(sourceStep.range[2]);
-      editor.setPosition(endPos);
-      editor.focus();
-    }
-
-    editor.getAction('workflows.editor.action.openActionsPopover')?.run();
+  const handleCreateConnectorAndAddStep = useCallback((context: PendingConnectorStepContext) => {
+    setPendingConnectorStep(context);
   }, []);
 
   const handleNodeClick = useCallback(
@@ -404,6 +419,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
                 onDeleteStep={handleDeleteStep}
                 onDeleteSteps={handleDeleteSteps}
                 onExtractSubWorkflow={handleExtractSubWorkflow}
+                onCreateConnectorAndAddStep={handleCreateConnectorAndAddStep}
               />
             </React.Suspense>
           </EuiFlexItem>
@@ -425,6 +441,22 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         />
       )}
       <WorkflowDetailConnectorFlyout editorRef={editorRef} />
+      {pendingConnectorStep &&
+        triggersActionsUi?.getAddConnectorFlyout({
+          initialConnector: { actionTypeId: pendingConnectorStep.connectorType },
+          onConnectorCreated: (createdConnector: ActionConnector) => {
+            const { mode, stepType, leafStepName, sourceStepName, targetStepName } =
+              pendingConnectorStep;
+            if (mode === 'after' && leafStepName) {
+              handleAddStepAfter(leafStepName, stepType, createdConnector.id);
+            } else if (mode === 'between' && sourceStepName && targetStepName) {
+              handleAddStepBetween(sourceStepName, targetStepName, stepType, createdConnector.id);
+            }
+            loadConnectors();
+            setPendingConnectorStep(null);
+          },
+          onClose: () => setPendingConnectorStep(null),
+        })}
       {extractModalState && (
         <ExtractSubWorkflowModal
           selectedStepNames={extractModalState.selectedStepNames}

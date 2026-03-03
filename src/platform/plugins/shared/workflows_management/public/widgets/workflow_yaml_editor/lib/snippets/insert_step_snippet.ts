@@ -453,7 +453,8 @@ export function insertStepSnippet(
   yamlDocument: Document | null,
   stepType: string,
   cursorPosition?: monaco.Position | null,
-  editor?: monaco.editor.IStandaloneCodeEditor
+  editor?: monaco.editor.IStandaloneCodeEditor,
+  connectorId?: string
 ) {
   let document: Document;
   try {
@@ -469,7 +470,12 @@ export function insertStepSnippet(
     const lineCount = model.getLineCount();
     const insertText = isBuiltInStepType(stepType)
       ? generateBuiltInStepSnippet(stepType, { full: true, withStepsSection: true })
-      : generateConnectorSnippet(stepType, { full: true, withStepsSection: true });
+      : generateConnectorSnippet(
+          stepType,
+          { full: true, withStepsSection: true },
+          undefined,
+          connectorId
+        );
 
     if (editor) editor.pushUndoStop();
 
@@ -553,7 +559,12 @@ export function insertStepSnippet(
 
   const snippetText = isBuiltInStepType(stepType)
     ? generateBuiltInStepSnippet(stepType, { full: true, withStepsSection: false })
-    : generateConnectorSnippet(stepType, { full: true, withStepsSection: false });
+    : generateConnectorSnippet(
+        stepType,
+        { full: true, withStepsSection: false },
+        undefined,
+        connectorId
+      );
 
   if (editor) editor.pushUndoStop();
 

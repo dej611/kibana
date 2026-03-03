@@ -8,3 +8,4 @@
  */
 
 export { WorkflowVisualEditorStateful as WorkflowVisualEditor } from './ui/workflow_visual_editor_stateful';
+export type { PendingConnectorStepContext } from './ui/workflow_visual_editor';

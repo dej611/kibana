@@ -33,7 +33,8 @@ interface GenerateConnectorSnippetOptions {
 export function generateConnectorSnippet(
   connectorType: string,
   { full, withStepsSection }: GenerateConnectorSnippetOptions = {},
-  dynamicConnectorTypes?: Record<string, ConnectorTypeInfo>
+  dynamicConnectorTypes?: Record<string, ConnectorTypeInfo>,
+  overrideConnectorId?: string
 ): string {
   const stringifyOptions: ToStringOptions = { indent: 2 };
   let parameters: Record<string, unknown>;
@@ -42,16 +43,15 @@ export function generateConnectorSnippet(
     getCachedAllConnectors(dynamicConnectorTypes).find((c) => c.type === connectorType)
       ?.hasConnectorId === 'required';
 
-  // Generate smart connector-id value based on available instances
   let connectorIdValue: string | undefined;
-  if (isConnectorIdRequired) {
+  if (overrideConnectorId) {
+    connectorIdValue = overrideConnectorId;
+  } else if (isConnectorIdRequired) {
     const instances = getConnectorInstancesForType(connectorType, dynamicConnectorTypes);
     if (instances.length > 0) {
-      // Use the first non-deprecated instance as default, or first instance if all are deprecated
       const defaultInstance = instances.find((i) => !i.isDeprecated) || instances[0];
-      connectorIdValue = defaultInstance.id; // Use UUID
+      connectorIdValue = defaultInstance.id;
     } else {
-      // No instances configured, add placeholder comment
       connectorIdValue = '# Enter connector UUID here';
     }
   }

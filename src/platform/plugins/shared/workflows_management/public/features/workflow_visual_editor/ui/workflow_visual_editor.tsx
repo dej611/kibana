@@ -7,7 +7,21 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { EuiIcon, useEuiTheme, useResizeObserver } from '@elastic/eui';
+import {
+  EuiButtonEmpty,
+  EuiFlexGroup,
+  EuiFlexItem,
+  EuiIcon,
+  EuiListGroup,
+  EuiListGroupItem,
+  EuiSpacer,
+  EuiText,
+  EuiTitle,
+  EuiWrappingPopover,
+  useEuiTheme,
+  useResizeObserver,
+} from '@elastic/eui';
+import { css } from '@emotion/react';
 import type {
   ColorMode,
   EdgeTypes,
@@ -27,8 +41,8 @@ import {
   SelectionMode,
 } from '@xyflow/react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import { i18n } from '@kbn/i18n';
+import type { ConnectorTypeInfo, WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import '@xyflow/react/dist/style.css';
 import { WorkflowGraphEdge } from './workflow_edge';
 import { WorkflowForeachGroupNode } from './workflow_foreach_group_node';
@@ -36,6 +50,11 @@ import { WorkflowGraphNode } from './workflow_node';
 import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 import type { SelectionBounds } from './workflow_selection_toolbar';
 import { WorkflowSelectionToolbar } from './workflow_selection_toolbar';
+import { getActionTypeIdFromStepType } from '../../../shared/lib/action_type_utils';
+import { getConnectorInstancesForType } from '../../../widgets/workflow_yaml_editor/lib/autocomplete/suggestions/connector_id/get_connector_id_suggestions_items';
+import { connectorTypeRequiresConnectorId } from '../../../widgets/workflow_yaml_editor/lib/snippets/generate_connector_snippet';
+import type { ActionOptionData } from '../../actions_menu_popover/types';
+import { ActionsMenu } from '../../actions_menu_popover/ui/actions_menu';
 import type { SelectionValidation, ValidSelection } from '../lib/extract_sub_workflow';
 import {
   buildStepNameToTopLevelIndex,
@@ -44,6 +63,31 @@ import {
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
 import type { LayoutDirection, LayoutedNode } from '../model/types';
 import { hasLabel } from '../model/types';
+
+interface AddStepContext {
+  anchorElement: HTMLElement;
+  mode: 'after' | 'between';
+  leafStepName?: string;
+  sourceStepName?: string;
+  targetStepName?: string;
+  phase: 'pickStep' | 'pickConnector';
+  stepType?: string;
+  connectorInstances?: Array<{
+    id: string;
+    name: string;
+    isDeprecated: boolean;
+    connectorType: string;
+  }>;
+}
+
+export interface PendingConnectorStepContext {
+  stepType: string;
+  connectorType: string;
+  mode: 'after' | 'between';
+  leafStepName?: string;
+  sourceStepName?: string;
+  targetStepName?: string;
+}
 
 /**
  * Produces a stable string fingerprint of the workflow's graph topology
@@ -126,9 +170,74 @@ const TOGGLE_LAYOUT_LABEL = i18n.translate('workflows.visualEditor.layout.toggle
   defaultMessage: 'Toggle layout direction',
 });
 
+const CONNECTOR_PICKER_TITLE = i18n.translate('workflows.visualEditor.connectorPicker.title', {
+  defaultMessage: 'Select a connector',
+});
+
+const NO_CONNECTORS_MESSAGE = i18n.translate(
+  'workflows.visualEditor.connectorPicker.noConnectors',
+  { defaultMessage: 'No connectors configured for this type.' }
+);
+
+const CREATE_NEW_CONNECTOR_LABEL = i18n.translate(
+  'workflows.visualEditor.connectorPicker.createNew',
+  { defaultMessage: 'Create new connector' }
+);
+
+const ConnectorPicker = React.memo(
+  ({
+    instances,
+    onSelect,
+    onCreateNew,
+  }: {
+    instances: Array<{ id: string; name: string; isDeprecated: boolean }>;
+    onSelect: (connectorId: string) => void;
+    onCreateNew: () => void;
+  }) => {
+    const activeInstances = instances.filter((inst) => !inst.isDeprecated);
+    const hasInstances = activeInstances.length > 0;
+
+    return (
+      <div css={css({ padding: '12px 16px' })}>
+        <EuiTitle size="xxxs">
+          <h4>{CONNECTOR_PICKER_TITLE}</h4>
+        </EuiTitle>
+        <EuiSpacer size="s" />
+        {hasInstances ? (
+          <EuiListGroup flush gutterSize="none" maxWidth={false}>
+            {activeInstances.map((inst) => (
+              <EuiListGroupItem
+                key={inst.id}
+                label={inst.name}
+                size="s"
+                onClick={() => onSelect(inst.id)}
+                iconType="logoElastic"
+              />
+            ))}
+          </EuiListGroup>
+        ) : (
+          <EuiText size="s" color="subdued">
+            <p>{NO_CONNECTORS_MESSAGE}</p>
+          </EuiText>
+        )}
+        <EuiSpacer size="s" />
+        <EuiFlexGroup justifyContent="center">
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty size="s" iconType="plusInCircle" onClick={onCreateNew}>
+              {CREATE_NEW_CONNECTOR_LABEL}
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    );
+  }
+);
+ConnectorPicker.displayName = 'ConnectorPicker';
+
 export function WorkflowVisualEditor({
   workflow,
   stepExecutions,
+  connectorTypes,
   onAddStepBetween,
   onAddStepAfter,
   onNodeClick,
@@ -136,16 +245,24 @@ export function WorkflowVisualEditor({
   onDeleteStep,
   onDeleteSteps,
   onExtractSubWorkflow,
+  onCreateConnectorAndAddStep,
 }: {
   workflow: WorkflowYaml;
   stepExecutions?: WorkflowStepExecutionDto[];
-  onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
-  onAddStepAfter?: (leafStepName: string) => void;
+  connectorTypes?: Record<string, ConnectorTypeInfo>;
+  onAddStepBetween?: (
+    sourceStepName: string,
+    targetStepName: string,
+    stepType: string,
+    connectorId?: string
+  ) => void;
+  onAddStepAfter?: (leafStepName: string, stepType: string, connectorId?: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
   onDeleteStep?: (stepName: string) => void;
   onDeleteSteps?: (stepNames: string[]) => void;
   onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
+  onCreateConnectorAndAddStep?: (context: PendingConnectorStepContext) => void;
 }) {
   const { colorMode, euiTheme } = useEuiTheme();
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -186,6 +303,84 @@ export function WorkflowVisualEditor({
     }, {});
   }, [stepExecutions]);
 
+  const [addStepContext, setAddStepContext] = useState<AddStepContext | null>(null);
+
+  const handlePlaceholderAddStep = useCallback(
+    (leafStepName: string, anchorElement: HTMLElement) => {
+      setAddStepContext({ anchorElement, mode: 'after', leafStepName, phase: 'pickStep' });
+    },
+    []
+  );
+
+  const closeAddStepPopover = useCallback(() => {
+    setAddStepContext(null);
+  }, []);
+
+  const handleStepTypeSelected = useCallback(
+    (action: ActionOptionData) => {
+      if (!addStepContext) return;
+
+      if (connectorTypeRequiresConnectorId(action.id)) {
+        const instances = getConnectorInstancesForType(action.id, connectorTypes);
+        setAddStepContext({
+          ...addStepContext,
+          phase: 'pickConnector',
+          stepType: action.id,
+          connectorInstances: instances,
+        });
+        return;
+      }
+
+      if (addStepContext.mode === 'after' && addStepContext.leafStepName) {
+        onAddStepAfter?.(addStepContext.leafStepName, action.id);
+      } else if (
+        addStepContext.mode === 'between' &&
+        addStepContext.sourceStepName &&
+        addStepContext.targetStepName
+      ) {
+        onAddStepBetween?.(addStepContext.sourceStepName, addStepContext.targetStepName, action.id);
+      }
+      setAddStepContext(null);
+    },
+    [addStepContext, onAddStepAfter, onAddStepBetween, connectorTypes]
+  );
+
+  const handleConnectorSelected = useCallback(
+    (connectorId: string) => {
+      if (!addStepContext?.stepType) return;
+      if (addStepContext.mode === 'after' && addStepContext.leafStepName) {
+        onAddStepAfter?.(addStepContext.leafStepName, addStepContext.stepType, connectorId);
+      } else if (
+        addStepContext.mode === 'between' &&
+        addStepContext.sourceStepName &&
+        addStepContext.targetStepName
+      ) {
+        onAddStepBetween?.(
+          addStepContext.sourceStepName,
+          addStepContext.targetStepName,
+          addStepContext.stepType,
+          connectorId
+        );
+      }
+      setAddStepContext(null);
+    },
+    [addStepContext, onAddStepAfter, onAddStepBetween]
+  );
+
+  const handleCreateNewConnector = useCallback(() => {
+    if (!addStepContext?.stepType) return;
+    const actionTypeId = getActionTypeIdFromStepType(addStepContext.stepType);
+    onCreateConnectorAndAddStep?.({
+      stepType: addStepContext.stepType,
+      connectorType: actionTypeId,
+      mode: addStepContext.mode,
+      leafStepName: addStepContext.leafStepName,
+      sourceStepName: addStepContext.sourceStepName,
+      targetStepName: addStepContext.targetStepName,
+    });
+    setAddStepContext(null);
+  }, [addStepContext, onCreateConnectorAndAddStep]);
+
   const derivedNodes = useMemo(
     () =>
       layoutNodes.map((node) => {
@@ -196,7 +391,7 @@ export function WorkflowVisualEditor({
           data: {
             ...node.data,
             ...(node.type === 'placeholder'
-              ? { onAddStepAfter }
+              ? { onAddStepAfter: handlePlaceholderAddStep }
               : {
                   onRunStep,
                   onDeleteStep,
@@ -207,7 +402,7 @@ export function WorkflowVisualEditor({
           },
         };
       }),
-    [layoutNodes, stepExecutionMap, onRunStep, onDeleteStep, onAddStepAfter]
+    [layoutNodes, stepExecutionMap, onRunStep, onDeleteStep, handlePlaceholderAddStep]
   );
 
   const [nodes, setNodes] = useState<Node[]>(derivedNodes);
@@ -321,6 +516,7 @@ export function WorkflowVisualEditor({
       }
 
       if (event.key === 'Escape') {
+        setAddStepContext(null);
         setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
         setSelectionState(null);
         setSelectionBounds(null);
@@ -348,17 +544,23 @@ export function WorkflowVisualEditor({
   }, [onDeleteSteps]);
 
   const handleEdgeAddNode = useCallback(
-    (_edgeId: string, sourceNodeId: string, targetNodeId: string) => {
+    (_edgeId: string, sourceNodeId: string, targetNodeId: string, anchorElement: HTMLElement) => {
       const currentNodes = nodesRef.current;
       const sourceNode = currentNodes.find((n) => n.id === sourceNodeId);
       const targetNode = currentNodes.find((n) => n.id === targetNodeId);
       const sourceLabel = sourceNode ? getNodeLabel(sourceNode) : undefined;
       const targetLabel = targetNode ? getNodeLabel(targetNode) : undefined;
       if (sourceLabel && targetLabel) {
-        onAddStepBetween?.(sourceLabel, targetLabel);
+        setAddStepContext({
+          anchorElement,
+          mode: 'between',
+          sourceStepName: sourceLabel,
+          targetStepName: targetLabel,
+          phase: 'pickStep',
+        });
       }
     },
-    [onAddStepBetween]
+    []
   );
 
   const handleNodeClick = useCallback(
@@ -438,18 +640,40 @@ export function WorkflowVisualEditor({
             selectionState.resolvedStepNames.length > 1 &&
             selectionBounds &&
             onExtractSubWorkflow && (
-            <WorkflowSelectionToolbar
-              selectedStepCount={selectionState.resolvedStepNames.length}
-              selectionBounds={selectionBounds}
-              onExtract={handleExtract}
-            />
-          )}
+              <WorkflowSelectionToolbar
+                selectedStepCount={selectionState.resolvedStepNames.length}
+                selectionBounds={selectionBounds}
+                onExtract={handleExtract}
+              />
+            )}
           <Background
             bgColor={euiTheme.colors.backgroundBasePlain}
             color={euiTheme.colors.textSubdued}
           />
         </ReactFlow>
       </ReactFlowProvider>
+      {addStepContext && (
+        <EuiWrappingPopover
+          button={addStepContext.anchorElement}
+          isOpen
+          closePopover={closeAddStepPopover}
+          panelPaddingSize="none"
+          anchorPosition="downCenter"
+          panelProps={{
+            css: css({ minInlineSize: '320px', maxBlockSize: '400px', overflow: 'auto' }),
+          }}
+        >
+          {addStepContext.phase === 'pickStep' ? (
+            <ActionsMenu onActionSelected={handleStepTypeSelected} hideTriggers />
+          ) : (
+            <ConnectorPicker
+              instances={addStepContext.connectorInstances ?? []}
+              onSelect={handleConnectorSelected}
+              onCreateNew={handleCreateNewConnector}
+            />
+          )}
+        </EuiWrappingPopover>
+      )}
     </div>
   );
 }

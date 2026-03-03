@@ -40,17 +40,18 @@ import {
 
 export interface ActionsMenuProps {
   onActionSelected: (action: ActionOptionData) => void;
+  hideTriggers?: boolean;
 }
 
-export function ActionsMenu({ onActionSelected }: ActionsMenuProps) {
+export function ActionsMenu({ onActionSelected, hideTriggers }: ActionsMenuProps) {
   const styles = useMemoCss(componentStyles);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const { euiTheme } = useEuiTheme();
   const { workflowsExtensions } = useKibana().services;
-  const defaultOptions = useMemo(
-    () => getActionOptions(euiTheme, workflowsExtensions),
-    [euiTheme, workflowsExtensions]
-  );
+  const defaultOptions = useMemo(() => {
+    const options = getActionOptions(euiTheme, workflowsExtensions);
+    return hideTriggers ? options.filter((o) => o.id !== 'triggers') : options;
+  }, [euiTheme, workflowsExtensions, hideTriggers]);
   const flatOptions = useMemo(() => flattenOptions(defaultOptions), [defaultOptions]);
 
   const [options, setOptions] = useState<ActionOptionData[]>(defaultOptions);

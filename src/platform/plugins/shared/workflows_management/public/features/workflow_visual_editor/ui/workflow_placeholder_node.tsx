@@ -20,7 +20,7 @@ const PLACEHOLDER_SIZE = 64;
 export interface WorkflowPlaceholderNodeData {
   [key: string]: unknown;
   leafStepName: string;
-  onAddStepAfter?: (leafStepName: string) => void;
+  onAddStepAfter?: (leafStepName: string, anchorElement: HTMLElement) => void;
 }
 
 export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholderNodeData>>) {
@@ -28,9 +28,12 @@ export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholder
   const styles = useMemoCss(componentStyles);
 
   const { onAddStepAfter, leafStepName } = node.data;
-  const handleClick = useCallback(() => {
-    onAddStepAfter?.(leafStepName);
-  }, [onAddStepAfter, leafStepName]);
+  const handleClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      onAddStepAfter?.(leafStepName, event.currentTarget);
+    },
+    [onAddStepAfter, leafStepName]
+  );
 
   return (
     <div css={styles.outerWrapper}>

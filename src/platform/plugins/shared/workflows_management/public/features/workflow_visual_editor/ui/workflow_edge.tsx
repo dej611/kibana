@@ -17,7 +17,7 @@ import type { EdgeBranchType } from '../model/types';
 const IDLE_OPACITY = 0.3;
 
 export interface WorkflowEdgeData {
-  onAddNode?: (edgeId: string, source: string, target: string) => void;
+  onAddNode?: (edgeId: string, source: string, target: string, anchorElement: HTMLElement) => void;
   branchType?: EdgeBranchType;
   branchIndex?: number;
 }
@@ -76,9 +76,12 @@ export function WorkflowGraphEdge({
     targetPosition,
   });
 
-  const handleAddNode = useCallback(() => {
-    edgeData?.onAddNode?.(id, source, target);
-  }, [edgeData, id, source, target]);
+  const handleAddNode = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      edgeData?.onAddNode?.(id, source, target, event.currentTarget);
+    },
+    [edgeData, id, source, target]
+  );
 
   const edgeStyle = useMemo(() => {
     if (!branchType) return style;

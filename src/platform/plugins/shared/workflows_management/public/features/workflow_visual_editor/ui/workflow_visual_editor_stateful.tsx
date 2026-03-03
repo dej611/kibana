@@ -12,6 +12,7 @@ import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { WorkflowYaml } from '@kbn/workflows';
+import type { PendingConnectorStepContext } from './workflow_visual_editor';
 import { WorkflowVisualEditor } from './workflow_visual_editor';
 import { parseWorkflowYamlToJSON } from '../../../../common/lib/yaml';
 import { getWorkflowZodSchemaLoose } from '../../../../common/schema';
@@ -29,14 +30,21 @@ export const WorkflowVisualEditorStateful = ({
   onDeleteStep,
   onDeleteSteps,
   onExtractSubWorkflow,
+  onCreateConnectorAndAddStep,
 }: {
-  onAddStepBetween?: (sourceStepName: string, targetStepName: string) => void;
-  onAddStepAfter?: (leafStepName: string) => void;
+  onAddStepBetween?: (
+    sourceStepName: string,
+    targetStepName: string,
+    stepType: string,
+    connectorId?: string
+  ) => void;
+  onAddStepAfter?: (leafStepName: string, stepType: string, connectorId?: string) => void;
   onNodeClick?: (identifier: string, nodeType: 'step' | 'trigger') => void;
   onRunStep?: (stepName: string) => void;
   onDeleteStep?: (stepName: string) => void;
   onDeleteSteps?: (stepNames: string[]) => void;
   onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
+  onCreateConnectorAndAddStep?: (context: PendingConnectorStepContext) => void;
 }) => {
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowYaml = useSelector(selectEditorYaml) ?? '';
@@ -97,6 +105,7 @@ export const WorkflowVisualEditorStateful = ({
     <WorkflowVisualEditor
       workflow={workflowYamlObject as unknown as WorkflowYaml}
       stepExecutions={stepExecutions}
+      connectorTypes={connectorsData?.connectorTypes}
       onAddStepBetween={onAddStepBetween}
       onAddStepAfter={onAddStepAfter}
       onNodeClick={onNodeClick}
@@ -104,6 +113,7 @@ export const WorkflowVisualEditorStateful = ({
       onDeleteStep={onDeleteStep}
       onDeleteSteps={onDeleteSteps}
       onExtractSubWorkflow={onExtractSubWorkflow}
+      onCreateConnectorAndAddStep={onCreateConnectorAndAddStep}
     />
   );
 };
