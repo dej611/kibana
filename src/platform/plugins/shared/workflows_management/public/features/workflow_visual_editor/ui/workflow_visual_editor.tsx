@@ -315,7 +315,7 @@ export function WorkflowVisualEditor({
     () =>
       edges.map((edge) => ({
         ...edge,
-        data: { onAddNode: handleEdgeAddNode },
+        data: { onAddNode: handleEdgeAddNode, label: edge.label },
       })),
     [edges, handleEdgeAddNode]
   );

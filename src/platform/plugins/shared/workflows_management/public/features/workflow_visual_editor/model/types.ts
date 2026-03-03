@@ -116,6 +116,7 @@ export interface GraphEdge {
   id: string;
   source: string;
   target: string;
+  label?: string;
 }
 
 /** Node after dagre layout has assigned a position. */

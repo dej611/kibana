@@ -52,20 +52,22 @@ function processNestedSteps(
   steps: Step[],
   depth: number,
   ids: IdAllocator,
-  edgeSuffix?: string
+  options?: { edgeSuffix?: string; edgeLabel?: string }
 ): TransformResult {
   const result = transformYamlToNodesAndEdgesInternal([], steps, depth, ids);
 
   if (result.nodes.length > 0) {
     const firstNestedId = result.nodes[0].id;
+    const suffix = options?.edgeSuffix;
     return {
       ...result,
       edges: [
         ...result.edges,
         {
-          id: `${parentId}:${firstNestedId}${edgeSuffix ? `-${edgeSuffix}` : ''}`,
+          id: `${parentId}:${firstNestedId}${suffix ? `-${suffix}` : ''}`,
           source: parentId,
           target: firstNestedId,
+          ...(options?.edgeLabel ? { label: options.edgeLabel } : {}),
         },
       ],
     };
@@ -155,18 +157,21 @@ function transformYamlToNodesAndEdgesInternal(
       });
 
       if (step.type === 'if' && 'steps' in step && step.steps) {
-        const ifResult = processNestedSteps(id, getValidSteps(step, 'steps'), depth, ids);
+        const hasElseBranch = 'else' in step && step.else;
+        const ifResult = processNestedSteps(id, getValidSteps(step, 'steps'), depth, ids, {
+          edgeLabel: hasElseBranch ? 'then' : undefined,
+        });
         nodes.push(...ifResult.nodes);
         edges.push(...ifResult.edges);
         foreachGroups.push(...ifResult.foreachGroups);
 
-        if ('else' in step && step.else) {
+        if (hasElseBranch) {
           const elseResult = processNestedSteps(
             id,
             getValidSteps(step, 'else'),
             depth,
             ids,
-            'else'
+            { edgeSuffix: 'else', edgeLabel: 'else' }
           );
           nodes.push(...elseResult.nodes);
           edges.push(...elseResult.edges);
@@ -182,11 +187,16 @@ function transformYamlToNodesAndEdgesInternal(
       }
 
       if (step.type === 'parallel' && 'branches' in step && step.branches) {
-        for (const branch of step.branches) {
+        const multipleBranches = step.branches.length > 1;
+        for (let branchIdx = 0; branchIdx < step.branches.length; branchIdx++) {
+          const branch = step.branches[branchIdx];
           const branchSteps = Array.isArray(branch.steps)
             ? (branch.steps as unknown[]).filter(isStep)
             : [];
-          const branchResult = processNestedSteps(id, branchSteps, depth, ids);
+          const branchResult = processNestedSteps(id, branchSteps, depth, ids, {
+            edgeSuffix: multipleBranches ? `b${branchIdx}` : undefined,
+            edgeLabel: multipleBranches ? `Branch ${branchIdx + 1}` : undefined,
+          });
           nodes.push(...branchResult.nodes);
           edges.push(...branchResult.edges);
           foreachGroups.push(...branchResult.foreachGroups);

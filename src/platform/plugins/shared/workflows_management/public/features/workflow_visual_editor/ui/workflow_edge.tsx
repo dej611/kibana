@@ -6,13 +6,16 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import { EuiButtonIcon } from '@elastic/eui';
+import { EuiBadge, EuiButtonIcon, useEuiTheme } from '@elastic/eui';
 import type { EdgeProps } from '@xyflow/react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 import React, { useCallback, useState } from 'react';
 
+const IDLE_OPACITY = 0.3;
+
 export interface WorkflowEdgeData {
   onAddNode?: (edgeId: string, source: string, target: string) => void;
+  label?: string;
 }
 
 export function WorkflowGraphEdge({
@@ -29,7 +32,9 @@ export function WorkflowGraphEdge({
   markerEnd,
   data,
 }: EdgeProps) {
+  const { euiTheme } = useEuiTheme();
   const [isHovered, setIsHovered] = useState(false);
+  const edgeData = data as WorkflowEdgeData | undefined;
 
   const [edgePath, centerX, centerY] = getBezierPath({
     sourceX,
@@ -41,9 +46,11 @@ export function WorkflowGraphEdge({
   });
 
   const handleAddNode = useCallback(() => {
-    const edgeData = data as WorkflowEdgeData | undefined;
     edgeData?.onAddNode?.(id, source, target);
-  }, [data, id, source, target]);
+  }, [edgeData, id, source, target]);
+
+  const labelX = sourceX + (centerX - sourceX) * 0.5;
+  const labelY = sourceY + (centerY - sourceY) * 0.5;
 
   return (
     <>
@@ -58,14 +65,31 @@ export function WorkflowGraphEdge({
         onMouseLeave={() => setIsHovered(false)}
       />
       <EdgeLabelRenderer>
+        {edgeData?.label && (
+          <div
+            className="nodrag nopan"
+            style={{
+              position: 'absolute',
+              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
+              pointerEvents: 'none',
+            }}
+          >
+            <EuiBadge
+              color={euiTheme.colors.backgroundBaseSubdued}
+              style={{ fontSize: 10, lineHeight: 1 }}
+            >
+              {edgeData.label}
+            </EuiBadge>
+          </div>
+        )}
         <div
           className="nodrag nopan"
           style={{
             position: 'absolute',
             transform: `translate(-50%, -50%) translate(${centerX}px, ${centerY}px)`,
-            opacity: isHovered ? 1 : 0,
+            opacity: isHovered ? 1 : IDLE_OPACITY,
             transition: 'opacity 150ms ease-in-out',
-            pointerEvents: isHovered ? 'all' : 'none',
+            pointerEvents: 'all',
           }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
