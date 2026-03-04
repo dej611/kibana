@@ -21,19 +21,27 @@ import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, NodeToolbar, Position } from '@xyflow/react';
 import React, { useCallback, useRef, useState } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+import { i18n } from '@kbn/i18n';
 import { ExecutionStatus } from '@kbn/workflows';
-import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
 import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
-import type { WorkflowStepType } from '../model/types';
-import { FLOW_NODE_TYPES } from '../model/types';
+import type { WorkflowStepNodeData } from '../model/types';
+import { isFlowNodeType } from '../model/types';
 
 const triggerNodeTypes = new Set(['manual', 'alert', 'scheduled']);
 
 const NODE_SIZE = 64;
 
-function getIconColors(nodeType: WorkflowStepType, euiTheme: EuiThemeComputed) {
-  if (FLOW_NODE_TYPES.has(nodeType)) {
+const RUN_FROM_STEP_LABEL = i18n.translate('workflows.visualEditor.node.runFromStep', {
+  defaultMessage: 'Run from this step',
+});
+
+const DELETE_STEP_LABEL = i18n.translate('workflows.visualEditor.node.deleteStep', {
+  defaultMessage: 'Delete step',
+});
+
+function getIconColors(nodeType: string, euiTheme: EuiThemeComputed) {
+  if (isFlowNodeType(nodeType)) {
     return {
       backgroundColor: transparentize(euiTheme.colors.warning, 0.1),
       iconColor: euiTheme.colors.warning,
@@ -51,16 +59,6 @@ function getIconColors(nodeType: WorkflowStepType, euiTheme: EuiThemeComputed) {
   };
 }
 
-export interface WorkflowNodeData {
-  [key: string]: unknown;
-  stepType: WorkflowStepType;
-  label: string;
-  step: WorkflowYaml['steps'][number];
-  stepExecution?: EsWorkflowStepExecution;
-  onRunStep?: (stepName: string) => void;
-  onDeleteStep?: (stepName: string) => void;
-}
-
 const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiThemeComputed) => {
   if (status === undefined) {
     return euiTheme.colors.borderBaseFloating;
@@ -68,11 +66,11 @@ const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiTh
   return getExecutionStatusColors(euiTheme, status ?? null).color;
 };
 
-export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
+export function WorkflowGraphNode(node: NodeProps<Node<WorkflowStepNodeData>>) {
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
   const isTriggerNode = triggerNodeTypes.has(node.data.stepType);
-  const isFlowNode = FLOW_NODE_TYPES.has(node.data.stepType);
+  const isFlowNode = isFlowNodeType(node.data.stepType);
   const { backgroundColor, iconColor } = getIconColors(node.data.stepType, euiTheme);
   const label = node.data.label || node.data.stepType;
   const { status } = node.data.stepExecution ?? {};
@@ -99,21 +97,21 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowNodeData>>) {
     <>
       <NodeToolbar position={Position.Right} align="center">
         <div css={styles.toolbar} className="nodrag nopan">
-          <EuiToolTip content="Run from this step" position="left" disableScreenReaderOutput>
+          <EuiToolTip content={RUN_FROM_STEP_LABEL} position="left" disableScreenReaderOutput>
             <EuiButtonIcon
               iconType="playFilled"
               color="success"
-              aria-label="Run from this step"
+              aria-label={RUN_FROM_STEP_LABEL}
               size="xs"
               onClick={handleRunStep}
             />
           </EuiToolTip>
           <div css={styles.toolbarDivider}>
-            <EuiToolTip content="Delete step" position="left" disableScreenReaderOutput>
+            <EuiToolTip content={DELETE_STEP_LABEL} position="left" disableScreenReaderOutput>
               <EuiButtonIcon
                 iconType="trash"
                 color="danger"
-                aria-label="Delete step"
+                aria-label={DELETE_STEP_LABEL}
                 size="xs"
                 onClick={handleDeleteStep}
               />

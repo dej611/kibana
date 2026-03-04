@@ -328,11 +328,24 @@ export function useWorkflowActions() {
     },
   });
 
+  const createWorkflow = useMutation<WorkflowDetailDto, HttpError, { yaml: string }>({
+    mutationKey: ['POST', 'workflows'],
+    mutationFn: ({ yaml }) => {
+      return http.post<WorkflowDetailDto>('/api/workflows', {
+        body: JSON.stringify({ yaml }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workflows'] });
+    },
+  });
+
   return {
     updateWorkflow,
     deleteWorkflows,
     runWorkflow,
     runIndividualStep,
     cloneWorkflow,
+    createWorkflow,
   };
 }

@@ -17,17 +17,16 @@ import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import type { monaco } from '@kbn/monaco';
 import type { ActionConnector } from '@kbn/triggers-actions-ui-plugin/public';
-import type { StepContext, WorkflowYaml } from '@kbn/workflows';
+import type { StepContext } from '@kbn/workflows';
 import {
   WORKFLOWS_UI_EXECUTION_GRAPH_SETTING_ID,
   WORKFLOWS_UI_VISUAL_EDITOR_SETTING_ID,
 } from '@kbn/workflows';
-import type { WorkflowDetailDto } from '@kbn/workflows/types/latest';
 import { useContextOverrideData } from './use_context_override_data';
 import { WorkflowDetailConnectorFlyout } from './workflow_detail_connector_flyout';
 import {
   getStepNodesWithType,
-  parseWorkflowYamlToJSON,
+  parseWorkflowYaml,
   stringifyWorkflowDefinition,
 } from '../../../../common/lib/yaml';
 import { getWorkflowZodSchemaLoose } from '../../../../common/schema';
@@ -44,6 +43,7 @@ import { TestStepModal } from '../../../features/run_workflow/ui/test_step_modal
 import type { PendingConnectorStepContext } from '../../../features/workflow_visual_editor';
 import { buildExtractedWorkflow } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
 import type { ExecuteStep } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
+import { filterStepTree } from '../../../features/workflow_visual_editor/lib/walk_step_tree';
 import { getErrorMessage } from '../../../features/workflow_visual_editor/model/types';
 import { ExtractSubWorkflowModal } from '../../../features/workflow_visual_editor/ui/extract_sub_workflow_modal';
 import { useAsyncThunk } from '../../../hooks/use_async_thunk';
@@ -84,10 +84,10 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
   const workflowLookup = useSelector(selectEditorWorkflowLookup);
 
   // Hooks
-  const { uiSettings, notifications, http, triggersActionsUi } = useKibana().services;
+  const { uiSettings, notifications, triggersActionsUi } = useKibana().services;
   const { setSelectedExecution } = useWorkflowUrlState();
   const getContextOverrideData = useContextOverrideData();
-  const { runIndividualStep } = useWorkflowActions();
+  const { runIndividualStep, createWorkflow, deleteWorkflows } = useWorkflowActions();
   const connectorsData = useAvailableConnectors();
   const loadConnectors = useAsyncThunk(loadConnectorsThunk);
 
@@ -249,39 +249,19 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     (stepNames: string[]) => {
       if (!connectorsData || stepNames.length === 0) return;
 
-      const parseResult = parseWorkflowYamlToJSON(
+      const parseResult = parseWorkflowYaml(
         workflowYaml,
         getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
       );
-      if (parseResult.error || !parseResult.data) return;
+      if (!parseResult.success) return;
 
-      const workflow = parseResult.data as unknown as WorkflowYaml;
+      const { data: workflow } = parseResult;
       const namesToDelete = new Set(stepNames);
 
-      const filterSteps = (steps: WorkflowYaml['steps']): WorkflowYaml['steps'] => {
-        return steps
-          .filter((step) => !namesToDelete.has(step.name))
-          .map((step) => {
-            const s = step as Record<string, unknown>;
-            if ('steps' in s && Array.isArray(s.steps)) {
-              s.steps = filterSteps(s.steps as WorkflowYaml['steps']);
-            }
-            if ('else' in s && Array.isArray(s.else)) {
-              s.else = filterSteps(s.else as WorkflowYaml['steps']);
-            }
-            if ('branches' in s && Array.isArray(s.branches)) {
-              s.branches = (s.branches as Array<{ steps?: unknown[] }>).map((branch) => ({
-                ...branch,
-                ...(Array.isArray(branch.steps)
-                  ? { steps: filterSteps(branch.steps as WorkflowYaml['steps']) }
-                  : {}),
-              }));
-            }
-            return step;
-          });
+      const updatedWorkflow = {
+        ...workflow,
+        steps: filterStepTree(workflow.steps, (step) => !namesToDelete.has(step.name)),
       };
-
-      const updatedWorkflow = { ...workflow, steps: filterSteps(workflow.steps) };
       const updatedYaml = stringifyWorkflowDefinition(
         updatedWorkflow as unknown as Record<string, unknown>
       );
@@ -306,17 +286,15 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
     async (newWorkflowName: string) => {
       if (!extractModalState || !connectorsData) return;
 
-      const parseResult = parseWorkflowYamlToJSON(
+      const parseResult = parseWorkflowYaml(
         workflowYaml,
         getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
       );
-      if (parseResult.error || !parseResult.data) {
+      if (!parseResult.success) {
         throw new Error('Current workflow YAML is invalid');
       }
 
-      // The Zod schema validates the shape but returns `unknown`; safe to cast
-      // after successful validation.
-      const workflow = parseResult.data as unknown as WorkflowYaml;
+      const { data: workflow } = parseResult;
       const { topLevelRange } = extractModalState;
 
       const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
@@ -329,9 +307,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         newWorkflowDefinition as unknown as Record<string, unknown>
       );
 
-      const created: WorkflowDetailDto = await http.post('/api/workflows', {
-        body: JSON.stringify({ yaml: newWorkflowYaml }),
-      });
+      const created = await createWorkflow.mutateAsync({ yaml: newWorkflowYaml });
 
       try {
         const executeStep = updatedSteps[executeStepIndex] as ExecuteStep;
@@ -360,9 +336,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
       } catch (linkageError: unknown) {
         let cleanedUp = false;
         try {
-          await http.delete('/api/workflows', {
-            body: JSON.stringify({ ids: [created.id] }),
-          });
+          await deleteWorkflows.mutateAsync({ ids: [created.id] });
           cleanedUp = true;
         } catch {
           // cleanup failed — fall through to notify about the orphan
@@ -393,7 +367,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         setExtractModalState(null);
       }
     },
-    [extractModalState, workflowYaml, connectorsData, http, dispatch, notifications.toasts]
+    [extractModalState, workflowYaml, connectorsData, createWorkflow, deleteWorkflows, dispatch, notifications.toasts]
   );
 
   return (

@@ -9,43 +9,7 @@
 
 import type { WorkflowYaml } from '@kbn/workflows';
 import type { Step } from '../model/types';
-import { isStep } from '../model/types';
-
-/**
- * Recursively walks a step and collects all nested step names,
- * mapping each to the provided top-level index.
- */
-function collectNestedStepNames(step: Step, topLevelIndex: number, map: Map<string, number>) {
-  map.set(step.name, topLevelIndex);
-
-  if ('steps' in step && Array.isArray(step.steps)) {
-    for (const child of step.steps) {
-      if (isStep(child)) {
-        collectNestedStepNames(child, topLevelIndex, map);
-      }
-    }
-  }
-
-  if ('else' in step && Array.isArray(step.else)) {
-    for (const child of step.else) {
-      if (isStep(child)) {
-        collectNestedStepNames(child, topLevelIndex, map);
-      }
-    }
-  }
-
-  if ('branches' in step && Array.isArray(step.branches)) {
-    for (const branch of step.branches) {
-      if (Array.isArray(branch.steps)) {
-        for (const child of branch.steps) {
-          if (isStep(child)) {
-            collectNestedStepNames(child, topLevelIndex, map);
-          }
-        }
-      }
-    }
-  }
-}
+import { walkStepTree } from './walk_step_tree';
 
 /**
  * Builds a map from every step name (including deeply nested ones)
@@ -54,7 +18,9 @@ function collectNestedStepNames(step: Step, topLevelIndex: number, map: Map<stri
 export function buildStepNameToTopLevelIndex(steps: WorkflowYaml['steps']): Map<string, number> {
   const map = new Map<string, number>();
   for (let i = 0; i < steps.length; i++) {
-    collectNestedStepNames(steps[i], i, map);
+    walkStepTree([steps[i]], (step) => {
+      map.set(step.name, i);
+    });
   }
   return map;
 }

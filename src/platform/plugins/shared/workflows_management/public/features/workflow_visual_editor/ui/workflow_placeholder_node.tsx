@@ -14,14 +14,14 @@ import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import React, { useCallback } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+import { i18n } from '@kbn/i18n';
+import type { WorkflowPlaceholderNodeData } from '../model/types';
 
 const PLACEHOLDER_SIZE = 64;
 
-export interface WorkflowPlaceholderNodeData {
-  [key: string]: unknown;
-  leafStepName: string;
-  onAddStepAfter?: (leafStepName: string, anchorElement: HTMLElement) => void;
-}
+const ADD_STEP_LABEL = i18n.translate('workflows.visualEditor.placeholder.addStep', {
+  defaultMessage: 'Add step',
+});
 
 export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholderNodeData>>) {
   const { euiTheme } = useEuiTheme();
@@ -52,7 +52,7 @@ export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholder
         ]}
         className="nodrag nopan"
         onClick={handleClick}
-        aria-label="Add step"
+        aria-label={ADD_STEP_LABEL}
       >
         <EuiIcon
           type="plusInCircle"
@@ -62,7 +62,7 @@ export function WorkflowPlaceholderNode(node: NodeProps<Node<WorkflowPlaceholder
           aria-hidden={true}
         />
       </button>
-      <span css={styles.label}>{'Add step'}</span>
+      <span css={styles.label}>{ADD_STEP_LABEL}</span>
     </div>
   );
 }

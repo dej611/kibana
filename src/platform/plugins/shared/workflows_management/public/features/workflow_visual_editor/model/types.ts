@@ -84,12 +84,14 @@ export interface WorkflowForeachGroupNodeData extends Record<string, unknown> {
 /** Data attached to placeholder ("add step") graph nodes. */
 export interface WorkflowPlaceholderNodeData extends Record<string, unknown> {
   leafStepName: string;
-  onAddStepAfter?: (leafStepName: string) => void;
+  onAddStepAfter?: (leafStepName: string, anchorElement: HTMLElement) => void;
 }
 
 /** Data attached to edges. */
 export interface WorkflowEdgeData extends Record<string, unknown> {
-  onAddNode?: (edgeId: string, source: string, target: string) => void;
+  onAddNode?: (edgeId: string, source: string, target: string, anchorElement: HTMLElement) => void;
+  branchType?: EdgeBranchType;
+  branchIndex?: number;
 }
 
 // ---------------------------------------------------------------------------

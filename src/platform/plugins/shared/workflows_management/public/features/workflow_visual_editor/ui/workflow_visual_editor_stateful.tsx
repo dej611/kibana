@@ -7,15 +7,17 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { UseEuiTheme } from '@elastic/eui';
 import { EuiBadge, EuiEmptyPrompt, EuiLoadingSpinner, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
 import React, { useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { FormattedMessage } from '@kbn/i18n-react';
+import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import type { WorkflowYaml } from '@kbn/workflows';
 import type { PendingConnectorStepContext } from './workflow_visual_editor';
 import { WorkflowVisualEditor } from './workflow_visual_editor';
-import { parseWorkflowYamlToJSON } from '../../../../common/lib/yaml';
+import { parseWorkflowYaml } from '../../../../common/lib/yaml';
 import { getWorkflowZodSchemaLoose } from '../../../../common/schema';
 import { useAvailableConnectors } from '../../../entities/connectors/model/use_available_connectors';
 import {
@@ -48,6 +50,7 @@ export const WorkflowVisualEditorStateful = ({
   onCreateConnectorAndAddStep?: (context: PendingConnectorStepContext) => void;
 }) => {
   const { euiTheme } = useEuiTheme();
+  const styles = useMemoCss(statefulComponentStyles);
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowYaml = useSelector(selectEditorYaml) ?? '';
   const connectorsData = useAvailableConnectors();
@@ -57,16 +60,15 @@ export const WorkflowVisualEditorStateful = ({
     if (!workflowYaml || !connectorsData) {
       return { workflow: lastValidWorkflowRef.current, isYamlInvalid: false };
     }
-    const result = parseWorkflowYamlToJSON(
+    const result = parseWorkflowYaml(
       workflowYaml,
       getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
     );
-    if (result.error) {
+    if (!result.success) {
       return { workflow: lastValidWorkflowRef.current, isYamlInvalid: true };
     }
-    const parsed = result.data as unknown as WorkflowYaml;
-    lastValidWorkflowRef.current = parsed;
-    return { workflow: parsed, isYamlInvalid: false };
+    lastValidWorkflowRef.current = result.data;
+    return { workflow: result.data, isYamlInvalid: false };
   }, [workflowYaml, connectorsData]);
 
   if (!workflow) {
@@ -85,34 +87,10 @@ export const WorkflowVisualEditorStateful = ({
     );
   }
 
-  const containerStyles = css({
-    position: 'relative',
-    height: '100%',
-    width: '100%',
-  });
-
-  const graphStyles = css({
-    height: '100%',
-    width: '100%',
-    opacity: isYamlInvalid ? 0.5 : 1,
-    transition: 'opacity 0.3s ease',
-  });
-
-  const badgeStyles = css({
-    position: 'absolute',
-    top: euiTheme.size.m,
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: 10,
-    opacity: isYamlInvalid ? 1 : 0,
-    transition: 'opacity 0.3s ease',
-    pointerEvents: isYamlInvalid ? 'auto' : 'none',
-  });
-
   return (
-    <div css={containerStyles}>
+    <div css={styles.container}>
       {isYamlInvalid && (
-        <div css={badgeStyles}>
+        <div css={styles.badge}>
           <EuiBadge iconType="alert" color={euiTheme.colors.backgroundLightWarning}>
             <FormattedMessage
               id="workflows.visualEditor.yamlHasErrors"
@@ -121,7 +99,7 @@ export const WorkflowVisualEditorStateful = ({
           </EuiBadge>
         </div>
       )}
-      <div css={graphStyles}>
+      <div css={[styles.graph, isYamlInvalid && styles.graphInvalid]}>
         <WorkflowVisualEditor
           workflow={workflow}
           stepExecutions={stepExecutions}
@@ -138,4 +116,29 @@ export const WorkflowVisualEditorStateful = ({
       </div>
     </div>
   );
+};
+
+const statefulComponentStyles = {
+  container: css({
+    position: 'relative',
+    height: '100%',
+    width: '100%',
+  }),
+  graph: css({
+    height: '100%',
+    width: '100%',
+    transition: 'opacity 0.3s ease',
+  }),
+  graphInvalid: css({
+    opacity: 0.5,
+  }),
+  badge: ({ euiTheme }: UseEuiTheme) =>
+    css({
+      position: 'absolute',
+      top: euiTheme.size.m,
+      left: '50%',
+      transform: 'translateX(-50%)',
+      zIndex: 10,
+      transition: 'opacity 0.3s ease',
+    }),
 };

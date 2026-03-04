@@ -12,15 +12,9 @@ import type { EdgeProps } from '@xyflow/react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 import React, { useCallback, useMemo, useState } from 'react';
 import { i18n } from '@kbn/i18n';
-import type { EdgeBranchType } from '../model/types';
+import type { EdgeBranchType, WorkflowEdgeData } from '../model/types';
 
 const IDLE_OPACITY = 0.3;
-
-export interface WorkflowEdgeData {
-  onAddNode?: (edgeId: string, source: string, target: string, anchorElement: HTMLElement) => void;
-  branchType?: EdgeBranchType;
-  branchIndex?: number;
-}
 
 const VIS_COLORS_KEYS = [
   'euiColorVis0',
@@ -150,7 +144,9 @@ export function WorkflowGraphEdge({
               color="text"
               iconType="plusInCircleFilled"
               size="s"
-              aria-label="Add step"
+              aria-label={i18n.translate('workflows.visualEditor.edge.addStep', {
+                defaultMessage: 'Add step',
+              })}
               onClick={handleAddNode}
             />
           </div>
