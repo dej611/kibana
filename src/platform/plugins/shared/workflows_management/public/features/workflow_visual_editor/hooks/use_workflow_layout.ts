@@ -15,7 +15,7 @@ import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import { getLayoutedNodesAndEdges } from '../lib/get_layouted_nodes_and_edges';
 import { walkStepTree } from '../lib/walk_step_tree';
 import type { LayoutDirection, LayoutedNode } from '../model/types';
-import { hasLabel } from '../model/types';
+import { getNodeLabel } from '../model/types';
 
 function computeTopologyFingerprint(workflow: WorkflowYaml): string {
   const parts: string[] = [];
@@ -27,10 +27,6 @@ function computeTopologyFingerprint(workflow: WorkflowYaml): string {
     parts.push(`${indent}${step.name}:${step.type}`);
   });
   return parts.join('\n');
-}
-
-function getNodeLabel(node: LayoutedNode | Node): string | undefined {
-  return hasLabel(node.data) ? node.data.label : undefined;
 }
 
 interface UseWorkflowLayoutParams {

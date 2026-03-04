@@ -8,16 +8,8 @@
  */
 
 import {
-  EuiButtonEmpty,
   EuiErrorBoundary,
-  EuiFlexGroup,
-  EuiFlexItem,
   EuiIcon,
-  EuiListGroup,
-  EuiListGroupItem,
-  EuiSpacer,
-  EuiText,
-  EuiTitle,
   EuiWrappingPopover,
   useEuiTheme,
   useResizeObserver,
@@ -36,6 +28,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { i18n } from '@kbn/i18n';
 import type { ConnectorTypeInfo, WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
 import '@xyflow/react/dist/style.css';
+import { ConnectorPicker } from './connector_picker';
 import { WorkflowGraphEdge } from './workflow_edge';
 import { WorkflowForeachGroupNode } from './workflow_foreach_group_node';
 import { WorkflowGraphNode } from './workflow_node';
@@ -43,7 +36,7 @@ import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 import { WorkflowSelectionToolbar } from './workflow_selection_toolbar';
 import { ActionsMenu } from '../../actions_menu_popover/ui/actions_menu';
 import type { LayoutDirection } from '../model/types';
-import { hasLabel } from '../model/types';
+import { getNodeLabel } from '../model/types';
 import { useAddStepFlow } from '../hooks/use_add_step_flow';
 import type { PendingConnectorStepContext } from '../hooks/use_add_step_flow';
 import { useWorkflowLayout } from '../hooks/use_workflow_layout';
@@ -82,20 +75,6 @@ const TOGGLE_LAYOUT_LABEL = i18n.translate('workflows.visualEditor.layout.toggle
   defaultMessage: 'Toggle layout direction',
 });
 
-const CONNECTOR_PICKER_TITLE = i18n.translate('workflows.visualEditor.connectorPicker.title', {
-  defaultMessage: 'Select a connector',
-});
-
-const NO_CONNECTORS_MESSAGE = i18n.translate(
-  'workflows.visualEditor.connectorPicker.noConnectors',
-  { defaultMessage: 'No connectors configured for this type.' }
-);
-
-const CREATE_NEW_CONNECTOR_LABEL = i18n.translate(
-  'workflows.visualEditor.connectorPicker.createNew',
-  { defaultMessage: 'Create new connector' }
-);
-
 function getNodeStepType(node: Node): string | undefined {
   const { data } = node;
   if ('stepType' in data && typeof data.stepType === 'string') {
@@ -103,56 +82,6 @@ function getNodeStepType(node: Node): string | undefined {
   }
   return undefined;
 }
-
-const ConnectorPicker = React.memo(
-  ({
-    instances,
-    onSelect,
-    onCreateNew,
-  }: {
-    instances: Array<{ id: string; name: string; isDeprecated: boolean }>;
-    onSelect: (connectorId: string) => void;
-    onCreateNew: () => void;
-  }) => {
-    const activeInstances = instances.filter((inst) => !inst.isDeprecated);
-    const hasInstances = activeInstances.length > 0;
-
-    return (
-      <div css={css({ padding: '12px 16px' })}>
-        <EuiTitle size="xxxs">
-          <h4>{CONNECTOR_PICKER_TITLE}</h4>
-        </EuiTitle>
-        <EuiSpacer size="s" />
-        {hasInstances ? (
-          <EuiListGroup flush gutterSize="none" maxWidth={false}>
-            {activeInstances.map((inst) => (
-              <EuiListGroupItem
-                key={inst.id}
-                label={inst.name}
-                size="s"
-                onClick={() => onSelect(inst.id)}
-                iconType="logoElastic"
-              />
-            ))}
-          </EuiListGroup>
-        ) : (
-          <EuiText size="s" color="subdued">
-            <p>{NO_CONNECTORS_MESSAGE}</p>
-          </EuiText>
-        )}
-        <EuiSpacer size="s" />
-        <EuiFlexGroup justifyContent="center">
-          <EuiFlexItem grow={false}>
-            <EuiButtonEmpty size="s" iconType="plusInCircle" onClick={onCreateNew}>
-              {CREATE_NEW_CONNECTOR_LABEL}
-            </EuiButtonEmpty>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </div>
-    );
-  }
-);
-ConnectorPicker.displayName = 'ConnectorPicker';
 
 export function WorkflowVisualEditor({
   workflow,
@@ -275,7 +204,7 @@ export function WorkflowVisualEditor({
           onNodeClick?.(triggerType, 'trigger');
         }
       } else {
-        const label = hasLabel(node.data) ? node.data.label : undefined;
+        const label = getNodeLabel(node);
         if (label) {
           onNodeClick?.(label, 'step');
         }

@@ -101,6 +101,8 @@ export interface ExecuteStep {
 export interface ExtractResult {
   newWorkflowDefinition: NewWorkflowDefinition;
   updatedSteps: Array<Step | ExecuteStep>;
+  /** The workflow.execute placeholder step inserted into `updatedSteps`. */
+  executeStep: ExecuteStep;
   /** Index of the workflow.execute step in `updatedSteps`. */
   executeStepIndex: number;
 }
@@ -145,6 +147,7 @@ export function buildExtractedWorkflow(
   return {
     newWorkflowDefinition,
     updatedSteps,
+    executeStep,
     executeStepIndex: startIdx,
   };
 }

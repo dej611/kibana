@@ -6,11 +6,13 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import type { EuiThemeComputed } from '@elastic/eui';
+import type { EuiThemeComputed, UseEuiTheme } from '@elastic/eui';
 import { EuiButtonIcon, useEuiTheme } from '@elastic/eui';
-import type { EdgeProps } from '@xyflow/react';
+import { css } from '@emotion/react';
+import type { Edge, EdgeProps } from '@xyflow/react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath } from '@xyflow/react';
 import React, { useCallback, useMemo, useState } from 'react';
+import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import type { EdgeBranchType, WorkflowEdgeData } from '../model/types';
 
@@ -55,11 +57,11 @@ export function WorkflowGraphEdge({
   style = {},
   markerEnd,
   data,
-}: EdgeProps) {
+}: EdgeProps<Edge<WorkflowEdgeData>>) {
   const { euiTheme } = useEuiTheme();
+  const styles = useMemoCss(edgeComponentStyles);
   const [isHovered, setIsHovered] = useState(false);
-  const edgeData = data as WorkflowEdgeData | undefined;
-  const { branchType, branchIndex } = edgeData ?? {};
+  const { branchType, branchIndex } = data ?? {};
 
   const [edgePath, centerX, centerY] = getBezierPath({
     sourceX,
@@ -72,9 +74,9 @@ export function WorkflowGraphEdge({
 
   const handleAddNode = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
-      edgeData?.onAddNode?.(id, source, target, event.currentTarget);
+      data?.onAddNode?.(id, source, target, event.currentTarget);
     },
-    [edgeData, id, source, target]
+    [data, id, source, target]
   );
 
   const edgeStyle = useMemo(() => {
@@ -109,7 +111,7 @@ export function WorkflowGraphEdge({
     }
   }, [branchType, branchIndex, euiTheme]);
 
-  const showAddButton = Boolean(edgeData?.onAddNode);
+  const showAddButton = Boolean(data?.onAddNode);
 
   return (
     <>
@@ -129,12 +131,10 @@ export function WorkflowGraphEdge({
         {showAddButton && (
           <div
             className="nodrag nopan"
+            css={styles.addButtonWrapper}
             style={{
-              position: 'absolute',
               transform: `translate(-50%, -50%) translate(${centerX}px, ${centerY}px)`,
               opacity: isHovered ? 1 : IDLE_OPACITY,
-              transition: 'opacity 150ms ease-in-out',
-              pointerEvents: 'all',
             }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -154,24 +154,16 @@ export function WorkflowGraphEdge({
         {branchLabel && (
           <div
             className="nodrag nopan"
+            css={styles.branchLabelWrapper}
             style={{
-              position: 'absolute',
               transform: `translate(-50%, -100%) translate(${centerX}px, ${centerY}px)`,
-              pointerEvents: 'none',
             }}
           >
             <span
+              css={styles.branchLabelText}
               style={{
-                fontSize: '10px',
-                fontWeight: 600,
                 color: branchLabel.color,
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                padding: '1px 6px',
-                borderRadius: '3px',
-                backgroundColor: euiTheme.colors.backgroundBasePlain,
                 border: `1px solid ${branchLabel.color}`,
-                whiteSpace: 'nowrap',
               }}
             >
               {branchLabel.text}
@@ -182,3 +174,26 @@ export function WorkflowGraphEdge({
     </>
   );
 }
+
+const edgeComponentStyles = {
+  addButtonWrapper: css({
+    position: 'absolute',
+    transition: 'opacity 150ms ease-in-out',
+    pointerEvents: 'all',
+  }),
+  branchLabelWrapper: css({
+    position: 'absolute',
+    pointerEvents: 'none',
+  }),
+  branchLabelText: ({ euiTheme }: UseEuiTheme) =>
+    css({
+      fontSize: '10px',
+      fontWeight: 600,
+      textTransform: 'uppercase',
+      letterSpacing: '0.05em',
+      padding: '1px 6px',
+      borderRadius: '3px',
+      backgroundColor: euiTheme.colors.backgroundBasePlain,
+      whiteSpace: 'nowrap',
+    }),
+};

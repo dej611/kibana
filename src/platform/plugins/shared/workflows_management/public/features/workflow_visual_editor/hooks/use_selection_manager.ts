@@ -17,11 +17,7 @@ import {
   buildStepNameToTopLevelIndex,
   validateContiguousSelection,
 } from '../lib/extract_sub_workflow';
-import { hasLabel } from '../model/types';
-
-function getNodeLabel(node: Node): string | undefined {
-  return hasLabel(node.data) ? node.data.label : undefined;
-}
+import { getNodeLabel } from '../model/types';
 
 interface UseSelectionManagerParams {
   workflowRef: MutableRefObject<WorkflowYaml>;

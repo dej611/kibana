@@ -13,11 +13,7 @@ import type { FitViewOptions, Node } from '@xyflow/react';
 import type { SelectionValidation } from '../lib/extract_sub_workflow';
 import type { SelectionBounds } from '../ui/workflow_selection_toolbar';
 import type { AddStepContext } from './use_add_step_flow';
-import { hasLabel } from '../model/types';
-
-function getNodeLabel(node: Node): string | undefined {
-  return hasLabel(node.data) ? node.data.label : undefined;
-}
+import { getNodeLabel } from '../model/types';
 
 interface UseKeyboardShortcutsParams {
   containerRef: MutableRefObject<HTMLDivElement | null>;

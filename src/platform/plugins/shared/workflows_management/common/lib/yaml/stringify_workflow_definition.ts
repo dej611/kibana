@@ -31,12 +31,14 @@ const WORKFLOW_DEFINITION_KEYS_ORDER: Array<keyof WorkflowYaml> = [
   'steps',
 ];
 
-function _getDiagnosticMessage(workflowDefinition: Record<string, any>) {
+function _getDiagnosticMessage(workflowDefinition: object) {
   try {
     const serialized = JSON.stringify(workflowDefinition);
     return serialized.length > 300 ? `${serialized.substring(0, 300)}...` : serialized;
   } catch {
-    return `[object ${workflowDefinition?.constructor?.name ?? typeof workflowDefinition}]`;
+    return `[object ${
+      (workflowDefinition as any)?.constructor?.name ?? typeof workflowDefinition
+    }]`;
   }
 }
 
@@ -46,10 +48,7 @@ function _getDiagnosticMessage(workflowDefinition: Record<string, any>) {
  * @param sortKeys - Whether to sort the keys of the workflow definition.
  * @returns The YAML string of the workflow definition.
  */
-export function stringifyWorkflowDefinition(
-  workflowDefinition: Record<string, any>,
-  sortKeys: boolean = true
-) {
+export function stringifyWorkflowDefinition(workflowDefinition: object, sortKeys: boolean = true) {
   const doc = new Document(workflowDefinition);
   if (sortKeys) {
     if (!doc.contents || !isMap(doc.contents)) {

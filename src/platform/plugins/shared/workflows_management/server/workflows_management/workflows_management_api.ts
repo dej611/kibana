@@ -170,7 +170,7 @@ export class WorkflowsManagementApi {
     };
 
     // Convert back to YAML string using proper YAML stringification
-    const clonedYaml = stringifyWorkflowDefinition(updatedYaml as unknown as WorkflowYaml);
+    const clonedYaml = stringifyWorkflowDefinition(updatedYaml);
     return this.workflowsService.createWorkflow({ yaml: clonedYaml }, spaceId, request);
   }
 

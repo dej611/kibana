@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { Position } from '@xyflow/react';
+import type { Node, Position } from '@xyflow/react';
 import type { CSSProperties } from 'react';
 import type { EsWorkflowStepExecution, WorkflowYaml } from '@kbn/workflows';
 
@@ -45,6 +45,10 @@ export function hasLabel(
   data: Record<string, unknown>
 ): data is Record<string, unknown> & { label: string } {
   return 'label' in data && typeof data.label === 'string';
+}
+
+export function getNodeLabel(node: Node): string | undefined {
+  return hasLabel(node.data) ? node.data.label : undefined;
 }
 
 export function getErrorMessage(error: unknown): string {

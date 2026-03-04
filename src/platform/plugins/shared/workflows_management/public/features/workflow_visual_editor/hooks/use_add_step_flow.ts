@@ -15,7 +15,7 @@ import { getActionTypeIdFromStepType } from '../../../shared/lib/action_type_uti
 import { getConnectorInstancesForType } from '../../../widgets/workflow_yaml_editor/lib/autocomplete/suggestions/connector_id/get_connector_id_suggestions_items';
 import { connectorTypeRequiresConnectorId } from '../../../widgets/workflow_yaml_editor/lib/snippets/generate_connector_snippet';
 import type { ActionOptionData } from '../../actions_menu_popover/types';
-import { hasLabel } from '../model/types';
+import { getNodeLabel } from '../model/types';
 
 export interface AddStepContext {
   anchorElement: HTMLElement;
@@ -53,10 +53,6 @@ interface UseAddStepFlowParams {
   ) => void;
   onAddStepAfter?: (leafStepName: string, stepType: string, connectorId?: string) => void;
   onCreateConnectorAndAddStep?: (context: PendingConnectorStepContext) => void;
-}
-
-function getNodeLabel(node: Node): string | undefined {
-  return hasLabel(node.data) ? node.data.label : undefined;
 }
 
 export const useAddStepFlow = ({

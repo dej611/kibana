@@ -42,7 +42,6 @@ import { ExecutionGraph } from '../../../features/debug_graph/execution_graph';
 import { TestStepModal } from '../../../features/run_workflow/ui/test_step_modal';
 import type { PendingConnectorStepContext } from '../../../features/workflow_visual_editor';
 import { buildExtractedWorkflow } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
-import type { ExecuteStep } from '../../../features/workflow_visual_editor/lib/extract_sub_workflow';
 import { filterStepTree } from '../../../features/workflow_visual_editor/lib/walk_step_tree';
 import { getErrorMessage } from '../../../features/workflow_visual_editor/model/types';
 import { ExtractSubWorkflowModal } from '../../../features/workflow_visual_editor/ui/extract_sub_workflow_modal';
@@ -262,9 +261,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         ...workflow,
         steps: filterStepTree(workflow.steps, (step) => !namesToDelete.has(step.name)),
       };
-      const updatedYaml = stringifyWorkflowDefinition(
-        updatedWorkflow as unknown as Record<string, unknown>
-      );
+      const updatedYaml = stringifyWorkflowDefinition(updatedWorkflow);
       dispatch(setYamlString(updatedYaml));
     },
     [workflowYaml, connectorsData, dispatch]
@@ -297,20 +294,14 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
       const { data: workflow } = parseResult;
       const { topLevelRange } = extractModalState;
 
-      const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
-        workflow,
-        topLevelRange,
-        newWorkflowName
-      );
+      const { newWorkflowDefinition, updatedSteps, executeStep, executeStepIndex } =
+        buildExtractedWorkflow(workflow, topLevelRange, newWorkflowName);
 
-      const newWorkflowYaml = stringifyWorkflowDefinition(
-        newWorkflowDefinition as unknown as Record<string, unknown>
-      );
+      const newWorkflowYaml = stringifyWorkflowDefinition(newWorkflowDefinition);
 
       const created = await createWorkflow.mutateAsync({ yaml: newWorkflowYaml });
 
       try {
-        const executeStep = updatedSteps[executeStepIndex] as ExecuteStep;
         const linkedSteps = [
           ...updatedSteps.slice(0, executeStepIndex),
           { ...executeStep, with: { ...executeStep.with, 'workflow-id': created.id } },
@@ -319,9 +310,7 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
 
         const { steps: _steps, ...workflowWithoutSteps } = workflow;
         const finalDefinition = { ...workflowWithoutSteps, steps: linkedSteps };
-        const updatedYamlString = stringifyWorkflowDefinition(
-          finalDefinition as unknown as Record<string, unknown>
-        );
+        const updatedYamlString = stringifyWorkflowDefinition(finalDefinition);
 
         dispatch(setYamlString(updatedYamlString));
         setExtractModalState(null);
@@ -434,7 +423,9 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
       {extractModalState && (
         <ExtractSubWorkflowModal
           selectedStepNames={extractModalState.selectedStepNames}
-          defaultName="Sub-workflow"
+          defaultName={i18n.translate('workflows.extractSubWorkflow.defaultName', {
+            defaultMessage: 'Sub-workflow',
+          })}
           onConfirm={handleExtractConfirm}
           onCancel={() => setExtractModalState(null)}
         />
