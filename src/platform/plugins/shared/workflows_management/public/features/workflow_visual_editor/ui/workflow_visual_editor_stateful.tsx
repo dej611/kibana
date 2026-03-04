@@ -7,8 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { EuiEmptyPrompt, EuiLoadingSpinner } from '@elastic/eui';
-import React, { useMemo } from 'react';
+import { EuiBadge, EuiEmptyPrompt, EuiLoadingSpinner, useEuiTheme } from '@elastic/eui';
+import { css } from '@emotion/react';
+import React, { useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { FormattedMessage } from '@kbn/i18n-react';
 import type { WorkflowYaml } from '@kbn/workflows';
@@ -46,25 +47,29 @@ export const WorkflowVisualEditorStateful = ({
   onExtractSubWorkflow?: (selectedStepNames: string[], topLevelRange: [number, number]) => void;
   onCreateConnectorAndAddStep?: (context: PendingConnectorStepContext) => void;
 }) => {
+  const { euiTheme } = useEuiTheme();
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowYaml = useSelector(selectEditorYaml) ?? '';
   const connectorsData = useAvailableConnectors();
+  const lastValidWorkflowRef = useRef<WorkflowYaml | undefined>();
 
-  const workflowYamlObject = useMemo(() => {
+  const { workflow, isYamlInvalid } = useMemo(() => {
     if (!workflowYaml || !connectorsData) {
-      return undefined;
+      return { workflow: lastValidWorkflowRef.current, isYamlInvalid: false };
     }
     const result = parseWorkflowYamlToJSON(
       workflowYaml,
       getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
     );
     if (result.error) {
-      return null;
+      return { workflow: lastValidWorkflowRef.current, isYamlInvalid: true };
     }
-    return result.data;
+    const parsed = result.data as unknown as WorkflowYaml;
+    lastValidWorkflowRef.current = parsed;
+    return { workflow: parsed, isYamlInvalid: false };
   }, [workflowYaml, connectorsData]);
 
-  if (workflowYamlObject === undefined) {
+  if (!workflow) {
     return (
       <EuiEmptyPrompt
         icon={<EuiLoadingSpinner size="l" />}
@@ -80,40 +85,57 @@ export const WorkflowVisualEditorStateful = ({
     );
   }
 
-  if (workflowYamlObject === null) {
-    return (
-      <EuiEmptyPrompt
-        title={
-          <h2>
-            <FormattedMessage
-              id="workflows.visualEditor.invalidWorkflowYaml"
-              defaultMessage="Invalid workflow YAML"
-            />
-          </h2>
-        }
-        body={
-          <FormattedMessage
-            id="workflows.visualEditor.invalidWorkflowYamlBody"
-            defaultMessage="The workflow YAML is invalid. Please check the YAML and try again."
-          />
-        }
-      />
-    );
-  }
+  const containerStyles = css({
+    position: 'relative',
+    height: '100%',
+    width: '100%',
+  });
+
+  const graphStyles = css({
+    height: '100%',
+    width: '100%',
+    opacity: isYamlInvalid ? 0.5 : 1,
+    transition: 'opacity 0.3s ease',
+  });
+
+  const badgeStyles = css({
+    position: 'absolute',
+    top: euiTheme.size.m,
+    left: '50%',
+    transform: 'translateX(-50%)',
+    zIndex: 10,
+    opacity: isYamlInvalid ? 1 : 0,
+    transition: 'opacity 0.3s ease',
+    pointerEvents: isYamlInvalid ? 'auto' : 'none',
+  });
 
   return (
-    <WorkflowVisualEditor
-      workflow={workflowYamlObject as unknown as WorkflowYaml}
-      stepExecutions={stepExecutions}
-      connectorTypes={connectorsData?.connectorTypes}
-      onAddStepBetween={onAddStepBetween}
-      onAddStepAfter={onAddStepAfter}
-      onNodeClick={onNodeClick}
-      onRunStep={onRunStep}
-      onDeleteStep={onDeleteStep}
-      onDeleteSteps={onDeleteSteps}
-      onExtractSubWorkflow={onExtractSubWorkflow}
-      onCreateConnectorAndAddStep={onCreateConnectorAndAddStep}
-    />
+    <div css={containerStyles}>
+      {isYamlInvalid && (
+        <div css={badgeStyles}>
+          <EuiBadge iconType="alert" color={euiTheme.colors.backgroundLightWarning}>
+            <FormattedMessage
+              id="workflows.visualEditor.yamlHasErrors"
+              defaultMessage="YAML has errors — fix to update graph"
+            />
+          </EuiBadge>
+        </div>
+      )}
+      <div css={graphStyles}>
+        <WorkflowVisualEditor
+          workflow={workflow}
+          stepExecutions={stepExecutions}
+          connectorTypes={connectorsData?.connectorTypes}
+          onAddStepBetween={isYamlInvalid ? undefined : onAddStepBetween}
+          onAddStepAfter={isYamlInvalid ? undefined : onAddStepAfter}
+          onNodeClick={onNodeClick}
+          onRunStep={isYamlInvalid ? undefined : onRunStep}
+          onDeleteStep={isYamlInvalid ? undefined : onDeleteStep}
+          onDeleteSteps={isYamlInvalid ? undefined : onDeleteSteps}
+          onExtractSubWorkflow={isYamlInvalid ? undefined : onExtractSubWorkflow}
+          onCreateConnectorAndAddStep={isYamlInvalid ? undefined : onCreateConnectorAndAddStep}
+        />
+      </div>
+    </div>
   );
 };
