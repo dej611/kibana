@@ -7,5 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import '@xyflow/react/dist/style.css';
+
 export { WorkflowVisualEditorStateful as WorkflowVisualEditor } from './ui/workflow_visual_editor_stateful';
 export type { PendingConnectorStepContext } from './ui/workflow_visual_editor';

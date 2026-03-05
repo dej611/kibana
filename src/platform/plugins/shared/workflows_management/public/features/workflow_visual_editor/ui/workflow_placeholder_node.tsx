@@ -18,6 +18,8 @@ import { i18n } from '@kbn/i18n';
 import type { WorkflowPlaceholderNodeData } from '../model/types';
 
 const PLACEHOLDER_SIZE = 64;
+const PLACEHOLDER_GAP = '6px';
+const PLACEHOLDER_BORDER_RADIUS = '12px';
 
 const ADD_STEP_LABEL = i18n.translate('workflows.visualEditor.placeholder.addStep', {
   defaultMessage: 'Add step',
@@ -72,13 +74,13 @@ const componentStyles = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: ${PLACEHOLDER_GAP};
     width: 100%;
   `,
   box: ({ euiTheme }: UseEuiTheme) => css`
     width: ${PLACEHOLDER_SIZE}px;
     height: ${PLACEHOLDER_SIZE}px;
-    border-radius: 12px;
+    border-radius: ${PLACEHOLDER_BORDER_RADIUS};
     background-color: transparent;
     border: 2px dashed;
     display: flex;

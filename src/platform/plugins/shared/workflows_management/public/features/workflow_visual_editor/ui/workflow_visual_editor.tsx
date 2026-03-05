@@ -27,7 +27,6 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from '@kbn/i18n';
 import type { ConnectorTypeInfo, WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
-import '@xyflow/react/dist/style.css';
 import { ConnectorPicker } from './connector_picker';
 import { WorkflowGraphEdge } from './workflow_edge';
 import { WorkflowForeachGroupNode } from './workflow_foreach_group_node';
@@ -35,13 +34,13 @@ import { WorkflowGraphNode } from './workflow_node';
 import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 import { WorkflowSelectionToolbar } from './workflow_selection_toolbar';
 import { ActionsMenu } from '../../actions_menu_popover/ui/actions_menu';
-import type { LayoutDirection } from '../model/types';
-import { getNodeLabel } from '../model/types';
 import { useAddStepFlow } from '../hooks/use_add_step_flow';
 import type { PendingConnectorStepContext } from '../hooks/use_add_step_flow';
-import { useWorkflowLayout } from '../hooks/use_workflow_layout';
-import { useSelectionManager } from '../hooks/use_selection_manager';
 import { useKeyboardShortcuts } from '../hooks/use_keyboard_shortcuts';
+import { useSelectionManager } from '../hooks/use_selection_manager';
+import { useWorkflowLayout } from '../hooks/use_workflow_layout';
+import { getNodeLabel } from '../model/types';
+import type { LayoutDirection, WorkflowEdgeData } from '../model/types';
 
 export type { PendingConnectorStepContext };
 
@@ -213,23 +212,40 @@ export function WorkflowVisualEditor({
     [onNodeClick]
   );
 
-  const edgesWithCallbacks = useMemo(
-    () =>
-      edges.map((edge) => {
-        const isBranchEdge = Boolean(edge.branchType);
-        const targetsPlaceholder = edge.target.endsWith('-placeholder');
-        const showAddButton = !isBranchEdge && !targetsPlaceholder;
-        return {
-          ...edge,
-          data: {
-            ...(showAddButton ? { onAddNode: handleEdgeAddNode } : {}),
-            branchType: edge.branchType,
-            branchIndex: edge.branchIndex,
-          },
-        };
-      }),
-    [edges, handleEdgeAddNode]
-  );
+  const edgeDataCacheRef = useRef<Map<string, WorkflowEdgeData>>(new Map());
+
+  const edgesWithCallbacks = useMemo(() => {
+    const prevCache = edgeDataCacheRef.current;
+    const nextCache = new Map<string, WorkflowEdgeData>();
+
+    const result = edges.map((edge) => {
+      const isBranchEdge = Boolean(edge.branchType);
+      const targetsPlaceholder = edge.target.endsWith('-placeholder');
+      const showAddButton = !isBranchEdge && !targetsPlaceholder;
+      const prev = prevCache.get(edge.id);
+
+      if (
+        prev &&
+        prev.branchType === edge.branchType &&
+        prev.branchIndex === edge.branchIndex &&
+        Boolean(prev.onAddNode) === showAddButton
+      ) {
+        nextCache.set(edge.id, prev);
+        return { ...edge, data: prev };
+      }
+
+      const data: WorkflowEdgeData = {
+        ...(showAddButton ? { onAddNode: handleEdgeAddNode } : {}),
+        branchType: edge.branchType,
+        branchIndex: edge.branchIndex,
+      };
+      nextCache.set(edge.id, data);
+      return { ...edge, data };
+    });
+
+    edgeDataCacheRef.current = nextCache;
+    return result;
+  }, [edges, handleEdgeAddNode]);
 
   return (
     <div ref={containerRef} css={{ height: '100%', width: '100%', outline: 'none' }} tabIndex={-1}>
@@ -265,7 +281,11 @@ export function WorkflowVisualEditor({
                 title={TOGGLE_LAYOUT_LABEL}
                 aria-label={TOGGLE_LAYOUT_LABEL}
               >
-                <EuiIcon type={layoutDirection === 'LR' ? 'sortRight' : 'sortDown'} size="s" />
+                <EuiIcon
+                  type={layoutDirection === 'LR' ? 'sortRight' : 'sortDown'}
+                  size="s"
+                  aria-hidden={true}
+                />
               </ControlButton>
             </Controls>
             {!isBoxSelecting &&

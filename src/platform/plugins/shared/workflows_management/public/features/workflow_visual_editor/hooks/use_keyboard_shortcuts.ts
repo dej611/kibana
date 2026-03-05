@@ -7,13 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { FitViewOptions, Node } from '@xyflow/react';
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { useEffect } from 'react';
-import type { FitViewOptions, Node } from '@xyflow/react';
-import type { SelectionValidation } from '../lib/extract_sub_workflow';
-import type { SelectionBounds } from '../ui/workflow_selection_toolbar';
 import type { AddStepContext } from './use_add_step_flow';
-import { getNodeLabel } from '../model/types';
+import type { SelectionValidation } from '../lib/extract_sub_workflow';
+import { getNodeLabel, getSelectableStepNodes } from '../model/types';
+import type { SelectionBounds } from '../ui/workflow_selection_toolbar';
 
 interface UseKeyboardShortcutsParams {
   containerRef: MutableRefObject<HTMLDivElement | null>;
@@ -46,14 +46,8 @@ export const useKeyboardShortcuts = ({
       const isMeta = event.metaKey || event.ctrlKey;
 
       if (event.key === 'Delete' || event.key === 'Backspace') {
-        const selectedStepNames = nodesRef.current
-          .filter(
-            (n) =>
-              n.selected &&
-              n.type !== 'placeholder' &&
-              n.type !== 'trigger' &&
-              n.type !== 'foreachGroup'
-          )
+        const selectedStepNames = getSelectableStepNodes(nodesRef.current)
+          .filter((n) => n.selected)
           .map((n) => getNodeLabel(n))
           .filter((name): name is string => Boolean(name));
         if (selectedStepNames.length > 0) {

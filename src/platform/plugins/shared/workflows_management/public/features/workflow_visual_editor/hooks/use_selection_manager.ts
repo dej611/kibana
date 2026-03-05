@@ -7,17 +7,17 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { MutableRefObject } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Node, OnSelectionChangeFunc } from '@xyflow/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import type { WorkflowYaml } from '@kbn/workflows';
-import type { SelectionBounds } from '../ui/workflow_selection_toolbar';
 import type { SelectionValidation, ValidSelection } from '../lib/extract_sub_workflow';
 import {
   buildStepNameToTopLevelIndex,
   validateContiguousSelection,
 } from '../lib/extract_sub_workflow';
-import { getNodeLabel } from '../model/types';
+import { getNodeLabel, getSelectableStepNodes } from '../model/types';
+import type { SelectionBounds } from '../ui/workflow_selection_toolbar';
 
 interface UseSelectionManagerParams {
   workflowRef: MutableRefObject<WorkflowYaml>;
@@ -51,10 +51,7 @@ export const useSelectionManager = ({
 
   const handleSelectionChange = useCallback<OnSelectionChangeFunc>(
     ({ nodes: selectedNodes }) => {
-      const stepNodes = selectedNodes.filter(
-        (n) => n.type !== 'trigger' && n.type !== 'placeholder'
-      );
-      const stepNames = stepNodes
+      const stepNames = getSelectableStepNodes(selectedNodes)
         .map((n) => getNodeLabel(n))
         .filter((name): name is string => Boolean(name));
 

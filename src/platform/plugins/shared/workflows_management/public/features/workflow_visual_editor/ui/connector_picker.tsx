@@ -35,7 +35,8 @@ const CREATE_NEW_CONNECTOR_LABEL = i18n.translate(
   { defaultMessage: 'Create new connector' }
 );
 
-const wrapperStyle = css({ padding: '12px 16px' });
+const CONNECTOR_PICKER_PADDING = '12px 16px';
+const wrapperStyle = css({ padding: CONNECTOR_PICKER_PADDING });
 
 interface ConnectorPickerProps {
   instances: Array<{ id: string; name: string; isDeprecated: boolean }>;

@@ -288,7 +288,11 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
       );
       if (!parseResult.success) {
-        throw new Error('Current workflow YAML is invalid');
+        throw new Error(
+          i18n.translate('workflows.detailEditor.extractError.invalidYaml', {
+            defaultMessage: 'Current workflow YAML is invalid',
+          })
+        );
       }
 
       const { data: workflow } = parseResult;
@@ -356,7 +360,15 @@ export const WorkflowDetailEditor = React.memo<WorkflowDetailEditorProps>(({ hig
         setExtractModalState(null);
       }
     },
-    [extractModalState, workflowYaml, connectorsData, createWorkflow, deleteWorkflows, dispatch, notifications.toasts]
+    [
+      extractModalState,
+      workflowYaml,
+      connectorsData,
+      createWorkflow,
+      deleteWorkflows,
+      dispatch,
+      notifications.toasts,
+    ]
   );
 
   return (

@@ -17,6 +17,9 @@ import { i18n } from '@kbn/i18n';
 import type { EdgeBranchType, WorkflowEdgeData } from '../model/types';
 
 const IDLE_OPACITY = 0.3;
+const EDGE_HIT_AREA_WIDTH = 20;
+const EDGE_ELSE_DASH_ARRAY = '6 4';
+const BRANCH_LABEL_FONT_SIZE = '10px';
 
 const VIS_COLORS_KEYS = [
   'euiColorVis0',
@@ -36,7 +39,7 @@ function getBranchEdgeStyle(
     case 'then':
       return { stroke: euiTheme.colors.success };
     case 'else':
-      return { stroke: euiTheme.colors.warning, strokeDasharray: '6 4' };
+      return { stroke: euiTheme.colors.warning, strokeDasharray: EDGE_ELSE_DASH_ARRAY };
     case 'parallel': {
       const idx = ((branchIndex ?? 1) - 1) % VIS_COLORS_KEYS.length;
       return { stroke: euiTheme.colors.vis[VIS_COLORS_KEYS[idx]] };
@@ -121,7 +124,7 @@ export function WorkflowGraphEdge({
           d={edgePath}
           fill="none"
           stroke="transparent"
-          strokeWidth={20}
+          strokeWidth={EDGE_HIT_AREA_WIDTH}
           style={{ pointerEvents: 'stroke' }}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -187,7 +190,7 @@ const edgeComponentStyles = {
   }),
   branchLabelText: ({ euiTheme }: UseEuiTheme) =>
     css({
-      fontSize: '10px',
+      fontSize: BRANCH_LABEL_FONT_SIZE,
       fontWeight: 600,
       textTransform: 'uppercase',
       letterSpacing: '0.05em',

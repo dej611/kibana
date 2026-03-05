@@ -163,11 +163,8 @@ describe('buildExtractedWorkflow', () => {
       { name: 'step-d', type: 'action' },
     ]);
 
-    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
-      workflow,
-      [1, 2],
-      'extracted-workflow'
-    );
+    const { newWorkflowDefinition, updatedSteps, executeStepIndex, executeStep } =
+      buildExtractedWorkflow(workflow, [1, 2], 'extracted-workflow');
 
     expect(newWorkflowDefinition).toEqual({
       name: 'extracted-workflow',
@@ -189,6 +186,7 @@ describe('buildExtractedWorkflow', () => {
     });
     expect(updatedSteps[2]).toEqual({ name: 'step-d', type: 'action' });
     expect(executeStepIndex).toBe(1);
+    expect(executeStep).toBe(updatedSteps[executeStepIndex]);
   });
 
   it('extracts all steps when the full range is selected', () => {
@@ -197,16 +195,14 @@ describe('buildExtractedWorkflow', () => {
       { name: 'step-b', type: 'action' },
     ]);
 
-    const { newWorkflowDefinition, updatedSteps, executeStepIndex } = buildExtractedWorkflow(
-      workflow,
-      [0, 1],
-      'all-steps'
-    );
+    const { newWorkflowDefinition, updatedSteps, executeStepIndex, executeStep } =
+      buildExtractedWorkflow(workflow, [0, 1], 'all-steps');
 
     expect(newWorkflowDefinition.steps).toHaveLength(2);
     expect(updatedSteps).toHaveLength(1);
     expect(updatedSteps[0].type).toBe('workflow.execute');
     expect(executeStepIndex).toBe(0);
+    expect(executeStep).toBe(updatedSteps[executeStepIndex]);
   });
 
   it('returns the correct executeStepIndex for leading extraction', () => {
@@ -215,7 +211,12 @@ describe('buildExtractedWorkflow', () => {
       { name: 'step-b', type: 'action' },
     ]);
 
-    const { executeStepIndex } = buildExtractedWorkflow(workflow, [0, 0], 'sub');
+    const { executeStepIndex, executeStep, updatedSteps } = buildExtractedWorkflow(
+      workflow,
+      [0, 0],
+      'sub'
+    );
     expect(executeStepIndex).toBe(0);
+    expect(executeStep).toBe(updatedSteps[executeStepIndex]);
   });
 });

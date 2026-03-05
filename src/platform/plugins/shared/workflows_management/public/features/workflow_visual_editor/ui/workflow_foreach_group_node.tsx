@@ -14,13 +14,18 @@ import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, Position } from '@xyflow/react';
 import React from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+import { i18n } from '@kbn/i18n';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
 import type { WorkflowForeachGroupNodeData } from '../model/types';
+
+const FOREACH_DEFAULT_LABEL = i18n.translate('workflows.visualEditor.foreachGroup.defaultLabel', {
+  defaultMessage: 'foreach',
+});
 
 export function WorkflowForeachGroupNode(node: NodeProps<Node<WorkflowForeachGroupNodeData>>) {
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
-  const label = node.data.label || 'foreach';
+  const label = node.data.label || FOREACH_DEFAULT_LABEL;
   const iconColor = euiTheme.colors.warning;
 
   return (

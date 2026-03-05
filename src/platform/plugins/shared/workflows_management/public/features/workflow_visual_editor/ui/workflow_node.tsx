@@ -31,6 +31,9 @@ import { isFlowNodeType } from '../model/types';
 const triggerNodeTypes = new Set(['manual', 'alert', 'scheduled']);
 
 const NODE_SIZE = 64;
+const NODE_GAP = '6px';
+const NODE_BORDER_RADIUS = '12px';
+const STATUS_BADGE_OFFSET = '-6px';
 
 const RUN_FROM_STEP_LABEL = i18n.translate('workflows.visualEditor.node.runFromStep', {
   defaultMessage: 'Run from this step',
@@ -185,7 +188,11 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowStepNodeData>>) {
             {label}
           </span>
         </EuiToolTip>
-        <Handle type="source" position={node.sourcePosition ?? Position.Right} css={styles.handle} />
+        <Handle
+          type="source"
+          position={node.sourcePosition ?? Position.Right}
+          css={styles.handle}
+        />
       </div>
     </>
   );
@@ -214,13 +221,13 @@ const componentStyles = {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: ${NODE_GAP};
     width: 100%;
   `,
   box: (euiThemeContext: UseEuiTheme) => css`
     width: ${NODE_SIZE}px;
     height: ${NODE_SIZE}px;
-    border-radius: 12px;
+    border-radius: ${NODE_BORDER_RADIUS};
     background-color: ${euiThemeContext.euiTheme.colors.backgroundBasePlain};
     display: flex;
     align-items: center;
@@ -238,8 +245,8 @@ const componentStyles = {
   `,
   statusBadge: ({ euiTheme }: UseEuiTheme) => css`
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: ${STATUS_BADGE_OFFSET};
+    right: ${STATUS_BADGE_OFFSET};
     background-color: ${euiTheme.colors.backgroundBasePlain};
     line-height: 0;
   `,

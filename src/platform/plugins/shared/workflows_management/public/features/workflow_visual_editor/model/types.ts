@@ -67,6 +67,13 @@ export function getErrorMessage(error: unknown): string {
   return 'An unexpected error occurred';
 }
 
+const NON_STEP_NODE_TYPES = new Set(['trigger', 'placeholder', 'foreachGroup']);
+
+/** Filters nodes to only selectable step nodes (excludes trigger, placeholder, foreachGroup). */
+export function getSelectableStepNodes(nodes: Node[]): Node[] {
+  return nodes.filter((n) => !NON_STEP_NODE_TYPES.has(n.type ?? ''));
+}
+
 /** Data attached to step and trigger graph nodes. */
 export interface WorkflowStepNodeData extends Record<string, unknown> {
   label: string;

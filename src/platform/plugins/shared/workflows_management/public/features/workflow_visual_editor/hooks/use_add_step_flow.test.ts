@@ -215,4 +215,95 @@ describe('useAddStepFlow', () => {
     expect(onAddStepBetween).toHaveBeenCalledWith('Source', 'Target', 'wait');
     expect(result.current.addStepContext).toBeNull();
   });
+
+  it('transitions to pickConnector in between mode for connector step types', () => {
+    const nodesRef = {
+      current: [
+        { id: 'src-id', data: { label: 'Source' } },
+        { id: 'tgt-id', data: { label: 'Target' } },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useAddStepFlow({ ...defaultParams, nodesRef: nodesRef as any })
+    );
+    const anchor = makeAnchor();
+
+    act(() => {
+      result.current.handleEdgeAddNode('edge-1', 'src-id', 'tgt-id', anchor);
+    });
+    act(() => {
+      result.current.handleStepTypeSelected({ id: 'bedrock' } as ActionOptionData);
+    });
+
+    expect(result.current.addStepContext).toMatchObject({
+      mode: 'between',
+      phase: 'pickConnector',
+      stepType: 'bedrock',
+      sourceStepName: 'Source',
+      targetStepName: 'Target',
+    });
+    expect(result.current.addStepContext?.connectorInstances).toHaveLength(1);
+  });
+
+  it('completes between-mode connector selection', () => {
+    const onAddStepBetween = jest.fn();
+    const nodesRef = {
+      current: [
+        { id: 'src-id', data: { label: 'Source' } },
+        { id: 'tgt-id', data: { label: 'Target' } },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useAddStepFlow({ ...defaultParams, onAddStepBetween, nodesRef: nodesRef as any })
+    );
+    const anchor = makeAnchor();
+
+    act(() => {
+      result.current.handleEdgeAddNode('edge-1', 'src-id', 'tgt-id', anchor);
+    });
+    act(() => {
+      result.current.handleStepTypeSelected({ id: 'bedrock' } as ActionOptionData);
+    });
+    act(() => {
+      result.current.handleConnectorSelected('conn-1');
+    });
+
+    expect(onAddStepBetween).toHaveBeenCalledWith('Source', 'Target', 'bedrock', 'conn-1');
+    expect(result.current.addStepContext).toBeNull();
+  });
+
+  it('calls onCreateConnectorAndAddStep in between mode', () => {
+    const onCreateConnectorAndAddStep = jest.fn();
+    const nodesRef = {
+      current: [
+        { id: 'src-id', data: { label: 'Source' } },
+        { id: 'tgt-id', data: { label: 'Target' } },
+      ],
+    };
+    const { result } = renderHook(() =>
+      useAddStepFlow({ ...defaultParams, onCreateConnectorAndAddStep, nodesRef: nodesRef as any })
+    );
+    const anchor = makeAnchor();
+
+    act(() => {
+      result.current.handleEdgeAddNode('edge-1', 'src-id', 'tgt-id', anchor);
+    });
+    act(() => {
+      result.current.handleStepTypeSelected({ id: 'bedrock' } as ActionOptionData);
+    });
+    act(() => {
+      result.current.handleCreateNewConnector();
+    });
+
+    expect(onCreateConnectorAndAddStep).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stepType: 'bedrock',
+        connectorType: 'bedrock',
+        mode: 'between',
+        sourceStepName: 'Source',
+        targetStepName: 'Target',
+      })
+    );
+    expect(result.current.addStepContext).toBeNull();
+  });
 });
