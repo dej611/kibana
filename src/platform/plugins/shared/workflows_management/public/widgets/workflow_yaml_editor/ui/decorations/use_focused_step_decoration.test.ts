@@ -14,11 +14,11 @@ import type { monaco } from '@kbn/monaco';
 import { useFocusedStepDecoration } from './use_focused_step_decoration';
 import { createMockStore } from '../../../../entities/workflows/store/__mocks__/store.mock';
 import {
-  _setComputedDataInternal,
+  _setSerializableComputed,
   setCursorPosition,
   setYamlString,
 } from '../../../../entities/workflows/store/workflow_detail/slice';
-import type { ComputedData } from '../../../../entities/workflows/store/workflow_detail/types';
+import type { SerializableComputedData } from '../../../../entities/workflows/store/workflow_detail/types';
 import type { StepInfo } from '../../../../entities/workflows/store/workflow_detail/utils/build_workflow_lookup';
 
 jest.mock('@kbn/monaco', () => {
@@ -93,12 +93,13 @@ const renderHookWithProviders = (
 
   store.dispatch(setYamlString('version: "1"\nname: test'));
 
-  const computedData: ComputedData = {
+  const computedData: SerializableComputedData = {
     workflowLookup: {
       steps: stepInfos,
     },
+    isYamlSyntaxValid: true,
   };
-  store.dispatch(_setComputedDataInternal(computedData));
+  store.dispatch(_setSerializableComputed(computedData));
 
   const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(Provider, { store }, children);

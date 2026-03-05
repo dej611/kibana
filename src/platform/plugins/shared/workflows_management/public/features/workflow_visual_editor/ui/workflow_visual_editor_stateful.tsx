@@ -10,18 +10,18 @@
 import type { UseEuiTheme } from '@elastic/eui';
 import { EuiBadge, EuiEmptyPrompt, EuiLoadingSpinner, useEuiTheme } from '@elastic/eui';
 import { css } from '@emotion/react';
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import { FormattedMessage } from '@kbn/i18n-react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+import { FormattedMessage } from '@kbn/i18n-react';
 import type { WorkflowYaml } from '@kbn/workflows';
 import type { PendingConnectorStepContext } from './workflow_visual_editor';
 import { WorkflowVisualEditor } from './workflow_visual_editor';
-import { parseWorkflowYaml } from '../../../../common/lib/yaml';
-import { getWorkflowZodSchemaLoose } from '../../../../common/schema';
 import { useAvailableConnectors } from '../../../entities/connectors/model/use_available_connectors';
 import {
+  selectEditorWorkflowDefinition,
   selectEditorYaml,
+  selectIsYamlSyntaxValid,
   selectStepExecutions,
 } from '../../../entities/workflows/store/workflow_detail/selectors';
 
@@ -54,22 +54,22 @@ export const WorkflowVisualEditorStateful = ({
   const stepExecutions = useSelector(selectStepExecutions);
   const workflowYaml = useSelector(selectEditorYaml) ?? '';
   const connectorsData = useAvailableConnectors();
+  const workflowDefinition = useSelector(selectEditorWorkflowDefinition);
+  const isYamlSyntaxValid = useSelector(selectIsYamlSyntaxValid);
   const lastValidWorkflowRef = useRef<WorkflowYaml | undefined>();
 
-  const { workflow, isYamlInvalid } = useMemo(() => {
-    if (!workflowYaml || !connectorsData) {
-      return { workflow: lastValidWorkflowRef.current, isYamlInvalid: false };
+  // Keep the last-valid fallback in sync with Redux computed data.
+  // When the middleware produces a valid definition, capture it so the
+  // visual editor can continue showing the last-known-good graph while
+  // the user fixes YAML errors.
+  useEffect(() => {
+    if (workflowDefinition) {
+      lastValidWorkflowRef.current = workflowDefinition;
     }
-    const result = parseWorkflowYaml(
-      workflowYaml,
-      getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
-    );
-    if (!result.success) {
-      return { workflow: lastValidWorkflowRef.current, isYamlInvalid: true };
-    }
-    lastValidWorkflowRef.current = result.data;
-    return { workflow: result.data, isYamlInvalid: false };
-  }, [workflowYaml, connectorsData]);
+  }, [workflowDefinition]);
+
+  const workflow = workflowDefinition ?? lastValidWorkflowRef.current;
+  const isYamlInvalid = Boolean(workflowYaml && !workflowDefinition && !isYamlSyntaxValid);
 
   if (!workflow) {
     return (

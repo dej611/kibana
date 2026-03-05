@@ -22,14 +22,13 @@ import { validateTriggerConditions } from './validate_trigger_conditions';
 import { validateVariables as validateVariablesInternal } from './validate_variables';
 import { validateWorkflowInputs } from './validate_workflow_inputs';
 import { getPropertyHandler } from '../../../../common/schema';
-import { selectWorkflowGraph, selectYamlDocument } from '../../../entities/workflows/store';
+import { useNonSerializableComputed } from '../../../entities/workflows/store';
 import {
   selectConnectors,
   selectEditorWorkflowLookup,
   selectIsWorkflowTab,
   selectWorkflowDefinition,
   selectWorkflows,
-  selectYamlLineCounter,
 } from '../../../entities/workflows/store/workflow_detail/selectors';
 import { useKibana } from '../../../hooks/use_kibana';
 import { MarkerSeverity } from '../../../widgets/workflow_yaml_editor/lib/utils';
@@ -52,11 +51,13 @@ export function useYamlValidation(
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const decorationsCollection = useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
-  const yamlDocument = useSelector(selectYamlDocument);
+  const {
+    yamlDocument,
+    yamlLineCounter: lineCounter,
+    workflowGraph,
+  } = useNonSerializableComputed();
   const workflowLookup = useSelector(selectEditorWorkflowLookup);
-  const workflowGraph = useSelector(selectWorkflowGraph);
   const workflowDefinition = useSelector(selectWorkflowDefinition);
-  const lineCounter = useSelector(selectYamlLineCounter);
   const isWorkflowTab = useSelector(selectIsWorkflowTab);
   const connectors = useSelector(selectConnectors);
   const workflows = useSelector(selectWorkflows);

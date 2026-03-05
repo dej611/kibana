@@ -12,7 +12,7 @@ import React from 'react';
 import { WorkflowDetailEditor } from './workflow_detail_editor';
 import { createMockStore } from '../../../entities/workflows/store/__mocks__/store.mock';
 import {
-  _setComputedDataInternal,
+  _setSerializableComputed,
   setYamlString,
 } from '../../../entities/workflows/store/workflow_detail/slice';
 import { TestWrapper } from '../../../shared/test_utils';
@@ -110,7 +110,8 @@ describe('WorkflowDetailEditor', () => {
     const store = createMockStore();
     store.dispatch(setYamlString(mockYaml));
     store.dispatch(
-      _setComputedDataInternal({
+      _setSerializableComputed({
+        isYamlSyntaxValid: true,
         workflowDefinition: {
           version: '1',
           name: 'Test Workflow',

@@ -38,7 +38,9 @@ export function isFlowNodeType(type: string): type is WorkflowStepType {
 }
 
 export function isStep(value: unknown): value is Step {
-  return typeof value === 'object' && value !== null && 'name' in value && 'type' in value;
+  if (typeof value !== 'object' || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return typeof record.name === 'string' && typeof record.type === 'string';
 }
 
 export function hasLabel(
@@ -56,11 +58,11 @@ export function getErrorMessage(error: unknown): string {
     return error.message;
   }
   if (typeof error === 'object' && error !== null && 'body' in error) {
-    const body = (error as { body?: unknown }).body;
+    const { body } = error as Record<string, unknown>;
     if (typeof body === 'object' && body !== null && 'message' in body) {
-      const msg = (body as { message?: unknown }).message;
-      if (typeof msg === 'string') {
-        return msg;
+      const { message } = body as Record<string, unknown>;
+      if (typeof message === 'string') {
+        return message;
       }
     }
   }

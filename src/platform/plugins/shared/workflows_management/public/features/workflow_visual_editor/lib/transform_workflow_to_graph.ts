@@ -8,43 +8,18 @@
  */
 
 import type { WorkflowYaml } from '@kbn/workflows';
+import { IdAllocator } from './id_allocator';
 import { getTriggerLabel } from '../../../shared/lib/graph_utils';
 import type { EdgeBranchType, ForeachGroup, GraphEdge, PreLayoutNode, Step } from '../model/types';
 import { DEFAULT_NODE_STYLE, isFlowNodeType, isStep } from '../model/types';
+export { slugify } from './id_allocator';
 
 const MAX_FOREACH_GROUP_DEPTH = 1;
-
-export function slugify(name: string): string {
-  return name.toLowerCase().replace(/\s+/g, '-');
-}
 
 export interface TransformResult {
   nodes: PreLayoutNode[];
   edges: GraphEdge[];
   foreachGroups: ForeachGroup[];
-}
-
-/**
- * Tracks used IDs and returns a unique ID by appending a numeric suffix
- * when the base slug has already been used.
- */
-class IdAllocator {
-  private usedIds = new Set<string>();
-
-  allocate(name: string): string {
-    const base = slugify(name);
-    if (!this.usedIds.has(base)) {
-      this.usedIds.add(base);
-      return base;
-    }
-    let counter = 2;
-    while (this.usedIds.has(`${base}-${counter}`)) {
-      counter++;
-    }
-    const uniqueId = `${base}-${counter}`;
-    this.usedIds.add(uniqueId);
-    return uniqueId;
-  }
 }
 
 function processNestedSteps(
@@ -171,13 +146,10 @@ function transformYamlToNodesAndEdgesInternal(
         foreachGroups.push(...ifResult.foreachGroups);
 
         if (hasElseBranch) {
-          const elseResult = processNestedSteps(
-            id,
-            getValidSteps(step, 'else'),
-            depth,
-            ids,
-            { edgeSuffix: 'else', branchType: 'else' }
-          );
+          const elseResult = processNestedSteps(id, getValidSteps(step, 'else'), depth, ids, {
+            edgeSuffix: 'else',
+            branchType: 'else',
+          });
           nodes.push(...elseResult.nodes);
           edges.push(...elseResult.edges);
           foreachGroups.push(...elseResult.foreachGroups);

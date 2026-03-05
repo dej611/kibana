@@ -10,13 +10,10 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { RootState } from '../types';
 
-// Selectors
-
-// Base selectors - these are simple property accessors that don't need memoization
+// Base selectors
 export const selectDetail = (state: RootState) => state.detail;
-export const selectYamlComputed = (state: RootState) => state.detail.computed;
+export const selectSerializableComputed = (state: RootState) => state.detail.computed;
 
-// Exported memoized selectors for final properties
 export const selectWorkflow = createSelector(selectDetail, (detail) => detail.workflow);
 export const selectYamlString = createSelector(selectDetail, (detail) => detail.yamlString);
 
@@ -31,32 +28,16 @@ export const selectHasChanges = createSelector(
 
 export const selectIsYamlSynced = createSelector(selectDetail, (detail) => detail.isYamlSynced);
 
-export const selectYamlDocument = createSelector(
-  selectYamlComputed,
-  (computed) => computed?.yamlDocument
-);
-
-export const selectYamlLineCounter = createSelector(
-  selectYamlComputed,
-  (computed) => computed?.yamlLineCounter
-);
-
-export const selectWorkflowGraph = createSelector(
-  selectYamlComputed,
-  (computed) => computed?.workflowGraph
-);
-
 export const selectWorkflowDefinition = createSelector(
-  selectYamlComputed,
+  selectSerializableComputed,
   (computed) => computed?.workflowDefinition
 );
 
-// Only checks if the current workflow yaml can be parsed, does not check the schema, only the yaml syntax
-export const selectIsYamlSyntaxValid = createSelector(selectYamlDocument, (yamlDoc): boolean =>
-  Boolean(yamlDoc && yamlDoc.errors.length === 0)
+export const selectIsYamlSyntaxValid = createSelector(
+  selectSerializableComputed,
+  (computed): boolean => computed?.isYamlSyntaxValid ?? false
 );
 
-// Checks whether validation errors (from strict schema + custom validations) are present
 export const selectHasYamlSchemaValidationErrors = createSelector(
   selectDetail,
   (detail): boolean => detail.hasYamlSchemaValidationErrors
@@ -105,8 +86,8 @@ export const selectIsWorkflowTab = createSelector(
 );
 
 /**
- * Editor selectors
- * These selectors are used to get the correct data for the editor based on the active tab (current workflow or previous execution).
+ * Editor selectors — return the correct data for the active tab
+ * (current workflow vs. previous execution).
  */
 
 const selectIsEditorExecutionYaml = createSelector(
@@ -121,11 +102,12 @@ export const selectEditorYaml = createSelector(
   selectYamlString,
   (isExecutionYamlForEditor, execution, yamlString) => {
     if (isExecutionYamlForEditor) {
-      return execution?.yaml ?? ''; // Will always be defined if isExecutionYaml is true
+      return execution?.yaml ?? '';
     }
     return yamlString;
   }
 );
+
 export const selectEditorComputed = createSelector(
   selectIsEditorExecutionYaml,
   selectDetail,
@@ -135,11 +117,6 @@ export const selectEditorComputed = createSelector(
     }
     return detailState.computed;
   }
-);
-
-export const selectEditorYamlDocument = createSelector(
-  selectEditorComputed,
-  (computed) => computed?.yamlDocument
 );
 
 export const selectEditorWorkflowLookup = createSelector(
@@ -154,19 +131,9 @@ export const selectEditorFocusedStepInfo = createSelector(
     focusedStepId && workflowLookup ? workflowLookup.steps[focusedStepId] : undefined
 );
 
-export const selectEditorWorkflowGraph = createSelector(
-  selectEditorComputed,
-  (computed) => computed?.workflowGraph
-);
-
 export const selectEditorWorkflowDefinition = createSelector(
   selectEditorComputed,
   (computed) => computed?.workflowDefinition
-);
-
-export const selectEditorYamlLineCounter = createSelector(
-  selectEditorComputed,
-  (computed) => computed?.yamlLineCounter
 );
 
 export const selectConnectorFlyout = createSelector(

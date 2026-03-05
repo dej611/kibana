@@ -13,14 +13,13 @@ import { useEuiTheme } from '@elastic/eui';
 import type { Node, NodeTypes } from '@xyflow/react';
 import { Background, Controls, ReactFlow } from '@xyflow/react';
 import React, { useMemo } from 'react';
-import { useSelector } from 'react-redux';
 
 import { ExecutionGraphEdge, ExecutionGraphNode } from './nodes';
 import { atomicNodes, mainScopeNodes, secondaryScopeNodes } from './nodes/types';
 import { convertWorkflowGraphToReactFlow } from './workflow_graph_layout';
 
 import '@xyflow/react/dist/style.css';
-import { selectWorkflowGraph } from '../../entities/workflows/store';
+import { useNonSerializableComputed } from '../../entities/workflows/store';
 
 const nodeTypes = [...mainScopeNodes, ...secondaryScopeNodes, ...atomicNodes].reduce(
   (acc, nodeType) => {
@@ -80,7 +79,7 @@ const ReactFlowWrapper: React.FC<{
 
 export const ExecutionGraph: React.FC = () => {
   const { euiTheme } = useEuiTheme();
-  const workflowGraph = useSelector(selectWorkflowGraph);
+  const { workflowGraph } = useNonSerializableComputed();
 
   const layoutResult: { result: any; error: string } | null = useMemo(() => {
     if (!workflowGraph) {

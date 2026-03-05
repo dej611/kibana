@@ -19,7 +19,7 @@ import {
 import { css } from '@emotion/react';
 import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, NodeToolbar, Position } from '@xyflow/react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import { ExecutionStatus } from '@kbn/workflows';
@@ -89,12 +89,17 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowStepNodeData>>) {
 
   const labelRef = useRef<HTMLSpanElement>(null);
   const [isLabelTruncated, setIsLabelTruncated] = useState(false);
-  const handleLabelMouseEnter = useCallback(() => {
+
+  useEffect(() => {
     const el = labelRef.current;
-    if (el) {
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
       setIsLabelTruncated(el.scrollWidth > el.clientWidth);
-    }
-  }, []);
+    });
+    observer.observe(el);
+    setIsLabelTruncated(el.scrollWidth > el.clientWidth);
+    return () => observer.disconnect();
+  }, [label]);
 
   return (
     <>
@@ -184,7 +189,7 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowStepNodeData>>) {
           position="bottom"
           display="block"
         >
-          <span ref={labelRef} css={styles.label} onMouseEnter={handleLabelMouseEnter}>
+          <span ref={labelRef} css={styles.label}>
             {label}
           </span>
         </EuiToolTip>

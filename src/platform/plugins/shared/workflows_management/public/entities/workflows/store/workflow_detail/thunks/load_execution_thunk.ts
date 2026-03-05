@@ -12,7 +12,8 @@ import { i18n } from '@kbn/i18n';
 import type { WorkflowExecutionDto } from '@kbn/workflows';
 import type { WorkflowsServices } from '../../../../../types';
 import type { RootState } from '../../types';
-import { _setComputedExecution, setExecution } from '../slice';
+import type { ComputedDataCache } from '../computed_data_cache';
+import { _setSerializableComputedExecution, setExecution } from '../slice';
 import { performComputation } from '../utils/computation';
 
 export interface LoadExecutionParams {
@@ -24,28 +25,35 @@ export type LoadExecutionResponse = WorkflowExecutionDto;
 export const loadExecutionThunk = createAsyncThunk<
   LoadExecutionResponse,
   LoadExecutionParams,
-  { state: RootState; extra: { services: WorkflowsServices } }
+  {
+    state: RootState;
+    extra: { services: WorkflowsServices; computedDataCache: ComputedDataCache };
+  }
 >(
   'detail/loadExecutionThunk',
-  async ({ id }, { getState, dispatch, rejectWithValue, extra: { services } }) => {
+  async (
+    { id },
+    { getState, dispatch, rejectWithValue, extra: { services, computedDataCache } }
+  ) => {
     const { http, notifications } = services;
     try {
       const previousExecution = getState().detail.execution;
 
-      // Make the API call to load the execution (without input/output to reduce payload during polling)
       const response = await http.get<WorkflowExecutionDto>(`/api/workflowExecutions/${id}`, {
         query: { includeInput: false, includeOutput: false },
       });
       dispatch(setExecution(response));
 
       if (id !== previousExecution?.id) {
-        // avoid recomputing derived data if the execution is the same
-        const computed = performComputation(response.yaml, response.workflowDefinition);
-        dispatch(_setComputedExecution(computed));
+        const { serializable, nonSerializable } = performComputation(
+          response.yaml,
+          response.workflowDefinition
+        );
+        computedDataCache.setComputedExecution(nonSerializable);
+        dispatch(_setSerializableComputedExecution(serializable));
       }
       return response;
     } catch (error) {
-      // Extract error message from HTTP error body if available
       const errorMessage = error.body?.message || error.message || 'Failed to load execution';
 
       notifications.toasts.addError(errorMessage, {

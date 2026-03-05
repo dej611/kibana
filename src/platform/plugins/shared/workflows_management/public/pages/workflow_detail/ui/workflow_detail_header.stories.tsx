@@ -17,7 +17,7 @@ import type { WorkflowDetailDto } from '@kbn/workflows';
 import { WorkflowDetailHeader } from './workflow_detail_header';
 import { kibanaReactDecorator } from '../../../../.storybook/decorators';
 import {
-  _setComputedDataInternal,
+  _setSerializableComputed,
   setWorkflow,
   setYamlString,
   WorkflowDetailStoreProvider,
@@ -56,7 +56,12 @@ const StoryWrapper: React.FC<{
   // Execute initialDispatch if provided
   React.useEffect(() => {
     dispatch(setWorkflow(defaultWorkflow));
-    dispatch(_setComputedDataInternal({ workflowDefinition: defaultWorkflow.definition }));
+    dispatch(
+      _setSerializableComputed({
+        workflowDefinition: defaultWorkflow.definition,
+        isYamlSyntaxValid: true,
+      })
+    );
     initialDispatch?.(dispatch);
   }, [dispatch, initialDispatch]);
 

@@ -10,17 +10,18 @@
 import React, { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { createWorkflowsStore } from './store';
+import { ComputedDataCacheProvider } from './workflow_detail/computed_data_context';
 import { useKibana } from '../../../hooks/use_kibana';
 import type { WorkflowsPublicPluginStart } from '../../../types';
 
 /**
  * Provides a workflow detail Redux store context to child components.
  * Creates a new store instance for each provider instance, ensuring isolation.
+ * Also provides the ComputedDataCache context so components can access
+ * non-serializable computed data via useNonSerializableComputed().
  */
 export function WorkflowDetailStoreProvider({ children }: React.PropsWithChildren) {
-  const { services } = useKibana(); // Services are pre-wired in the Kibana services context, they never change.
-  // Services should include workflowsManagement (added in createWorkflowsStartServices)
-  // Cast to include workflowsManagement for proper type checking
+  const { services } = useKibana();
   const servicesWithWorkflowsManagement = services as typeof services & {
     workflowsManagement?: WorkflowsPublicPluginStart;
   };
@@ -29,5 +30,11 @@ export function WorkflowDetailStoreProvider({ children }: React.PropsWithChildre
     [servicesWithWorkflowsManagement]
   );
 
-  return <Provider store={workflowsStore}>{children}</Provider>;
+  return (
+    <Provider store={workflowsStore}>
+      <ComputedDataCacheProvider value={workflowsStore.computedDataCache}>
+        {children}
+      </ComputedDataCacheProvider>
+    </Provider>
+  );
 }

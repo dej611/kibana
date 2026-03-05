@@ -10,12 +10,24 @@
 import YAML, { LineCounter } from 'yaml';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { WorkflowGraph } from '@kbn/workflows/graph';
+import type { WorkflowLookup } from './build_workflow_lookup';
 import { buildWorkflowLookup } from './build_workflow_lookup';
 import {
   correctYamlSyntax,
   parseWorkflowYamlForAutocomplete,
 } from '../../../../../../common/lib/yaml';
-import type { ComputedData } from '../types';
+import type { NonSerializableComputed } from '../computed_data_cache';
+import type { SerializableComputedData } from '../types';
+
+/**
+ * Full computed result containing both serializable and non-serializable parts.
+ * The middleware splits this: serializable goes to Redux, non-serializable goes
+ * to the ComputedDataCache side-channel.
+ */
+export interface ComputedData {
+  serializable: SerializableComputedData;
+  nonSerializable: NonSerializableComputed;
+}
 
 export const performComputation = (
   yamlString: string,
@@ -23,31 +35,27 @@ export const performComputation = (
 ): ComputedData => {
   if (!yamlString) {
     return {
-      yamlLineCounter: undefined,
-      yamlDocument: undefined,
-      workflowLookup: undefined,
-      workflowGraph: undefined,
-      workflowDefinition: undefined,
+      serializable: {
+        workflowLookup: undefined,
+        workflowDefinition: undefined,
+        isYamlSyntaxValid: false,
+      },
+      nonSerializable: {},
     };
   }
 
-  // Compute derived data
-  // Parse YAML document from original yaml string
-  // todo: use parseDocument once, not here plus inside parseWorkflowYamlToJSON
   const lineCounter = new LineCounter();
   const yamlDoc = YAML.parseDocument(yamlString, { lineCounter, keepSourceTokens: true });
 
-  // use corrected yaml for schema parsing
   const correctedYamlString = correctYamlSyntax(yamlString);
-  // Build workflow lookup
-  const lookup = buildWorkflowLookup(yamlDoc, lineCounter);
+  const lookup: WorkflowLookup | undefined = buildWorkflowLookup(yamlDoc, lineCounter);
 
-  // parse workflow definition from yaml string if not provided
   let workflowDefinition = loadedDefinition;
   if (!workflowDefinition) {
-    // Parse workflow JSON for graph creation
     const parsingResult = parseWorkflowYamlForAutocomplete(correctedYamlString);
     if (parsingResult.success) {
+      // The autocomplete schema is a superset of WorkflowYaml structurally;
+      // this cast bridges the two Zod schemas at a controlled boundary.
       workflowDefinition = parsingResult.data as WorkflowYaml;
     }
   }
@@ -57,10 +65,15 @@ export const performComputation = (
     : undefined;
 
   return {
-    yamlLineCounter: lineCounter,
-    yamlDocument: yamlDoc,
-    workflowLookup: lookup,
-    workflowGraph: graph,
-    workflowDefinition,
+    serializable: {
+      workflowLookup: lookup,
+      workflowDefinition,
+      isYamlSyntaxValid: yamlDoc.errors.length === 0,
+    },
+    nonSerializable: {
+      yamlDocument: yamlDoc,
+      yamlLineCounter: lineCounter,
+      workflowGraph: graph,
+    },
   };
 };

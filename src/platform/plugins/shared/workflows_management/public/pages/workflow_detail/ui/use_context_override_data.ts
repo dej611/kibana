@@ -11,9 +11,9 @@ import { useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import { v4 as generateUuid } from 'uuid';
 import YAML from 'yaml';
+import { useNonSerializableComputed } from '../../../entities/workflows/store';
 import {
   selectWorkflowDefinition,
-  selectWorkflowGraph,
   selectYamlString,
 } from '../../../entities/workflows/store/workflow_detail/selectors';
 import { useSpaceId } from '../../../hooks/use_space_id';
@@ -26,8 +26,7 @@ import { buildContextOverride } from '../../../shared/utils/build_step_context_o
  */
 export function useContextOverrideData() {
   const spaceId = useSpaceId();
-  // Redux selectors, use only current workflow data, not execution data
-  const workflowGraph = useSelector(selectWorkflowGraph);
+  const { workflowGraph } = useNonSerializableComputed();
   const workflowDefinition = useSelector(selectWorkflowDefinition);
   const yamlString = useSelector(selectYamlString);
 

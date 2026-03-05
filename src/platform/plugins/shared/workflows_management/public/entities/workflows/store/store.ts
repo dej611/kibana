@@ -8,27 +8,34 @@
  */
 
 import { configureStore } from '@reduxjs/toolkit';
-import { workflowDetailMiddleware } from './workflow_detail/middleware';
+import { ComputedDataCache } from './workflow_detail/computed_data_cache';
+import { createWorkflowDetailMiddleware } from './workflow_detail/middleware';
 import { ignoredActions, ignoredPaths, workflowDetailReducer } from './workflow_detail/slice';
 import type { WorkflowsServices } from '../../../types';
 
-// Store factory
+export interface WorkflowsStoreExtras {
+  computedDataCache: ComputedDataCache;
+}
+
 export const createWorkflowsStore = (services: WorkflowsServices) => {
-  return configureStore({
+  const computedDataCache = new ComputedDataCache();
+  const middleware = createWorkflowDetailMiddleware(computedDataCache);
+
+  const store = configureStore({
     reducer: {
       detail: workflowDetailReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
-        thunk: { extraArgument: { services } },
+        thunk: { extraArgument: { services, computedDataCache } },
         serializableCheck: {
-          // Ignore these non-serializable fields in the state
           ignoredPaths,
-          // Ignore these specific action types that contain non-serializable data
           ignoredActions,
         },
-      }).concat(workflowDetailMiddleware),
+      }).concat(middleware),
   });
+
+  return Object.assign(store, { computedDataCache });
 };
 
 export type AppDispatch = ReturnType<typeof createWorkflowsStore>['dispatch'];

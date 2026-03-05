@@ -12,6 +12,32 @@ import type { Step } from '../model/types';
 import { isStep } from '../model/types';
 
 /**
+ * Enumerates every child-step list inside a parent step (`steps`, `else`,
+ * `branches[].steps`).  Centralises the branching logic so that
+ * walkStepTree, filterStepTree, and future visitors don't each duplicate it.
+ */
+export const visitStepChildren = (
+  step: Step,
+  callback: (children: Step[], key: string) => void
+): void => {
+  const record = step as Record<string, unknown>;
+
+  if ('steps' in record && Array.isArray(record.steps)) {
+    callback((record.steps as unknown[]).filter(isStep), 'steps');
+  }
+  if ('else' in record && Array.isArray(record.else)) {
+    callback((record.else as unknown[]).filter(isStep), 'else');
+  }
+  if ('branches' in record && Array.isArray(record.branches)) {
+    for (const branch of record.branches as Array<{ steps?: unknown[] }>) {
+      if (Array.isArray(branch.steps)) {
+        callback(branch.steps.filter(isStep), 'branches');
+      }
+    }
+  }
+};
+
+/**
  * Recursively walks a step tree depth-first, calling `visitor` for every step
  * including nested children inside `steps`, `else`, and `branches[].steps`.
  */
@@ -23,21 +49,32 @@ export const walkStepTree = (
 ): void => {
   for (const step of steps) {
     visitor(step, depth, parentStep);
-
-    if ('steps' in step && Array.isArray(step.steps)) {
-      walkStepTree((step.steps as unknown[]).filter(isStep), visitor, depth + 1, step);
-    }
-    if ('else' in step && Array.isArray(step.else)) {
-      walkStepTree((step.else as unknown[]).filter(isStep), visitor, depth + 1, step);
-    }
-    if ('branches' in step && Array.isArray(step.branches)) {
-      for (const branch of step.branches as Array<{ steps?: unknown[] }>) {
-        if (Array.isArray(branch.steps)) {
-          walkStepTree(branch.steps.filter(isStep), visitor, depth + 1, step);
-        }
-      }
-    }
+    visitStepChildren(step, (children) => {
+      walkStepTree(children, visitor, depth + 1, step);
+    });
   }
+};
+
+/**
+ * Returns a shallow clone of `step` with every child-step list replaced by
+ * the result of `transform(children)`.  Uses `visitStepChildren` under the
+ * hood so that the set of child properties is defined in exactly one place.
+ */
+export const mapStepChildren = (step: Step, transform: (children: Step[]) => Step[]): Step => {
+  const clone = { ...step } as Record<string, unknown>;
+
+  visitStepChildren(step, (children, key) => {
+    if (key === 'branches') {
+      clone.branches = (clone.branches as Array<{ steps?: unknown[] }>).map((branch) => ({
+        ...branch,
+        ...(Array.isArray(branch.steps) ? { steps: transform(branch.steps.filter(isStep)) } : {}),
+      }));
+    } else {
+      clone[key] = transform(children);
+    }
+  });
+
+  return clone as Step;
 };
 
 /**
@@ -48,24 +85,7 @@ export const filterStepTree = (
   steps: WorkflowYaml['steps'],
   predicate: (step: Step) => boolean
 ): WorkflowYaml['steps'] => {
-  return steps.filter(predicate).map((step) => {
-    const s = { ...step } as Record<string, unknown>;
-
-    if ('steps' in s && Array.isArray(s.steps)) {
-      s.steps = filterStepTree((s.steps as unknown[]).filter(isStep), predicate);
-    }
-    if ('else' in s && Array.isArray(s.else)) {
-      s.else = filterStepTree((s.else as unknown[]).filter(isStep), predicate);
-    }
-    if ('branches' in s && Array.isArray(s.branches)) {
-      s.branches = (s.branches as Array<{ steps?: unknown[] }>).map((branch) => ({
-        ...branch,
-        ...(Array.isArray(branch.steps)
-          ? { steps: filterStepTree(branch.steps.filter(isStep), predicate) }
-          : {}),
-      }));
-    }
-
-    return s as Step;
-  });
+  return steps
+    .filter(predicate)
+    .map((step) => mapStepChildren(step, (children) => filterStepTree(children, predicate)));
 };

@@ -38,11 +38,11 @@ import { useSaveYaml } from '../../../entities/workflows/model/use_save_yaml';
 import type { StepInfo } from '../../../entities/workflows/store';
 import {
   selectEditorFocusedStepInfo,
-  selectEditorYamlDocument,
   selectSchema,
   setCursorPosition,
   setIsYamlSynced,
   setYamlString,
+  useEditorNonSerializableComputed,
 } from '../../../entities/workflows/store';
 import {
   selectEditorYaml,
@@ -206,8 +206,7 @@ export const WorkflowYAMLEditor = ({
   // Refs / Disposables for Monaco providers
   const disposablesRef = useRef<monaco.IDisposable[]>([]);
   const workflowYamlSchema = useSelector(selectSchema);
-  // The current yaml document in the editor (could be unsaved)
-  const yamlDocument = useSelector(selectEditorYamlDocument);
+  const { yamlDocument } = useEditorNonSerializableComputed();
   const yamlDocumentRef = useRef<YAML.Document | null>(yamlDocument ?? null);
   yamlDocumentRef.current = yamlDocument || null;
 

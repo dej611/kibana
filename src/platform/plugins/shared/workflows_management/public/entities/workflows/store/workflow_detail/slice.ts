@@ -9,7 +9,12 @@
 
 import { createSlice } from '@reduxjs/toolkit';
 import type { EsWorkflow, WorkflowDetailDto, WorkflowExecutionDto } from '@kbn/workflows';
-import type { ActiveTab, ComputedData, LineColumnPosition, WorkflowDetailState } from './types';
+import type {
+  ActiveTab,
+  LineColumnPosition,
+  SerializableComputedData,
+  WorkflowDetailState,
+} from './types';
 import { addLoadingStateReducers, initialLoadingState } from './utils/loading_states';
 import { findStepByLine } from './utils/step_finder';
 import { getWorkflowZodSchema } from '../../../../../common/schema';
@@ -21,7 +26,6 @@ export const initialWorkflowsState: WorkflowsResponse = {
   totalWorkflows: 0,
 };
 
-// Initial state
 const initialState: WorkflowDetailState = {
   yamlString: '',
   isYamlSynced: true,
@@ -48,7 +52,6 @@ const initialState: WorkflowDetailState = {
   },
 };
 
-// Slice
 const workflowDetailSlice = createSlice({
   name: 'detail',
   initialState,
@@ -108,7 +111,6 @@ const workflowDetailSlice = createSlice({
       state.hasYamlSchemaValidationErrors = action.payload;
     },
 
-    // Connector flyout actions
     openCreateConnectorFlyout: (
       state,
       action: { payload: { connectorType: string; insertPosition?: LineColumnPosition } }
@@ -122,15 +124,11 @@ const workflowDetailSlice = createSlice({
       state.connectorFlyout = { isOpen: true, ...action.payload };
     },
     closeConnectorFlyout: (state) => {
-      state.connectorFlyout = { isOpen: false }; // connectorType, connectorToEdit, and insertPosition are undefined
+      state.connectorFlyout = { isOpen: false };
     },
 
-    // Internal actions - these are not for components usage
-    _setComputedDataInternal: (state, action: { payload: ComputedData }) => {
+    _setSerializableComputed: (state, action: { payload: SerializableComputedData }) => {
       state.computed = action.payload;
-      // Recalculate the focused step now that workflowLookup may have changed.
-      // This handles the case where the cursor was positioned before the
-      // debounced YAML computation completed.
       if (state.cursorPosition && action.payload.workflowLookup) {
         state.focusedStepId = findStepByLine(
           state.cursorPosition.lineNumber,
@@ -139,13 +137,13 @@ const workflowDetailSlice = createSlice({
       }
     },
     _clearComputedData: (state) => {
-      state.computed = {};
+      state.computed = undefined;
       state.focusedStepId = undefined;
     },
     _setGeneratedSchemaInternal: (state, action: { payload: WorkflowDetailState['schema'] }) => {
       state.schema = action.payload;
     },
-    _setComputedExecution: (state, action: { payload: ComputedData }) => {
+    _setSerializableComputedExecution: (state, action: { payload: SerializableComputedData }) => {
       state.computedExecution = action.payload;
     },
   },
@@ -154,11 +152,9 @@ const workflowDetailSlice = createSlice({
   },
 });
 
-// Export the reducer
 export const workflowDetailReducer = workflowDetailSlice.reducer;
 
 export const {
-  // Public action creators
   setWorkflow,
   updateWorkflow,
   setYamlString,
@@ -177,24 +173,21 @@ export const {
   openEditConnectorFlyout,
   closeConnectorFlyout,
 
-  // Internal action creators for middleware use only
-  _setComputedDataInternal,
+  _setSerializableComputed,
   _clearComputedData,
   _setGeneratedSchemaInternal,
-  _setComputedExecution,
+  _setSerializableComputedExecution,
 } = workflowDetailSlice.actions;
 
-// Ignore these non-serializable fields in the state
+/**
+ * Non-serializable paths still present in the Redux state.
+ * Now that ComputedData lives outside Redux, only the Zod schema and
+ * definition objects remain as non-serializable.
+ */
 export const ignoredPaths: Array<string | RegExp> = [
-  /detail\.computed\.*/, // All computed data is not serializable
-  /detail\.computedExecution\.*/, // All computed execution data is not serializable
-  'detail.schema', // Zod schema is not serializable
-  'detail.workflow.definition', // WorkflowYaml definition schema is not serializable
-  'detail.execution.definition', // WorkflowYaml definition schema is not serializable
+  'detail.schema',
+  'detail.workflow.definition',
+  'detail.execution.definition',
 ];
-// Ignore these specific action types that contain non-serializable data
-export const ignoredActions: Array<string> = [
-  'detail/_setComputedDataInternal',
-  'detail/_setGeneratedSchemaInternal',
-  'detail/_setComputedExecution',
-];
+
+export const ignoredActions: Array<string> = ['detail/_setGeneratedSchemaInternal'];

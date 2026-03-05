@@ -7,8 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ZodType } from '@kbn/zod/v4';
 import type { WorkflowYaml } from '@kbn/workflows';
+import type { ZodType } from '@kbn/zod/v4';
 import { parseWorkflowYamlToJSON } from './parse_workflow_yaml_to_json';
 
 interface ParseSuccess {
@@ -25,21 +25,16 @@ export type ParseWorkflowYamlResult = ParseSuccess | ParseFailure;
 
 /**
  * Typed wrapper around `parseWorkflowYamlToJSON` that returns `WorkflowYaml`
- * directly, avoiding the need for `as unknown as WorkflowYaml` casts at
- * every call site.
- *
- * The Zod schema validates the structural shape at runtime; the output is
- * structurally compatible with `WorkflowYaml` after successful validation.
+ * directly.  The Zod schema validates the structural shape at runtime; the
+ * narrowing from `unknown` to `WorkflowYaml` is safe after successful
+ * validation.
  */
-export function parseWorkflowYaml(
-  yamlString: string,
-  schema: ZodType
-): ParseWorkflowYamlResult {
+export function parseWorkflowYaml(yamlString: string, schema: ZodType): ParseWorkflowYamlResult {
   const result = parseWorkflowYamlToJSON(yamlString, schema);
   if (!result.success) {
     return { success: false, error: result.error };
   }
-  // Safe: the Zod schema validates the shape; the inferred output is
-  // structurally compatible with WorkflowYaml.
-  return { success: true, data: result.data as WorkflowYaml };
+  // Safe: Zod validated the shape at runtime; narrowing through `unknown`.
+  const data: WorkflowYaml = result.data as unknown as WorkflowYaml;
+  return { success: true, data };
 }

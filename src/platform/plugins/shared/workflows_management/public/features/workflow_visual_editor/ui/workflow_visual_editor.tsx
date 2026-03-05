@@ -15,7 +15,7 @@ import {
   useResizeObserver,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { ColorMode, EdgeTypes, FitViewOptions, Node, NodeTypes } from '@xyflow/react';
+import type { ColorMode, FitViewOptions, Node } from '@xyflow/react';
 import {
   Background,
   ControlButton,
@@ -39,26 +39,28 @@ import type { PendingConnectorStepContext } from '../hooks/use_add_step_flow';
 import { useKeyboardShortcuts } from '../hooks/use_keyboard_shortcuts';
 import { useSelectionManager } from '../hooks/use_selection_manager';
 import { useWorkflowLayout } from '../hooks/use_workflow_layout';
+import { createNodeTypeRegistry } from '../model/node_type_registry';
 import { getNodeLabel } from '../model/types';
 import type { LayoutDirection, WorkflowEdgeData } from '../model/types';
 
 export type { PendingConnectorStepContext };
 
-const nodeTypes: NodeTypes = {
-  trigger: WorkflowGraphNode,
-  if: WorkflowGraphNode,
-  merge: WorkflowGraphNode,
-  parallel: WorkflowGraphNode,
-  action: WorkflowGraphNode,
-  foreach: WorkflowGraphNode,
-  atomic: WorkflowGraphNode,
-  foreachGroup: WorkflowForeachGroupNode,
-  placeholder: WorkflowPlaceholderNode,
-};
-
-const edgeTypes: EdgeTypes = {
-  workflowEdge: WorkflowGraphEdge,
-};
+const defaultRegistry = createNodeTypeRegistry({
+  nodeTypes: {
+    trigger: WorkflowGraphNode,
+    if: WorkflowGraphNode,
+    merge: WorkflowGraphNode,
+    parallel: WorkflowGraphNode,
+    action: WorkflowGraphNode,
+    foreach: WorkflowGraphNode,
+    atomic: WorkflowGraphNode,
+    foreachGroup: WorkflowForeachGroupNode,
+    placeholder: WorkflowPlaceholderNode,
+  },
+  edgeTypes: {
+    workflowEdge: WorkflowGraphEdge,
+  },
+});
 
 const DEFAULT_EDGE_OPTIONS = { type: 'workflowEdge' } as const;
 const FIT_VIEW_OPTIONS = { padding: 1 } as const;
@@ -259,8 +261,8 @@ export function WorkflowVisualEditor({
             onNodesChange={onNodesChange}
             nodes={nodes}
             edges={edgesWithCallbacks}
-            nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
+            nodeTypes={defaultRegistry.nodeTypes}
+            edgeTypes={defaultRegistry.edgeTypes}
             defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
             fitView
             fitViewOptions={FIT_VIEW_OPTIONS}

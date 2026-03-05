@@ -16,12 +16,12 @@ import type { WorkflowExecutionDto, WorkflowStepExecutionDto, WorkflowYaml } fro
 import { useStepDecorationsInExecution } from './use_step_decorations_in_execution';
 import { createMockStore } from '../../../../entities/workflows/store/__mocks__/store.mock';
 import {
-  _setComputedDataInternal,
+  _setSerializableComputed,
   setExecution,
   setHighlightedStepId,
   setYamlString,
 } from '../../../../entities/workflows/store/workflow_detail/slice';
-import type { ComputedData } from '../../../../entities/workflows/store/workflow_detail/types';
+import type { SerializableComputedData } from '../../../../entities/workflows/store/workflow_detail/types';
 import type { StepInfo } from '../../../../entities/workflows/store/workflow_detail/utils/build_workflow_lookup';
 
 // Mock Monaco Range
@@ -156,7 +156,8 @@ const renderHookWithProviders = (
   store.dispatch(setYamlString(initialYaml));
 
   // Set workflowLookup in computed state using internal action
-  const computedData: ComputedData = {
+  const computedData: SerializableComputedData = {
+    isYamlSyntaxValid: true,
     workflowLookup: {
       steps: {
         'step-1': createStepInfo({ stepId: 'step-1', lineStart: 1, lineEnd: 3 }),
@@ -170,7 +171,7 @@ const renderHookWithProviders = (
       },
     },
   };
-  store.dispatch(_setComputedDataInternal(computedData));
+  store.dispatch(_setSerializableComputed(computedData));
 
   const wrapper = ({ children }: { children: React.ReactNode }) => {
     return React.createElement(Provider, { store }, children);
@@ -245,7 +246,8 @@ describe('useStepDecorationsInExecution', () => {
       act(() => {
         store.dispatch(setYamlString('version: "1"'));
         store.dispatch(
-          _setComputedDataInternal({
+          _setSerializableComputed({
+            isYamlSyntaxValid: true,
             workflowLookup: { steps: undefined as any },
           })
         );

@@ -22,7 +22,7 @@ import {
 } from '@kbn/workflows/graph/types';
 import {
   selectEditorFocusedStepInfo,
-  selectEditorWorkflowGraph,
+  useEditorNonSerializableComputed,
 } from '../../../../entities/workflows/store';
 import { useKibana } from '../../../../hooks/use_kibana';
 
@@ -34,7 +34,7 @@ export interface CopyDevToolsOptionProps {
  * Combined copy-as-devtools option that works for both Elasticsearch and Kibana steps
  */
 export const CopyDevToolsOption: React.FC<CopyDevToolsOptionProps> = ({ onClick }) => {
-  const workflowGraph = useSelector(selectEditorWorkflowGraph);
+  const { workflowGraph } = useEditorNonSerializableComputed();
   const focusedStepInfo = useSelector(selectEditorFocusedStepInfo);
   const {
     services: { notifications },

@@ -7,10 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type YAML from 'yaml';
-import type { LineCounter } from 'yaml';
 import type { WorkflowDetailDto, WorkflowExecutionDto, WorkflowYaml } from '@kbn/workflows';
-import type { WorkflowGraph } from '@kbn/workflows/graph';
 import type { WorkflowLookup } from './utils/build_workflow_lookup';
 import type { LoadingStates } from './utils/loading_states';
 import type { WorkflowZodSchemaType } from '../../../../../common/schema';
@@ -28,12 +25,17 @@ export interface WorkflowDetailState {
   isYamlSynced: boolean;
   /** The persisted workflow detail data */
   workflow?: WorkflowDetailDto;
-  /** The computed data derived from the workflow yaml string, it is updated by the workflowComputationMiddleware */
-  computed?: ComputedData;
+  /**
+   * Serializable portion of computed data derived from the workflow YAML.
+   * Non-serializable parts (YAML.Document, LineCounter, WorkflowGraph) live
+   * in the ComputedDataCache side-channel, accessible via
+   * useNonSerializableComputed().
+   */
+  computed?: SerializableComputedData;
   /** The currently selected execution (when viewing executions tab) */
   execution?: WorkflowExecutionDto;
-  /** The computed data derived from the selected execution, it is updated by the loadExecutionThunk */
-  computedExecution?: ComputedData;
+  /** Serializable portion of computed data derived from the selected execution */
+  computedExecution?: SerializableComputedData;
   /** The active tab (workflow or executions) */
   activeTab?: ActiveTab;
   /** The last known cursor position in the YAML editor (1-based line and column) */
@@ -68,13 +70,24 @@ export interface WorkflowDetailState {
 
 export type ActiveTab = 'workflow' | 'executions';
 
-export interface ComputedData {
-  yamlDocument?: YAML.Document; // This will be handled specially for serialization
-  yamlLineCounter?: LineCounter;
+/**
+ * The serializable subset of computed data that lives in the Redux store.
+ * Non-serializable parts are held in ComputedDataCache (see computed_data_cache.ts).
+ */
+export interface SerializableComputedData {
   workflowLookup?: WorkflowLookup;
-  workflowGraph?: WorkflowGraph; // This will be handled specially for serialization
   workflowDefinition?: WorkflowYaml | null;
+  isYamlSyntaxValid: boolean;
 }
+
+/**
+ * Full computed data (serializable + non-serializable) used internally by the
+ * computation utility. The middleware splits this into the Redux store and the
+ * side cache.
+ *
+ * @internal
+ */
+export { type ComputedData } from './utils/computation';
 
 /**
  * Position in a text document (1-based line and column, matching Monaco editor).
