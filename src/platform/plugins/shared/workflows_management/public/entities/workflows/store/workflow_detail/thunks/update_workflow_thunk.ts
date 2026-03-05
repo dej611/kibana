@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import type { EsWorkflow } from '@kbn/workflows';
 import { loadWorkflowThunk } from './load_workflow_thunk';
 import { affectsYamlMetadata, updateWorkflowYamlFields } from '../../../../../../common/lib/yaml';
@@ -109,8 +110,7 @@ export const updateWorkflowThunk = createAsyncThunk<
         { toastLifeTimeMs: 2000 }
       );
     } catch (error) {
-      // Extract error message from HTTP error body if available
-      const errorMessage = error.body?.message || error.message || 'Failed to update workflow';
+      const errorMessage = getErrorMessage(error);
       const errorObj = error instanceof Error ? error : new Error(errorMessage);
 
       // Report telemetry for failed update

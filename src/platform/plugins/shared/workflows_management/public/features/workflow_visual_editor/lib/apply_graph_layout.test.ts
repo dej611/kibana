@@ -7,22 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ForeachGroup, GraphEdge, PreLayoutNode } from '../model/types';
-import { DEFAULT_NODE_STYLE } from '../model/types';
+import type { ForeachGroup, PreLayoutNode } from '../model/types';
+import { makePreLayoutNode, makeEdge } from '../__fixtures__/graph_test_helpers';
 import { applyDagreLayout, layoutForeachGroup } from './apply_graph_layout';
 
 const makeNode = (id: string, overrides?: Partial<PreLayoutNode>): PreLayoutNode => ({
-  id,
-  type: 'action',
-  data: { label: id, stepType: 'action' },
-  style: { ...DEFAULT_NODE_STYLE },
+  ...makePreLayoutNode(id),
   ...overrides,
-});
-
-const makeEdge = (source: string, target: string): GraphEdge => ({
-  id: `${source}:${target}`,
-  source,
-  target,
 });
 
 describe('applyDagreLayout', () => {

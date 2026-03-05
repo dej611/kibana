@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import type { WorkflowsServices } from '../../../../../types';
 import type { RootState } from '../../types';
 import { selectWorkflow } from '../selectors';
@@ -52,8 +53,7 @@ export const runWorkflowThunk = createAsyncThunk<
       );
       return response;
     } catch (error) {
-      // Extract error message from HTTP error body if available
-      const errorMessage = error.body?.message || error.message || 'Failed to run workflow';
+      const errorMessage = getErrorMessage(error);
 
       notifications.toasts.addError(new Error(errorMessage), {
         title: i18n.translate('workflows.detail.runWorkflow.error', {

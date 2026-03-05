@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import { WorkflowsBaseTelemetry } from '../../../../../common/service/telemetry';
 import type { WorkflowTriggerTab } from '../../../../../features/run_workflow/ui/types';
 import type { WorkflowsServices } from '../../../../../types';
@@ -81,8 +82,7 @@ export const testWorkflowThunk = createAsyncThunk<
 
       return response;
     } catch (error) {
-      // Extract error message from HTTP error body if available
-      const errorMessage = error.body?.message || error.message || 'Failed to test workflow';
+      const errorMessage = getErrorMessage(error);
       const errorObj = error instanceof Error ? error : new Error(errorMessage);
 
       const state = getState();

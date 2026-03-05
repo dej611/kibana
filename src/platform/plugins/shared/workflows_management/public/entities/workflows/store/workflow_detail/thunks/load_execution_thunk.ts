@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import type { WorkflowExecutionDto } from '@kbn/workflows';
 import type { WorkflowsServices } from '../../../../../types';
 import type { RootState } from '../../types';
@@ -54,9 +55,9 @@ export const loadExecutionThunk = createAsyncThunk<
       }
       return response;
     } catch (error) {
-      const errorMessage = error.body?.message || error.message || 'Failed to load execution';
+      const errorMessage = getErrorMessage(error);
 
-      notifications.toasts.addError(errorMessage, {
+      notifications.toasts.addError(new Error(errorMessage), {
         title: i18n.translate('workflows.detail.loadExecution.error', {
           defaultMessage: 'Failed to load execution',
         }),

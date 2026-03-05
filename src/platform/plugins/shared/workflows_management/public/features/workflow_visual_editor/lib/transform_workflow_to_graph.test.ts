@@ -53,7 +53,7 @@ describe('transformYamlToNodesAndEdges', () => {
 
       expect(nodes).toHaveLength(2);
       expect(nodes[0].type).toBe('trigger');
-      expect(nodes[1].type).toBe('action');
+      expect(nodes[1].type).toBe('step');
       expect(nodes[1].data.label).toBe('step-a');
 
       expect(edges).toHaveLength(1);

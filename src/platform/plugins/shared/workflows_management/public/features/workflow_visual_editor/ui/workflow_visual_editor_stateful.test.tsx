@@ -13,6 +13,12 @@ import React from 'react';
 import { I18nProvider } from '@kbn/i18n-react';
 import type { WorkflowYaml } from '@kbn/workflows';
 import { WorkflowVisualEditorStateful } from './workflow_visual_editor_stateful';
+import {
+  selectEditorWorkflowDefinition,
+  selectEditorYaml,
+  selectIsYamlSyntaxValid,
+  selectStepExecutions,
+} from '../../../entities/workflows/store/workflow_detail/selectors';
 
 const mockUseSelector = jest.fn();
 jest.mock('react-redux', () => ({
@@ -67,17 +73,12 @@ const setupSelectors = (overrides: Partial<typeof mockSelectorValues> = {}) => {
     stepExecutions: null,
   });
   Object.assign(mockSelectorValues, overrides);
-  const callOrder = [
-    'stepExecutions',
-    'workflowYaml',
-    'workflowDefinition',
-    'isYamlSyntaxValid',
-  ] as const;
-  let callIndex = 0;
-  mockUseSelector.mockImplementation(() => {
-    const key = callOrder[callIndex % 4];
-    callIndex += 1;
-    return mockSelectorValues[key];
+  mockUseSelector.mockImplementation((selector: Function) => {
+    if (selector === selectStepExecutions) return mockSelectorValues.stepExecutions;
+    if (selector === selectEditorYaml) return mockSelectorValues.workflowYaml;
+    if (selector === selectEditorWorkflowDefinition) return mockSelectorValues.workflowDefinition;
+    if (selector === selectIsYamlSyntaxValid) return mockSelectorValues.isYamlSyntaxValid;
+    return undefined;
   });
 };
 

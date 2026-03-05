@@ -38,6 +38,21 @@ export const visitStepChildren = (
 };
 
 /**
+ * Returns the validated child steps for a given child-list key (`steps`,
+ * `else`).  Reuses the same narrowing logic as `visitStepChildren` so that
+ * step validation is defined in exactly one place.
+ */
+export const getStepChildren = (step: Step, childKey: 'steps' | 'else'): Step[] => {
+  let result: Step[] = [];
+  visitStepChildren(step, (children, key) => {
+    if (key === childKey) {
+      result = children;
+    }
+  });
+  return result;
+};
+
+/**
  * Recursively walks a step tree depth-first, calling `visitor` for every step
  * including nested children inside `steps`, `else`, and `branches[].steps`.
  */

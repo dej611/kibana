@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import type { WorkflowDetailDto } from '@kbn/workflows';
 import type { WorkflowsServices } from '../../../../../types';
 import type { RootState } from '../../types';
@@ -36,10 +37,9 @@ export const loadWorkflowThunk = createAsyncThunk<
 
       return response;
     } catch (error) {
-      // Extract error message from HTTP error body if available
-      const errorMessage = error.body?.message || error.message || 'Failed to load workflow';
+      const errorMessage = getErrorMessage(error);
 
-      notifications.toasts.addError(errorMessage, {
+      notifications.toasts.addError(new Error(errorMessage), {
         title: i18n.translate('workflows.detail.loadWorkflow.error', {
           defaultMessage: 'Failed to load workflow',
         }),

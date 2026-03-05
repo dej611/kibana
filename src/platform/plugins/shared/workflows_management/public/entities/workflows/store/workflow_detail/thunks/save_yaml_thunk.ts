@@ -9,6 +9,7 @@
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { i18n } from '@kbn/i18n';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import type { WorkflowDetailDto } from '@kbn/workflows/types/latest';
 import { loadWorkflowThunk } from './load_workflow_thunk';
 import { PLUGIN_ID } from '../../../../../../common';
@@ -116,8 +117,7 @@ export const saveYamlThunk = createAsyncThunk<
         { toastLifeTimeMs: 2000 }
       );
     } catch (error) {
-      // Extract error message from HTTP error body if available
-      const errorMessage = error.body?.message || error.message || 'Failed to save workflow';
+      const errorMessage = getErrorMessage(error);
       const errorObj = error instanceof Error ? error : new Error(errorMessage);
 
       const errorState = getState();

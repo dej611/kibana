@@ -15,27 +15,45 @@ export type Step = WorkflowYaml['steps'][number];
 
 export const DEFAULT_NODE_STYLE = { width: 100, height: 84 } as const;
 
-export type WorkflowStepType =
-  | 'if'
-  | 'merge'
-  | 'parallel'
-  | 'action'
-  | 'foreach'
-  | 'atomic'
-  | 'trigger';
-
-export const FLOW_NODE_TYPES = new Set<WorkflowStepType>([
+/**
+ * Step types that represent built-in flow control constructs.
+ * These are not registered in `workflowsExtensions` -- they are part of the
+ * workflow YAML grammar and always receive flow-control styling.
+ */
+export const FLOW_CONTROL_STEP_TYPES: ReadonlySet<string> = new Set([
   'if',
   'merge',
   'parallel',
   'foreach',
   'atomic',
-  'trigger',
 ]);
 
-export function isFlowNodeType(type: string): type is WorkflowStepType {
-  return FLOW_NODE_TYPES.has(type as WorkflowStepType);
-}
+/**
+ * Step types that represent triggers.
+ * Trigger nodes carry their trigger kind (e.g. 'manual') as `data.stepType`.
+ */
+export const TRIGGER_STEP_TYPES: ReadonlySet<string> = new Set([
+  'manual',
+  'alert',
+  'scheduled',
+  'document',
+]);
+
+/**
+ * Visual category used to derive node styling (background/icon colors)
+ * in the graph editor.  Categories are resolved at render time from the
+ * step type, falling back to the `actionsMenuGroup` provided by the
+ * `workflowsExtensions` step definition registry when available.
+ */
+export type NodeVisualCategory =
+  | 'flowControl'
+  | 'trigger'
+  | 'data'
+  | 'ai'
+  | 'elasticsearch'
+  | 'kibana'
+  | 'external'
+  | 'connector';
 
 export function isStep(value: unknown): value is Step {
   if (typeof value !== 'object' || value === null) return false;
@@ -53,21 +71,7 @@ export function getNodeLabel(node: Node): string | undefined {
   return hasLabel(node.data) ? node.data.label : undefined;
 }
 
-export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  if (typeof error === 'object' && error !== null && 'body' in error) {
-    const { body } = error as Record<string, unknown>;
-    if (typeof body === 'object' && body !== null && 'message' in body) {
-      const { message } = body as Record<string, unknown>;
-      if (typeof message === 'string') {
-        return message;
-      }
-    }
-  }
-  return 'An unexpected error occurred';
-}
+export { getErrorMessage } from '../../../shared/lib/error_utils';
 
 const NON_STEP_NODE_TYPES = new Set(['trigger', 'placeholder', 'foreachGroup']);
 

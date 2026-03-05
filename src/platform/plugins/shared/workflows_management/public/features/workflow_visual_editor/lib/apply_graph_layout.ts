@@ -53,6 +53,9 @@ export function applyDagreLayout(
   const isHorizontal = direction === 'LR';
   const layoutedNodes: LayoutedNode[] = nodes.map((node) => {
     const dagreNode = dagreGraph.node(node.id);
+    if (!dagreNode) {
+      throw new Error(`Dagre layout produced no position for node "${node.id}"`);
+    }
     return {
       ...node,
       targetPosition: isHorizontal ? Position.Left : Position.Top,

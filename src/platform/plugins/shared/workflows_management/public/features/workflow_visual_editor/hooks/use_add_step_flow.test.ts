@@ -7,7 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { MutableRefObject } from 'react';
+import type { Node } from '@xyflow/react';
 import { renderHook, act } from '@testing-library/react';
+import { makeNode, makeNodesRef } from '../__fixtures__/graph_test_helpers';
 import { useAddStepFlow } from './use_add_step_flow';
 import type { ActionOptionData } from '../../actions_menu_popover/types';
 
@@ -36,7 +39,7 @@ const makeAnchor = () => document.createElement('button');
 describe('useAddStepFlow', () => {
   const defaultParams = {
     connectorTypes: undefined,
-    nodesRef: { current: [] },
+    nodesRef: { current: [] } as MutableRefObject<Node[]>,
     onAddStepBetween: jest.fn(),
     onAddStepAfter: jest.fn(),
     onCreateConnectorAndAddStep: jest.fn(),
@@ -169,14 +172,12 @@ describe('useAddStepFlow', () => {
   });
 
   it('opens between mode on handleEdgeAddNode', () => {
-    const nodesRef = {
-      current: [
-        { id: 'src-id', data: { label: 'Source Step' } },
-        { id: 'tgt-id', data: { label: 'Target Step' } },
-      ],
-    };
+    const nodesRef = makeNodesRef(
+      makeNode('src-id', 'Source Step'),
+      makeNode('tgt-id', 'Target Step')
+    );
     const { result } = renderHook(() =>
-      useAddStepFlow({ ...defaultParams, nodesRef: nodesRef as any })
+      useAddStepFlow({ ...defaultParams, nodesRef })
     );
     const anchor = makeAnchor();
 
@@ -194,14 +195,9 @@ describe('useAddStepFlow', () => {
 
   it('completes between-mode flow for non-connector types', () => {
     const onAddStepBetween = jest.fn();
-    const nodesRef = {
-      current: [
-        { id: 'src-id', data: { label: 'Source' } },
-        { id: 'tgt-id', data: { label: 'Target' } },
-      ],
-    };
+    const nodesRef = makeNodesRef(makeNode('src-id', 'Source'), makeNode('tgt-id', 'Target'));
     const { result } = renderHook(() =>
-      useAddStepFlow({ ...defaultParams, onAddStepBetween, nodesRef: nodesRef as any })
+      useAddStepFlow({ ...defaultParams, onAddStepBetween, nodesRef })
     );
     const anchor = makeAnchor();
 
@@ -217,14 +213,9 @@ describe('useAddStepFlow', () => {
   });
 
   it('transitions to pickConnector in between mode for connector step types', () => {
-    const nodesRef = {
-      current: [
-        { id: 'src-id', data: { label: 'Source' } },
-        { id: 'tgt-id', data: { label: 'Target' } },
-      ],
-    };
+    const nodesRef = makeNodesRef(makeNode('src-id', 'Source'), makeNode('tgt-id', 'Target'));
     const { result } = renderHook(() =>
-      useAddStepFlow({ ...defaultParams, nodesRef: nodesRef as any })
+      useAddStepFlow({ ...defaultParams, nodesRef })
     );
     const anchor = makeAnchor();
 
@@ -247,14 +238,9 @@ describe('useAddStepFlow', () => {
 
   it('completes between-mode connector selection', () => {
     const onAddStepBetween = jest.fn();
-    const nodesRef = {
-      current: [
-        { id: 'src-id', data: { label: 'Source' } },
-        { id: 'tgt-id', data: { label: 'Target' } },
-      ],
-    };
+    const nodesRef = makeNodesRef(makeNode('src-id', 'Source'), makeNode('tgt-id', 'Target'));
     const { result } = renderHook(() =>
-      useAddStepFlow({ ...defaultParams, onAddStepBetween, nodesRef: nodesRef as any })
+      useAddStepFlow({ ...defaultParams, onAddStepBetween, nodesRef })
     );
     const anchor = makeAnchor();
 
@@ -274,14 +260,9 @@ describe('useAddStepFlow', () => {
 
   it('calls onCreateConnectorAndAddStep in between mode', () => {
     const onCreateConnectorAndAddStep = jest.fn();
-    const nodesRef = {
-      current: [
-        { id: 'src-id', data: { label: 'Source' } },
-        { id: 'tgt-id', data: { label: 'Target' } },
-      ],
-    };
+    const nodesRef = makeNodesRef(makeNode('src-id', 'Source'), makeNode('tgt-id', 'Target'));
     const { result } = renderHook(() =>
-      useAddStepFlow({ ...defaultParams, onCreateConnectorAndAddStep, nodesRef: nodesRef as any })
+      useAddStepFlow({ ...defaultParams, onCreateConnectorAndAddStep, nodesRef })
     );
     const anchor = makeAnchor();
 

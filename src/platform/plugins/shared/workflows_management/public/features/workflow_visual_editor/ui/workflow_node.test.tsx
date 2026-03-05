@@ -16,6 +16,7 @@ import type { WorkflowStepNodeData, WorkflowPlaceholderNodeData } from '../model
 import { WorkflowGraphNode } from './workflow_node';
 import { WorkflowPlaceholderNode } from './workflow_placeholder_node';
 
+const MockPosition = { Left: 'left', Right: 'right', Top: 'top', Bottom: 'bottom' } as const;
 jest.mock('@xyflow/react', () => ({
   Handle: ({ type, position }: { type: string; position: string }) => (
     <div data-test-subj={`handle-${type}`} data-position={position} />
@@ -23,7 +24,7 @@ jest.mock('@xyflow/react', () => ({
   NodeToolbar: ({ children }: { children: React.ReactNode }) => (
     <div data-test-subj="node-toolbar">{children}</div>
   ),
-  Position: { Left: 'left', Right: 'right', Top: 'top', Bottom: 'bottom' },
+  Position: MockPosition,
 }));
 
 jest.mock('@kbn/css-utils/public/use_memo_css', () => ({
@@ -42,36 +43,67 @@ jest.mock('../../../shared/ui/step_icons/step_icon', () => ({
   ),
 }));
 
+jest.mock('../../../hooks/use_kibana', () => ({
+  useKibana: () => ({
+    services: {
+      workflowsExtensions: {
+        getStepDefinition: jest.fn(),
+      },
+    },
+  }),
+}));
+
 const renderWithI18n = (ui: React.ReactNode) =>
   render(<I18nProvider>{ui}</I18nProvider>);
 
 const createWorkflowGraphNodeProps = (
   overrides: Partial<NodeProps<Node<WorkflowStepNodeData>>> = {}
-): NodeProps<Node<WorkflowStepNodeData>> =>
-  ({
+): NodeProps<Node<WorkflowStepNodeData>> => {
+  const base: NodeProps<Node<WorkflowStepNodeData>> = {
     id: 'node-1',
+    type: 'step',
     data: {
       label: 'my-step',
       stepType: 'action',
     },
     selected: false,
-    targetPosition: 'left' as any,
-    sourcePosition: 'right' as any,
+    zIndex: 0,
+    isConnectable: true,
+    positionAbsoluteX: 0,
+    positionAbsoluteY: 0,
+    targetPosition: MockPosition.Left as unknown as NodeProps['targetPosition'],
+    sourcePosition: MockPosition.Right as unknown as NodeProps['sourcePosition'],
+    dragging: false,
+    dragHandle: undefined,
+    parentId: undefined,
     ...overrides,
-  } as any);
+  };
+  return base;
+};
 
 const createPlaceholderNodeProps = (
   overrides: Partial<NodeProps<Node<WorkflowPlaceholderNodeData>>> = {}
-): NodeProps<Node<WorkflowPlaceholderNodeData>> =>
-  ({
+): NodeProps<Node<WorkflowPlaceholderNodeData>> => {
+  const base: NodeProps<Node<WorkflowPlaceholderNodeData>> = {
     id: 'placeholder-1',
+    type: 'placeholder',
     data: {
       leafStepName: 'prev-step',
     },
-    targetPosition: 'left' as any,
-    sourcePosition: 'right' as any,
+    selected: false,
+    zIndex: 0,
+    isConnectable: true,
+    positionAbsoluteX: 0,
+    positionAbsoluteY: 0,
+    targetPosition: MockPosition.Left as unknown as NodeProps['targetPosition'],
+    sourcePosition: MockPosition.Right as unknown as NodeProps['sourcePosition'],
+    dragging: false,
+    dragHandle: undefined,
+    parentId: undefined,
     ...overrides,
-  } as any);
+  };
+  return base;
+};
 
 describe('WorkflowGraphNode', () => {
   it('renders the step label', () => {

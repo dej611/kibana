@@ -8,6 +8,8 @@
  */
 
 import type { graphlib } from '@dagrejs/dagre';
+import { capitalize } from 'lodash';
+import { triggerSchemas } from '../../trigger_schemas';
 
 export function getAllPredecessors(graph: graphlib.Graph, nodeId: string): string[] {
   const predecessors = graph.predecessors(nodeId);
@@ -20,15 +22,6 @@ export function getAllPredecessors(graph: graphlib.Graph, nodeId: string): strin
   ]);
 }
 
-export function getTriggerLabel(triggerType: string) {
-  switch (triggerType) {
-    case 'manual':
-      return 'Manual';
-    case 'alert':
-      return 'Alert';
-    case 'scheduled':
-      return 'Scheduled';
-    default:
-      return triggerType;
-  }
+export function getTriggerLabel(triggerType: string): string {
+  return triggerSchemas.getTriggerDefinition(triggerType)?.title ?? capitalize(triggerType);
 }

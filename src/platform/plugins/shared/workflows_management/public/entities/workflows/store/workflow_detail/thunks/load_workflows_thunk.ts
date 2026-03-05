@@ -8,6 +8,7 @@
  */
 
 import { createAsyncThunk } from '@reduxjs/toolkit';
+import { getErrorMessage } from '../../../../../shared/lib/error_utils';
 import { normalizeInputsToJsonSchema } from '@kbn/workflows/spec/lib/input_conversion';
 import { searchWorkflows } from '@kbn/workflows-ui';
 import type { WorkflowsServices } from '../../../../../types';
@@ -54,16 +55,7 @@ export const loadWorkflowsThunk = createAsyncThunk<
 
     return workflowsResponse;
   } catch (error) {
-    const errorMessage =
-      error && typeof error === 'object' && 'body' in error
-        ? (error as { body?: { message?: string } }).body?.message
-        : undefined;
-    const message =
-      typeof errorMessage === 'string'
-        ? errorMessage
-        : error instanceof Error
-        ? error.message
-        : 'Failed to load workflows';
+    const message = getErrorMessage(error);
 
     notifications.toasts.addError(new Error(message), {
       title: 'Failed to load workflows',

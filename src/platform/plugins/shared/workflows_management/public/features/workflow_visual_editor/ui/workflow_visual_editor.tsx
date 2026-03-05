@@ -15,7 +15,7 @@ import {
   useResizeObserver,
 } from '@elastic/eui';
 import { css } from '@emotion/react';
-import type { ColorMode, FitViewOptions, Node } from '@xyflow/react';
+import type { ColorMode, EdgeTypes, FitViewOptions, Node, NodeTypes } from '@xyflow/react';
 import {
   Background,
   ControlButton,
@@ -39,28 +39,29 @@ import type { PendingConnectorStepContext } from '../hooks/use_add_step_flow';
 import { useKeyboardShortcuts } from '../hooks/use_keyboard_shortcuts';
 import { useSelectionManager } from '../hooks/use_selection_manager';
 import { useWorkflowLayout } from '../hooks/use_workflow_layout';
-import { createNodeTypeRegistry } from '../model/node_type_registry';
 import { getNodeLabel } from '../model/types';
 import type { LayoutDirection, WorkflowEdgeData } from '../model/types';
 
 export type { PendingConnectorStepContext };
 
-const defaultRegistry = createNodeTypeRegistry({
-  nodeTypes: {
-    trigger: WorkflowGraphNode,
-    if: WorkflowGraphNode,
-    merge: WorkflowGraphNode,
-    parallel: WorkflowGraphNode,
-    action: WorkflowGraphNode,
-    foreach: WorkflowGraphNode,
-    atomic: WorkflowGraphNode,
-    foreachGroup: WorkflowForeachGroupNode,
-    placeholder: WorkflowPlaceholderNode,
-  },
-  edgeTypes: {
-    workflowEdge: WorkflowGraphEdge,
-  },
-});
+/**
+ * Stable node/edge type maps for React Flow.  All step types (action, if,
+ * foreach, ...) render through the same `WorkflowGraphNode` component -- the
+ * actual step type is carried in `data.stepType` and used to derive icon/color
+ * from the `workflowsExtensions` step-definition registry at render time.
+ *
+ * Only structurally distinct node kinds need dedicated components.
+ */
+const NODE_TYPES: NodeTypes = {
+  step: WorkflowGraphNode,
+  trigger: WorkflowGraphNode,
+  foreachGroup: WorkflowForeachGroupNode,
+  placeholder: WorkflowPlaceholderNode,
+};
+
+const EDGE_TYPES: EdgeTypes = {
+  workflowEdge: WorkflowGraphEdge,
+};
 
 const DEFAULT_EDGE_OPTIONS = { type: 'workflowEdge' } as const;
 const FIT_VIEW_OPTIONS = { padding: 1 } as const;
@@ -261,8 +262,8 @@ export function WorkflowVisualEditor({
             onNodesChange={onNodesChange}
             nodes={nodes}
             edges={edgesWithCallbacks}
-            nodeTypes={defaultRegistry.nodeTypes}
-            edgeTypes={defaultRegistry.edgeTypes}
+            nodeTypes={NODE_TYPES}
+            edgeTypes={EDGE_TYPES}
             defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
             fitView
             fitViewOptions={FIT_VIEW_OPTIONS}

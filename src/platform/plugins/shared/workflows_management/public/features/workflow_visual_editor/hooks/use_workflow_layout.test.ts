@@ -9,6 +9,7 @@
 
 import { act, renderHook } from '@testing-library/react';
 import type { WorkflowStepExecutionDto, WorkflowYaml } from '@kbn/workflows';
+import { makeLayoutedNode, makeWorkflow } from '../__fixtures__/graph_test_helpers';
 import { useWorkflowLayout } from './use_workflow_layout';
 import type { GraphEdge, LayoutedNode } from '../model/types';
 
@@ -17,29 +18,15 @@ jest.mock('../lib/get_layouted_nodes_and_edges');
 const mockGetLayoutedNodesAndEdges = jest.requireMock('../lib/get_layouted_nodes_and_edges')
   .getLayoutedNodesAndEdges as jest.Mock;
 
-const createLayoutedNode = (
-  overrides: Partial<LayoutedNode> & { id: string; type: string }
-): LayoutedNode =>
-  ({
-    id: overrides.id,
-    type: overrides.type,
-    data: { label: 'step-a', stepType: 'action', step: {} },
-    style: { width: 100, height: 84 },
-    position: { x: 0, y: 0 },
-    targetPosition: 'left',
-    sourcePosition: 'right',
-    ...overrides,
-  } as LayoutedNode);
-
 const createStepNode = (): LayoutedNode =>
-  createLayoutedNode({
+  makeLayoutedNode({
     id: 'step-a',
-    type: 'action',
+    type: 'step',
     data: { label: 'step-a', stepType: 'action', step: {} },
   });
 
 const createPlaceholderNode = (): LayoutedNode =>
-  createLayoutedNode({
+  makeLayoutedNode({
     id: 'placeholder-1',
     type: 'placeholder',
     data: { leafStepName: 'step-a' },
@@ -51,14 +38,10 @@ const createMockLayout = (nodes: LayoutedNode[] = [createStepNode(), createPlace
 });
 
 const createWorkflow = (overrides: Partial<WorkflowYaml> = {}): WorkflowYaml =>
-  ({
-    version: '1',
-    name: 'test',
-    enabled: true,
-    triggers: [{ type: 'manual' }],
-    steps: [{ name: 'step-a', type: 'action' }],
-    ...overrides,
-  } as WorkflowYaml);
+  makeWorkflow(
+    overrides.steps ?? ([{ name: 'step-a', type: 'action' }] as WorkflowYaml['steps']),
+    overrides.triggers ?? ([{ type: 'manual' }] as WorkflowYaml['triggers'])
+  );
 
 const createStepExecution = (
   overrides: Partial<WorkflowStepExecutionDto> = {}
@@ -202,7 +185,7 @@ describe('useWorkflowLayout', () => {
       })
     );
 
-    const stepNode = result.current.nodes.find((n) => n.type === 'action');
+    const stepNode = result.current.nodes.find((n) => n.type === 'step');
     const placeholderNode = result.current.nodes.find((n) => n.type === 'placeholder');
 
     expect(stepNode?.data).toMatchObject({ onRunStep, onDeleteStep });

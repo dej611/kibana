@@ -7,27 +7,9 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { ForeachGroup, GraphEdge, PreLayoutNode } from '../model/types';
-import { DEFAULT_NODE_STYLE } from '../model/types';
+import type { ForeachGroup } from '../model/types';
+import { makePreLayoutNode as makeNode, makeEdge } from '../__fixtures__/graph_test_helpers';
 import { appendPlaceholderNodes } from './inject_placeholder_nodes';
-
-const makeNode = (
-  id: string,
-  type: string = 'action',
-  parentId?: string
-): PreLayoutNode => ({
-  id,
-  type,
-  data: { label: id, stepType: type },
-  style: { ...DEFAULT_NODE_STYLE },
-  ...(parentId ? { parentId, extent: 'parent' as const } : {}),
-});
-
-const makeEdge = (source: string, target: string): GraphEdge => ({
-  id: `${source}:${target}`,
-  source,
-  target,
-});
 
 describe('appendPlaceholderNodes', () => {
   it('adds a placeholder after a leaf node', () => {
@@ -59,7 +41,7 @@ describe('appendPlaceholderNodes', () => {
   });
 
   it('adds placeholders inside foreach groups for inner leaf nodes', () => {
-    const innerNode = makeNode('inner', 'action', 'group');
+    const innerNode = makeNode('inner', 'step', 'group');
     const group: ForeachGroup = {
       groupNodeId: 'group',
       innerNodes: [innerNode],

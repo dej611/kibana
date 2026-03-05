@@ -24,11 +24,14 @@ import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import { ExecutionStatus } from '@kbn/workflows';
 import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
+import { useKibana } from '../../../hooks/use_kibana';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
 import type { WorkflowStepNodeData } from '../model/types';
-import { isFlowNodeType } from '../model/types';
-
-const triggerNodeTypes = new Set(['manual', 'alert', 'scheduled']);
+import {
+  FLOW_CONTROL_STEP_TYPES,
+  TRIGGER_STEP_TYPES,
+} from '../model/types';
+import type { NodeVisualCategory } from '../model/types';
 
 const NODE_SIZE = 64;
 const NODE_GAP = '6px';
@@ -43,38 +46,95 @@ const DELETE_STEP_LABEL = i18n.translate('workflows.visualEditor.node.deleteStep
   defaultMessage: 'Delete step',
 });
 
-function getIconColors(nodeType: string, euiTheme: EuiThemeComputed) {
-  if (isFlowNodeType(nodeType)) {
-    return {
-      backgroundColor: transparentize(euiTheme.colors.warning, 0.1),
-      iconColor: euiTheme.colors.warning,
-    };
+/**
+ * Maps an `actionsMenuGroup` string (from `PublicStepDefinition`) to a
+ * `NodeVisualCategory`.  Returns `undefined` for unrecognised groups so the
+ * caller can fall through to a default.
+ */
+const MENU_GROUP_TO_CATEGORY: Record<string, NodeVisualCategory> = {
+  data: 'data',
+  ai: 'ai',
+  elasticsearch: 'elasticsearch',
+  kibana: 'kibana',
+  external: 'external',
+};
+
+/**
+ * Resolves the visual category for a step type.  Resolution order:
+ *  1. Built-in flow-control constructs (if, merge, parallel, ...)
+ *  2. Trigger kinds (manual, alert, scheduled, ...)
+ *  3. `actionsMenuGroup` from the `workflowsExtensions` step-definition
+ *     registry (populated by external plugins at setup time)
+ *  4. Default 'connector' category
+ */
+function resolveVisualCategory(
+  stepType: string,
+  getStepDefinition?: (id: string) => { actionsMenuGroup?: string } | undefined
+): NodeVisualCategory {
+  if (FLOW_CONTROL_STEP_TYPES.has(stepType)) return 'flowControl';
+  if (TRIGGER_STEP_TYPES.has(stepType)) return 'trigger';
+
+  const group = getStepDefinition?.(stepType)?.actionsMenuGroup;
+  if (group && group in MENU_GROUP_TO_CATEGORY) {
+    return MENU_GROUP_TO_CATEGORY[group];
   }
-  if (triggerNodeTypes.has(nodeType)) {
-    return {
-      backgroundColor: transparentize(euiTheme.colors.vis.euiColorVis6, 0.1),
-      iconColor: euiTheme.colors.vis.euiColorVis6,
-    };
-  }
-  return {
-    backgroundColor: euiTheme.colors.backgroundBasePlain,
-    iconColor: euiTheme.colors.borderBaseSubdued,
-  };
+
+  return 'connector';
 }
+
+const CATEGORY_COLORS: Record<
+  NodeVisualCategory,
+  (euiTheme: EuiThemeComputed) => { backgroundColor: string; iconColor: string }
+> = {
+  flowControl: (t) => ({
+    backgroundColor: transparentize(t.colors.warning, 0.1),
+    iconColor: t.colors.warning,
+  }),
+  trigger: (t) => ({
+    backgroundColor: transparentize(t.colors.vis.euiColorVis6, 0.1),
+    iconColor: t.colors.vis.euiColorVis6,
+  }),
+  data: (t) => ({
+    backgroundColor: transparentize(t.colors.vis.euiColorVis0, 0.1),
+    iconColor: t.colors.vis.euiColorVis0,
+  }),
+  ai: (t) => ({
+    backgroundColor: transparentize(t.colors.vis.euiColorVis3, 0.1),
+    iconColor: t.colors.vis.euiColorVis3,
+  }),
+  elasticsearch: (t) => ({
+    backgroundColor: transparentize(t.colors.vis.euiColorVis1, 0.1),
+    iconColor: t.colors.vis.euiColorVis1,
+  }),
+  kibana: (t) => ({
+    backgroundColor: transparentize(t.colors.vis.euiColorVis5, 0.1),
+    iconColor: t.colors.vis.euiColorVis5,
+  }),
+  external: (t) => ({
+    backgroundColor: transparentize(t.colors.vis.euiColorVis2, 0.1),
+    iconColor: t.colors.vis.euiColorVis2,
+  }),
+  connector: (t) => ({
+    backgroundColor: t.colors.backgroundBasePlain,
+    iconColor: t.colors.borderBaseSubdued,
+  }),
+};
 
 const getNodeBorderColor = (status: ExecutionStatus | undefined, euiTheme: EuiThemeComputed) => {
   if (status === undefined) {
     return euiTheme.colors.borderBaseFloating;
   }
-  return getExecutionStatusColors(euiTheme, status ?? null).color;
+  return getExecutionStatusColors(euiTheme, status).color;
 };
 
 export function WorkflowGraphNode(node: NodeProps<Node<WorkflowStepNodeData>>) {
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(componentStyles);
-  const isTriggerNode = triggerNodeTypes.has(node.data.stepType);
-  const isFlowNode = isFlowNodeType(node.data.stepType);
-  const { backgroundColor, iconColor } = getIconColors(node.data.stepType, euiTheme);
+  const { workflowsExtensions } = useKibana().services;
+  const category = resolveVisualCategory(node.data.stepType, workflowsExtensions.getStepDefinition);
+  const isTriggerNode = category === 'trigger';
+  const isFlowNode = category === 'flowControl';
+  const { backgroundColor, iconColor } = CATEGORY_COLORS[category](euiTheme);
   const label = node.data.label || node.data.stepType;
   const { status } = node.data.stepExecution ?? {};
   const { onRunStep, onDeleteStep } = node.data;

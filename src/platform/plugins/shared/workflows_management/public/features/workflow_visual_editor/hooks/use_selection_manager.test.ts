@@ -43,13 +43,13 @@ const createDefaultParams = () => ({
     current: [
       {
         id: 'a',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-a' },
         position: { x: 10, y: 20 },
       },
       {
         id: 'b',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-b' },
         position: { x: 110, y: 20 },
       },
@@ -133,14 +133,14 @@ describe('useSelectionManager', () => {
     const selectedNodes: Node[] = [
       {
         id: 'a',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-a' },
         position: { x: 10, y: 20 },
         measured: { width: 100, height: 84 },
       },
       {
         id: 'b',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-b' },
         position: { x: 110, y: 20 },
         measured: { width: 100, height: 84 },
@@ -176,7 +176,7 @@ describe('useSelectionManager', () => {
     const selectedNodes: Node[] = [
       {
         id: 'a',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-a' },
         position: { x: 10, y: 20 },
       },
@@ -206,7 +206,7 @@ describe('useSelectionManager', () => {
     const selectedNodes: Node[] = [
       {
         id: 'a',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-a' },
         position: { x: 10, y: 20 },
       },
@@ -241,7 +241,7 @@ describe('useSelectionManager', () => {
     const selectedNodes: Node[] = [
       {
         id: 'a',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-a' },
         position: { x: 10, y: 20 },
       },
@@ -277,7 +277,7 @@ describe('useSelectionManager', () => {
     const selectedNodes: Node[] = [
       {
         id: 'a',
-        type: 'action',
+        type: 'step',
         data: { label: 'step-a' },
         position: { x: 10, y: 20 },
       },
