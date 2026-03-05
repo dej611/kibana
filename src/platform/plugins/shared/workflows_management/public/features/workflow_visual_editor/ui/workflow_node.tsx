@@ -23,15 +23,12 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import { ExecutionStatus } from '@kbn/workflows';
-import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
+import { ActionsMenuGroup } from '@kbn/workflows-extensions/public';
 import { useKibana } from '../../../hooks/use_kibana';
+import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
-import type { WorkflowStepNodeData } from '../model/types';
-import {
-  FLOW_CONTROL_STEP_TYPES,
-  TRIGGER_STEP_TYPES,
-} from '../model/types';
-import type { NodeVisualCategory } from '../model/types';
+import { FLOW_CONTROL_STEP_TYPES, TRIGGER_STEP_TYPES } from '../model/types';
+import type { NodeVisualCategory, WorkflowStepNodeData } from '../model/types';
 
 const NODE_SIZE = 64;
 const NODE_GAP = '6px';
@@ -51,12 +48,12 @@ const DELETE_STEP_LABEL = i18n.translate('workflows.visualEditor.node.deleteStep
  * `NodeVisualCategory`.  Returns `undefined` for unrecognised groups so the
  * caller can fall through to a default.
  */
-const MENU_GROUP_TO_CATEGORY: Record<string, NodeVisualCategory> = {
-  data: 'data',
-  ai: 'ai',
-  elasticsearch: 'elasticsearch',
-  kibana: 'kibana',
-  external: 'external',
+const MENU_GROUP_TO_CATEGORY: Record<ActionsMenuGroup, NodeVisualCategory> = {
+  [ActionsMenuGroup.data]: 'data',
+  [ActionsMenuGroup.ai]: 'ai',
+  [ActionsMenuGroup.elasticsearch]: 'elasticsearch',
+  [ActionsMenuGroup.kibana]: 'kibana',
+  [ActionsMenuGroup.external]: 'external',
 };
 
 /**
@@ -67,15 +64,19 @@ const MENU_GROUP_TO_CATEGORY: Record<string, NodeVisualCategory> = {
  *     registry (populated by external plugins at setup time)
  *  4. Default 'connector' category
  */
+function isActionsMenuGroup(value: string): value is ActionsMenuGroup {
+  return value in MENU_GROUP_TO_CATEGORY;
+}
+
 function resolveVisualCategory(
   stepType: string,
-  getStepDefinition?: (id: string) => { actionsMenuGroup?: string } | undefined
+  getStepDefinition?: (id: string) => { actionsMenuGroup?: ActionsMenuGroup } | undefined
 ): NodeVisualCategory {
   if (FLOW_CONTROL_STEP_TYPES.has(stepType)) return 'flowControl';
   if (TRIGGER_STEP_TYPES.has(stepType)) return 'trigger';
 
   const group = getStepDefinition?.(stepType)?.actionsMenuGroup;
-  if (group && group in MENU_GROUP_TO_CATEGORY) {
+  if (group && isActionsMenuGroup(group)) {
     return MENU_GROUP_TO_CATEGORY[group];
   }
 

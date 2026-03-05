@@ -9,12 +9,10 @@
 
 import type { WorkflowYaml } from '@kbn/workflows';
 import { walkStepTree, filterStepTree } from './walk_step_tree';
+import { makeStep } from '../__fixtures__/graph_test_helpers';
 import type { Step } from '../model/types';
 
 type Steps = WorkflowYaml['steps'];
-
-const makeStep = (name: string, type: string = 'action', extra?: Record<string, unknown>): Step =>
-  ({ name, type, ...extra } as unknown as Step);
 
 describe('walkStepTree', () => {
   it('visits flat steps in order', () => {

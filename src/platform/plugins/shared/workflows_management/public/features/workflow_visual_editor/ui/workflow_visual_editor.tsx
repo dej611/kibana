@@ -40,7 +40,7 @@ import { useKeyboardShortcuts } from '../hooks/use_keyboard_shortcuts';
 import { useSelectionManager } from '../hooks/use_selection_manager';
 import { useWorkflowLayout } from '../hooks/use_workflow_layout';
 import { getNodeLabel } from '../model/types';
-import type { LayoutDirection, WorkflowEdgeData } from '../model/types';
+import type { GraphEdge, LayoutDirection, WorkflowEdgeData } from '../model/types';
 
 export type { PendingConnectorStepContext };
 
@@ -199,7 +199,7 @@ export function WorkflowVisualEditor({
 
   const handleNodeClick = useCallback(
     (_event: React.MouseEvent, node: Node) => {
-      if (node.type === 'placeholder') return;
+      if (node.type === 'placeholder' || node.type === 'foreachGroup') return;
       if (node.type === 'trigger') {
         const triggerType = getNodeStepType(node);
         if (triggerType) {
@@ -215,26 +215,30 @@ export function WorkflowVisualEditor({
     [onNodeClick]
   );
 
-  const edgeDataCacheRef = useRef<Map<string, WorkflowEdgeData>>(new Map());
+  const edgeCacheRef = useRef<
+    Map<string, { edge: GraphEdge; enriched: GraphEdge & { data: WorkflowEdgeData } }>
+  >(new Map());
 
   const edgesWithCallbacks = useMemo(() => {
-    const prevCache = edgeDataCacheRef.current;
-    const nextCache = new Map<string, WorkflowEdgeData>();
+    const prevCache = edgeCacheRef.current;
+    const nextCache = new Map<
+      string,
+      { edge: GraphEdge; enriched: GraphEdge & { data: WorkflowEdgeData } }
+    >();
 
     const result = edges.map((edge) => {
+      const cached = prevCache.get(edge.id);
       const isBranchEdge = Boolean(edge.branchType);
       const targetsPlaceholder = edge.target.endsWith('-placeholder');
       const showAddButton = !isBranchEdge && !targetsPlaceholder;
-      const prev = prevCache.get(edge.id);
 
       if (
-        prev &&
-        prev.branchType === edge.branchType &&
-        prev.branchIndex === edge.branchIndex &&
-        Boolean(prev.onAddNode) === showAddButton
+        cached &&
+        cached.edge === edge &&
+        Boolean(cached.enriched.data.onAddNode) === showAddButton
       ) {
-        nextCache.set(edge.id, prev);
-        return { ...edge, data: prev };
+        nextCache.set(edge.id, cached);
+        return cached.enriched;
       }
 
       const data: WorkflowEdgeData = {
@@ -242,11 +246,12 @@ export function WorkflowVisualEditor({
         branchType: edge.branchType,
         branchIndex: edge.branchIndex,
       };
-      nextCache.set(edge.id, data);
-      return { ...edge, data };
+      const enriched = { ...edge, data };
+      nextCache.set(edge.id, { edge, enriched });
+      return enriched;
     });
 
-    edgeDataCacheRef.current = nextCache;
+    edgeCacheRef.current = nextCache;
     return result;
   }, [edges, handleEdgeAddNode]);
 

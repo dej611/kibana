@@ -35,11 +35,17 @@ type Listener = () => void;
 export class ComputedDataCache {
   private _computed: NonSerializableComputed = EMPTY;
   private _computedExecution: NonSerializableComputed = EMPTY;
-  private _listeners = new Set<Listener>();
+  private _computedListeners = new Set<Listener>();
+  private _executionListeners = new Set<Listener>();
 
-  subscribe = (listener: Listener): (() => void) => {
-    this._listeners.add(listener);
-    return () => this._listeners.delete(listener);
+  subscribeComputed = (listener: Listener): (() => void) => {
+    this._computedListeners.add(listener);
+    return () => this._computedListeners.delete(listener);
+  };
+
+  subscribeComputedExecution = (listener: Listener): (() => void) => {
+    this._executionListeners.add(listener);
+    return () => this._executionListeners.delete(listener);
   };
 
   getComputedSnapshot = (): NonSerializableComputed => this._computed;
@@ -47,26 +53,32 @@ export class ComputedDataCache {
 
   setComputed(data: NonSerializableComputed): void {
     this._computed = data;
-    this._notify();
+    this._notifyComputed();
   }
 
   clearComputed(): void {
     this._computed = EMPTY;
-    this._notify();
+    this._notifyComputed();
   }
 
   setComputedExecution(data: NonSerializableComputed): void {
     this._computedExecution = data;
-    this._notify();
+    this._notifyExecution();
   }
 
   clearComputedExecution(): void {
     this._computedExecution = EMPTY;
-    this._notify();
+    this._notifyExecution();
   }
 
-  private _notify(): void {
-    for (const listener of this._listeners) {
+  private _notifyComputed(): void {
+    for (const listener of this._computedListeners) {
+      listener();
+    }
+  }
+
+  private _notifyExecution(): void {
+    for (const listener of this._executionListeners) {
       listener();
     }
   }

@@ -8,6 +8,7 @@
  */
 
 import type { WorkflowYaml } from '@kbn/workflows';
+import { makeStep } from '../__fixtures__/graph_test_helpers';
 import { slugify, transformYamlToNodesAndEdges } from './transform_workflow_to_graph';
 
 type Steps = WorkflowYaml['steps'];
@@ -48,7 +49,7 @@ describe('transformYamlToNodesAndEdges', () => {
 
   describe('single step', () => {
     it('creates a node and an edge from trigger to step', () => {
-      const steps = [{ name: 'step-a', type: 'action' }] as Steps;
+      const steps = [makeStep('step-a')] as Steps;
       const { nodes, edges } = transformYamlToNodesAndEdges(triggers, steps);
 
       expect(nodes).toHaveLength(2);
@@ -64,11 +65,7 @@ describe('transformYamlToNodesAndEdges', () => {
 
   describe('sequential steps', () => {
     it('chains nodes with sequential edges', () => {
-      const steps = [
-        { name: 'step-a', type: 'action' },
-        { name: 'step-b', type: 'action' },
-        { name: 'step-c', type: 'action' },
-      ] as Steps;
+      const steps = [makeStep('step-a'), makeStep('step-b'), makeStep('step-c')] as Steps;
 
       const { nodes, edges } = transformYamlToNodesAndEdges(triggers, steps);
       expect(nodes).toHaveLength(4);
@@ -87,8 +84,8 @@ describe('transformYamlToNodesAndEdges', () => {
           name: 'check',
           type: 'if',
           condition: 'true',
-          steps: [{ name: 'then-step', type: 'action' }],
-          else: [{ name: 'else-step', type: 'action' }],
+          steps: [makeStep('then-step')],
+          else: [makeStep('else-step')],
         },
       ] as Steps;
 
@@ -109,7 +106,7 @@ describe('transformYamlToNodesAndEdges', () => {
           name: 'check',
           type: 'if',
           condition: 'true',
-          steps: [{ name: 'then-step', type: 'action' }],
+          steps: [makeStep('then-step')],
         },
       ] as Steps;
 
@@ -126,8 +123,8 @@ describe('transformYamlToNodesAndEdges', () => {
           name: 'parallel-step',
           type: 'parallel',
           branches: [
-            { name: 'a', steps: [{ name: 'branch-a', type: 'action' }] },
-            { name: 'b', steps: [{ name: 'branch-b', type: 'action' }] },
+            { name: 'a', steps: [makeStep('branch-a')] },
+            { name: 'b', steps: [makeStep('branch-b')] },
           ],
         },
       ] as Steps;
@@ -148,7 +145,7 @@ describe('transformYamlToNodesAndEdges', () => {
         {
           name: 'parallel-step',
           type: 'parallel',
-          branches: [{ name: 'a', steps: [{ name: 'branch-a', type: 'action' }] }],
+          branches: [{ name: 'a', steps: [makeStep('branch-a')] }],
         },
       ] as Steps;
 
@@ -165,7 +162,7 @@ describe('transformYamlToNodesAndEdges', () => {
           name: 'foreach-step',
           type: 'foreach',
           foreach: '${{ items }}',
-          steps: [{ name: 'inner', type: 'action' }],
+          steps: [makeStep('inner')],
         },
       ] as Steps;
 
@@ -183,7 +180,7 @@ describe('transformYamlToNodesAndEdges', () => {
           name: 'foreach-step',
           type: 'foreach',
           foreach: '${{ items }}',
-          steps: [{ name: 'inner', type: 'action' }],
+          steps: [makeStep('inner')],
         },
       ] as Steps;
 
@@ -194,11 +191,7 @@ describe('transformYamlToNodesAndEdges', () => {
 
   describe('IdAllocator collision handling', () => {
     it('assigns unique IDs to duplicate step names', () => {
-      const steps = [
-        { name: 'step', type: 'action' },
-        { name: 'step', type: 'action' },
-        { name: 'step', type: 'action' },
-      ] as Steps;
+      const steps = [makeStep('step'), makeStep('step'), makeStep('step')] as Steps;
 
       const { nodes } = transformYamlToNodesAndEdges([], steps);
       const ids = nodes.map((n) => n.id);

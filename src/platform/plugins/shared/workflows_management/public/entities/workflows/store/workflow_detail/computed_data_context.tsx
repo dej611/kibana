@@ -35,7 +35,7 @@ const selectHasExecution = (state: RootState) => Boolean(state.detail.execution?
  */
 export function useNonSerializableComputed(): NonSerializableComputed {
   const cache = useCache();
-  return useSyncExternalStore(cache.subscribe, cache.getComputedSnapshot);
+  return useSyncExternalStore(cache.subscribeComputed, cache.getComputedSnapshot);
 }
 
 /**
@@ -44,7 +44,7 @@ export function useNonSerializableComputed(): NonSerializableComputed {
  */
 export function useNonSerializableComputedExecution(): NonSerializableComputed {
   const cache = useCache();
-  return useSyncExternalStore(cache.subscribe, cache.getComputedExecutionSnapshot);
+  return useSyncExternalStore(cache.subscribeComputedExecution, cache.getComputedExecutionSnapshot);
 }
 
 /**
@@ -57,9 +57,9 @@ export function useEditorNonSerializableComputed(): NonSerializableComputed {
   const hasExecution = useSelector(selectHasExecution);
   const isExecutionMode = isExecutionsTab && hasExecution;
 
-  const computed = useSyncExternalStore(cache.subscribe, cache.getComputedSnapshot);
+  const computed = useSyncExternalStore(cache.subscribeComputed, cache.getComputedSnapshot);
   const computedExecution = useSyncExternalStore(
-    cache.subscribe,
+    cache.subscribeComputedExecution,
     cache.getComputedExecutionSnapshot
   );
 

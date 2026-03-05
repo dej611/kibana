@@ -10,20 +10,8 @@
 import type { Node } from '@xyflow/react';
 import type { MutableRefObject } from 'react';
 import { renderHook, act } from '@testing-library/react';
+import { makeNode } from '../__fixtures__/graph_test_helpers';
 import { useKeyboardShortcuts } from './use_keyboard_shortcuts';
-
-const makeStepNode = (
-  id: string,
-  label: string,
-  type: string,
-  selected: boolean
-): Node => ({
-  id,
-  type,
-  data: { label },
-  position: { x: 0, y: 0 },
-  selected,
-});
 
 let container: HTMLDivElement | null = null;
 
@@ -76,9 +64,9 @@ describe('useKeyboardShortcuts', () => {
 
   it('calls onDeleteSteps with selected step names on Delete', () => {
     params.nodesRef.current = [
-      makeStepNode('1', 'step-a', 'action', true),
-      makeStepNode('2', 'step-b', 'action', false),
-      makeStepNode('3', 'step-c', 'if', true),
+      makeNode('1', 'step-a', 'step', true),
+      makeNode('2', 'step-b', 'step', false),
+      makeNode('3', 'step-c', 'step', true, 'if'),
     ];
     params.onDeleteSteps = jest.fn();
 
@@ -93,8 +81,8 @@ describe('useKeyboardShortcuts', () => {
 
   it('calls onDeleteSteps with selected step names on Backspace', () => {
     params.nodesRef.current = [
-      makeStepNode('1', 'step-a', 'action', true),
-      makeStepNode('2', 'step-b', 'merge', true),
+      makeNode('1', 'step-a', 'step', true),
+      makeNode('2', 'step-b', 'step', true, 'merge'),
     ];
     params.onDeleteSteps = jest.fn();
 
@@ -109,9 +97,9 @@ describe('useKeyboardShortcuts', () => {
 
   it('ignores placeholder and trigger nodes when deleting', () => {
     params.nodesRef.current = [
-      makeStepNode('1', 'step-a', 'action', true),
-      makeStepNode('2', 'trigger', 'trigger', true),
-      makeStepNode('3', 'ph', 'placeholder', true),
+      makeNode('1', 'step-a', 'step', true),
+      makeNode('2', 'trigger', 'trigger', true, 'manual'),
+      makeNode('3', 'ph', 'placeholder', true),
     ];
     params.onDeleteSteps = jest.fn();
 
@@ -126,8 +114,8 @@ describe('useKeyboardShortcuts', () => {
 
   it('does not call onDeleteSteps when no steps are selected', () => {
     params.nodesRef.current = [
-      makeStepNode('1', 'step-a', 'action', false),
-      makeStepNode('2', 'step-b', 'action', false),
+      makeNode('1', 'step-a', 'step', false),
+      makeNode('2', 'step-b', 'step', false),
     ];
     params.onDeleteSteps = jest.fn();
 
@@ -173,14 +161,14 @@ describe('useKeyboardShortcuts', () => {
     expect(params.setNodes).toHaveBeenCalledWith(expect.any(Function));
     const setNodesCb = (params.setNodes as jest.Mock).mock.calls[0][0];
     const nodes = [
-      { id: '1', type: 'action' },
+      { id: '1', type: 'step' },
       { id: '2', type: 'placeholder' },
-      { id: '3', type: 'if' },
+      { id: '3', type: 'step' },
     ];
     expect(setNodesCb(nodes)).toEqual([
-      { id: '1', type: 'action', selected: true },
+      { id: '1', type: 'step', selected: true },
       { id: '2', type: 'placeholder', selected: false },
-      { id: '3', type: 'if', selected: true },
+      { id: '3', type: 'step', selected: true },
     ]);
   });
 

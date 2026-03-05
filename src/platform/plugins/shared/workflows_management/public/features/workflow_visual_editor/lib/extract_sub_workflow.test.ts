@@ -13,13 +13,12 @@ import {
   buildStepNameToTopLevelIndex,
   validateContiguousSelection,
 } from './extract_sub_workflow';
+import { makeWorkflow as makeBaseWorkflow } from '../__fixtures__/graph_test_helpers';
 
-const makeWorkflow = (steps: Array<Record<string, unknown>>): WorkflowYaml =>
-  ({
-    name: 'test-workflow',
-    triggers: [{ type: 'manual' }],
-    steps,
-  } as unknown as WorkflowYaml);
+const makeWorkflow = (steps: Array<Record<string, unknown>>): WorkflowYaml => ({
+  ...makeBaseWorkflow(steps as WorkflowYaml['steps']),
+  name: 'test-workflow',
+});
 
 describe('buildStepNameToTopLevelIndex', () => {
   it('maps flat steps to their indices', () => {

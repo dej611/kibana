@@ -147,6 +147,33 @@ describe('useWorkflowLayout', () => {
     expect(resultA.current.topologyFingerprint).toBe(resultB.current.topologyFingerprint);
   });
 
+  it('does not re-call getLayoutedNodesAndEdges when only step config changes (topology stable)', () => {
+    const workflowA = createWorkflow({
+      steps: [{ name: 'step-a', type: 'action', action: { type: 'connector', connectorId: 'c1' } }],
+    });
+    const workflowB = createWorkflow({
+      steps: [{ name: 'step-a', type: 'action', action: { type: 'connector', connectorId: 'c2' } }],
+    });
+
+    mockGetLayoutedNodesAndEdges.mockClear();
+
+    const { rerender } = renderHook(
+      ({ workflow }: { workflow: WorkflowYaml }) =>
+        useWorkflowLayout({
+          workflow,
+          layoutDirection: 'LR',
+          handlePlaceholderAddStep,
+        }),
+      { initialProps: { workflow: workflowA } }
+    );
+
+    expect(mockGetLayoutedNodesAndEdges).toHaveBeenCalledTimes(1);
+
+    rerender({ workflow: workflowB });
+
+    expect(mockGetLayoutedNodesAndEdges).toHaveBeenCalledTimes(1);
+  });
+
   it('builds stepExecutionMap from stepExecutions and applies to matching node data', () => {
     const stepExecution = createStepExecution({ stepId: 'step-a' });
     const workflow = createWorkflow();

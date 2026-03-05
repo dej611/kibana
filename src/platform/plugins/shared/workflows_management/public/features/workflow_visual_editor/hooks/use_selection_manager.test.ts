@@ -11,6 +11,7 @@ import type { Node } from '@xyflow/react';
 import type { MutableRefObject } from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { validateContiguousSelection } from '../lib/extract_sub_workflow';
+import { makeNode, makeNodesRef } from '../__fixtures__/graph_test_helpers';
 import { getNodeLabel, getSelectableStepNodes } from '../model/types';
 import { useSelectionManager } from './use_selection_manager';
 
@@ -39,22 +40,10 @@ const mockWorkflow = {
 
 const createDefaultParams = () => ({
   workflowRef: { current: mockWorkflow } as MutableRefObject<typeof mockWorkflow>,
-  nodesRef: {
-    current: [
-      {
-        id: 'a',
-        type: 'step',
-        data: { label: 'step-a' },
-        position: { x: 10, y: 20 },
-      },
-      {
-        id: 'b',
-        type: 'step',
-        data: { label: 'step-b' },
-        position: { x: 110, y: 20 },
-      },
-    ] as Node[],
-  } as MutableRefObject<Node[]>,
+  nodesRef: makeNodesRef(
+    { ...makeNode('a', 'step-a'), position: { x: 10, y: 20 } },
+    { ...makeNode('b', 'step-b'), position: { x: 110, y: 20 } }
+  ),
   topologyFingerprint: 'fp1',
   onExtractSubWorkflow: jest.fn(),
 });
@@ -131,20 +120,8 @@ describe('useSelectionManager', () => {
     (getNodeLabel as jest.Mock).mockImplementation((n: Node) => (n.data as { label?: string })?.label);
 
     const selectedNodes: Node[] = [
-      {
-        id: 'a',
-        type: 'step',
-        data: { label: 'step-a' },
-        position: { x: 10, y: 20 },
-        measured: { width: 100, height: 84 },
-      },
-      {
-        id: 'b',
-        type: 'step',
-        data: { label: 'step-b' },
-        position: { x: 110, y: 20 },
-        measured: { width: 100, height: 84 },
-      },
+      { ...makeNode('a', 'step-a'), position: { x: 10, y: 20 }, measured: { width: 100, height: 84 } },
+      { ...makeNode('b', 'step-b'), position: { x: 110, y: 20 }, measured: { width: 100, height: 84 } },
     ];
     params.nodesRef.current = selectedNodes;
 
@@ -174,12 +151,7 @@ describe('useSelectionManager', () => {
     (getNodeLabel as jest.Mock).mockImplementation((n: Node) => (n.data as { label?: string })?.label);
 
     const selectedNodes: Node[] = [
-      {
-        id: 'a',
-        type: 'step',
-        data: { label: 'step-a' },
-        position: { x: 10, y: 20 },
-      },
+      { ...makeNode('a', 'step-a'), position: { x: 10, y: 20 } },
     ];
 
     const { result } = renderHook(() => useSelectionManager(params));
@@ -204,12 +176,7 @@ describe('useSelectionManager', () => {
     (getNodeLabel as jest.Mock).mockImplementation((n: Node) => (n.data as { label?: string })?.label);
 
     const selectedNodes: Node[] = [
-      {
-        id: 'a',
-        type: 'step',
-        data: { label: 'step-a' },
-        position: { x: 10, y: 20 },
-      },
+      { ...makeNode('a', 'step-a'), position: { x: 10, y: 20 } },
     ];
     params.nodesRef.current = selectedNodes;
 
@@ -239,12 +206,7 @@ describe('useSelectionManager', () => {
     (getNodeLabel as jest.Mock).mockImplementation((n: Node) => (n.data as { label?: string })?.label);
 
     const selectedNodes: Node[] = [
-      {
-        id: 'a',
-        type: 'step',
-        data: { label: 'step-a' },
-        position: { x: 10, y: 20 },
-      },
+      { ...makeNode('a', 'step-a'), position: { x: 10, y: 20 } },
     ];
 
     const { result } = renderHook(() => useSelectionManager(params));
@@ -275,12 +237,7 @@ describe('useSelectionManager', () => {
     (getNodeLabel as jest.Mock).mockImplementation((n: Node) => (n.data as { label?: string })?.label);
 
     const selectedNodes: Node[] = [
-      {
-        id: 'a',
-        type: 'step',
-        data: { label: 'step-a' },
-        position: { x: 10, y: 20 },
-      },
+      { ...makeNode('a', 'step-a'), position: { x: 10, y: 20 } },
     ];
     paramsWithoutCallback.nodesRef.current = selectedNodes;
 

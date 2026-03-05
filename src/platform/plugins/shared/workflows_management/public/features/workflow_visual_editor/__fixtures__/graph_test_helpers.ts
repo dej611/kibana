@@ -8,8 +8,8 @@
  */
 
 import type { Node } from '@xyflow/react';
-import type { MutableRefObject } from 'react';
 import { Position } from '@xyflow/react';
+import type { MutableRefObject } from 'react';
 import type { WorkflowYaml } from '@kbn/workflows';
 import type { GraphEdge, LayoutedNode, PreLayoutNode, Step } from '../model/types';
 import { DEFAULT_NODE_STYLE } from '../model/types';
@@ -39,18 +39,19 @@ export const makeNode = (
   id: string,
   label: string,
   type: string = 'step',
-  selected: boolean = false
+  selected: boolean = false,
+  stepType: string = 'action'
 ): Node => ({
   id,
   type,
-  data: { label },
+  data: { label, stepType },
   position: { x: 0, y: 0 },
   selected,
 });
 
 /** Creates a typed `MutableRefObject<Node[]>`. */
 export const makeNodesRef = (...nodes: Node[]): MutableRefObject<Node[]> =>
-  ({ current: nodes }) as MutableRefObject<Node[]>;
+  ({ current: nodes } as MutableRefObject<Node[]>);
 
 /** Creates a `LayoutedNode` with sensible defaults. */
 export const makeLayoutedNode = (
@@ -69,7 +70,7 @@ export const makeStep = (
   name: string,
   type: string = 'action',
   extra?: Record<string, unknown>
-): Step => ({ name, type, ...extra }) as Step;
+): Step => ({ name, type, ...extra } as Step);
 
 /** Creates a minimal `WorkflowYaml`. */
 export const makeWorkflow = (
@@ -82,4 +83,4 @@ export const makeWorkflow = (
     enabled: true,
     triggers,
     steps,
-  }) as WorkflowYaml;
+  } as WorkflowYaml);

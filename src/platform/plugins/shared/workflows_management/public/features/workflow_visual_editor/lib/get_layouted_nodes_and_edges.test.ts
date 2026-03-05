@@ -39,26 +39,28 @@ describe('getLayoutedNodesAndEdges (integration)', () => {
     expect(innerA).toBeDefined();
     expect(innerB).toBeDefined();
 
-    expect(innerA!.parentId).toBe(foreachGroup!.id);
-    expect(innerB!.parentId).toBe(foreachGroup!.id);
+    if (!triggerNode || !foreachGroup || !innerA || !innerB) return;
 
-    expect(foreachGroup!.style.width).toBeGreaterThan(0);
-    expect(foreachGroup!.style.height).toBeGreaterThan(0);
+    expect(innerA.parentId).toBe(foreachGroup.id);
+    expect(innerB.parentId).toBe(foreachGroup.id);
 
-    expect(innerA!.position.x).toBeDefined();
-    expect(innerA!.position.y).toBeDefined();
-    expect(innerB!.position.x).toBeDefined();
+    expect(foreachGroup.style.width).toBeGreaterThan(0);
+    expect(foreachGroup.style.height).toBeGreaterThan(0);
+
+    expect(innerA.position.x).toBeDefined();
+    expect(innerA.position.y).toBeDefined();
+    expect(innerB.position.x).toBeDefined();
 
     const innerPlaceholder = nodes.find(
-      (n) => n.type === 'placeholder' && n.parentId === foreachGroup!.id
+      (n) => n.type === 'placeholder' && n.parentId === foreachGroup.id
     );
     expect(innerPlaceholder).toBeDefined();
 
-    const edgeInnerAToB = edges.find((e) => e.source === innerA!.id && e.target === innerB!.id);
+    const edgeInnerAToB = edges.find((e) => e.source === innerA.id && e.target === innerB.id);
     expect(edgeInnerAToB).toBeDefined();
 
     const edgeTriggerToGroup = edges.find(
-      (e) => e.source === triggerNode!.id && e.target === foreachGroup!.id
+      (e) => e.source === triggerNode.id && e.target === foreachGroup.id
     );
     expect(edgeTriggerToGroup).toBeDefined();
   });
