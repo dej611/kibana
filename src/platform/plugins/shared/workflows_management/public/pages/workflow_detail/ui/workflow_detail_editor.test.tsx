@@ -34,6 +34,7 @@ jest.mock('../../../entities/workflows/model/use_workflow_actions', () => ({
 }));
 jest.mock('../../../entities/connectors/model/use_available_connectors', () => ({
   useFetchConnector: () => jest.fn(() => ({ data: undefined, isLoading: false })),
+  useAvailableConnectors: () => ({ connectorTypes: {}, totalConnectors: 0 }),
 }));
 jest.mock('react-redux', () => ({
   ...jest.requireActual('react-redux'),

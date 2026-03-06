@@ -65,7 +65,7 @@ const MENU_GROUP_TO_CATEGORY: Record<ActionsMenuGroup, NodeVisualCategory> = {
  *  4. Default 'connector' category
  */
 function isActionsMenuGroup(value: string): value is ActionsMenuGroup {
-  return value in MENU_GROUP_TO_CATEGORY;
+  return Object.hasOwn(MENU_GROUP_TO_CATEGORY, value);
 }
 
 function resolveVisualCategory(

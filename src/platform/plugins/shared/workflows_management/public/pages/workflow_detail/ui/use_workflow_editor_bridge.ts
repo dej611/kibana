@@ -8,7 +8,7 @@
  */
 
 import type { MutableRefObject } from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { isScalar, parseDocument } from 'yaml';
 import { i18n } from '@kbn/i18n';
@@ -38,6 +38,13 @@ interface ExtractModalState {
   topLevelRange: [number, number];
 }
 
+function findStepByName(stepNodes: ReturnType<typeof getStepNodesWithType>, name: string) {
+  return stepNodes.find((node) => {
+    const nameNode = node.get('name', true);
+    return isScalar(nameNode) && nameNode.value === name;
+  });
+}
+
 export function useWorkflowEditorBridge(
   editorRef: MutableRefObject<monaco.editor.IStandaloneCodeEditor | null>
 ) {
@@ -48,7 +55,19 @@ export function useWorkflowEditorBridge(
   const { createWorkflow, deleteWorkflows } = useWorkflowActions();
   const connectorsData = useAvailableConnectors();
 
+  const workflowYamlRef = useRef(workflowYaml);
+  workflowYamlRef.current = workflowYaml;
+
+  const workflowLookupRef = useRef(workflowLookup);
+  workflowLookupRef.current = workflowLookup;
+
+  const connectorsDataRef = useRef(connectorsData);
+  connectorsDataRef.current = connectorsData;
+
   const [extractModalState, setExtractModalState] = useState<ExtractModalState | null>(null);
+  const extractModalStateRef = useRef(extractModalState);
+  extractModalStateRef.current = extractModalState;
+
   const [pendingConnectorStep, setPendingConnectorStep] =
     useState<PendingConnectorStepContext | null>(null);
 
@@ -62,24 +81,23 @@ export function useWorkflowEditorBridge(
       const document = parseDocument(model.getValue());
       const stepNodes = getStepNodesWithType(document);
 
-      const targetStep = stepNodes.find(
-        (node) =>
-          isScalar(node.get('name', true)) && node.get('name', true)?.value === targetStepName
-      );
+      const targetStep = findStepByName(stepNodes, targetStepName);
 
+      let positioned = false;
       if (targetStep?.range) {
         const targetStartPos = model.getPositionAt(targetStep.range[0]);
         const lineAbove = Math.max(1, targetStartPos.lineNumber - 1);
         editor.setPosition({ lineNumber: lineAbove, column: 1 });
+        positioned = true;
       } else {
-        const sourceStep = stepNodes.find(
-          (node) =>
-            isScalar(node.get('name', true)) && node.get('name', true)?.value === sourceStepName
-        );
+        const sourceStep = findStepByName(stepNodes, sourceStepName);
         if (sourceStep?.range) {
           editor.setPosition(model.getPositionAt(sourceStep.range[2]));
+          positioned = true;
         }
       }
+
+      if (!positioned) return;
 
       insertStepSnippet(model, document, stepType, editor.getPosition(), editor, connectorId);
     },
@@ -96,14 +114,12 @@ export function useWorkflowEditorBridge(
       const document = parseDocument(model.getValue());
       const stepNodes = getStepNodesWithType(document);
 
-      const sourceStep = stepNodes.find(
-        (node) => isScalar(node.get('name', true)) && node.get('name', true)?.value === leafStepName
-      );
+      const sourceStep = findStepByName(stepNodes, leafStepName);
 
-      if (sourceStep?.range) {
-        const endPos = model.getPositionAt(sourceStep.range[2]);
-        editor.setPosition(endPos);
-      }
+      if (!sourceStep?.range) return;
+
+      const endPos = model.getPositionAt(sourceStep.range[2]);
+      editor.setPosition(endPos);
 
       insertStepSnippet(model, document, stepType, editor.getPosition(), editor, connectorId);
     },
@@ -117,24 +133,23 @@ export function useWorkflowEditorBridge(
   const handleNodeClick = useCallback(
     (identifier: string, nodeType: 'step' | 'trigger') => {
       const editor = editorRef.current;
-      if (!editor || !workflowLookup) return;
-      const info =
-        nodeType === 'trigger'
-          ? workflowLookup.triggers[identifier]
-          : workflowLookup.steps[identifier];
+      const lookup = workflowLookupRef.current;
+      if (!editor || !lookup) return;
+      const info = nodeType === 'trigger' ? lookup.triggers[identifier] : lookup.steps[identifier];
       if (!info) return;
       navigateToErrorPosition(editor, info.lineStart, 1);
     },
-    [editorRef, workflowLookup]
+    [editorRef]
   );
 
   const handleDeleteSteps = useCallback(
     (stepNames: string[]) => {
-      if (!connectorsData || stepNames.length === 0) return;
+      const currentConnectorsData = connectorsDataRef.current;
+      if (!currentConnectorsData || stepNames.length === 0) return;
 
       const parseResult = parseWorkflowYaml(
-        workflowYaml,
-        getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
+        workflowYamlRef.current,
+        getWorkflowZodSchemaLoose(currentConnectorsData.connectorTypes)
       );
       if (!parseResult.success) return;
 
@@ -148,7 +163,7 @@ export function useWorkflowEditorBridge(
       const updatedYaml = stringifyWorkflowDefinition(updatedWorkflow);
       dispatch(setYamlString(updatedYaml));
     },
-    [workflowYaml, connectorsData, dispatch]
+    [dispatch]
   );
 
   const handleDeleteStep = useCallback(
@@ -165,11 +180,13 @@ export function useWorkflowEditorBridge(
 
   const handleExtractConfirm = useCallback(
     async (newWorkflowName: string) => {
-      if (!extractModalState || !connectorsData) return;
+      const currentExtractModalState = extractModalStateRef.current;
+      const currentConnectorsData = connectorsDataRef.current;
+      if (!currentExtractModalState || !currentConnectorsData) return;
 
       const parseResult = parseWorkflowYaml(
-        workflowYaml,
-        getWorkflowZodSchemaLoose(connectorsData.connectorTypes)
+        workflowYamlRef.current,
+        getWorkflowZodSchemaLoose(currentConnectorsData.connectorTypes)
       );
       if (!parseResult.success) {
         throw new Error(
@@ -180,14 +197,28 @@ export function useWorkflowEditorBridge(
       }
 
       const { data: workflow } = parseResult;
-      const { topLevelRange } = extractModalState;
+      const { topLevelRange } = currentExtractModalState;
 
       const { newWorkflowDefinition, updatedSteps, executeStep, executeStepIndex } =
         buildExtractedWorkflow(workflow, topLevelRange, newWorkflowName);
 
       const newWorkflowYaml = stringifyWorkflowDefinition(newWorkflowDefinition);
 
-      const created = await createWorkflow.mutateAsync({ yaml: newWorkflowYaml });
+      let created: { id: string };
+      try {
+        created = await createWorkflow.mutateAsync({ yaml: newWorkflowYaml });
+      } catch (creationError: unknown) {
+        notifications.toasts.addError(
+          creationError instanceof Error ? creationError : new Error(String(creationError)),
+          {
+            title: i18n.translate('workflows.extractSubWorkflow.creationError.title', {
+              defaultMessage: 'Failed to create sub-workflow',
+            }),
+          }
+        );
+        setExtractModalState(null);
+        return;
+      }
 
       try {
         const linkedSteps = [
@@ -215,8 +246,9 @@ export function useWorkflowEditorBridge(
         try {
           await deleteWorkflows.mutateAsync({ ids: [created.id] });
           cleanedUp = true;
-        } catch {
-          // cleanup failed — fall through to notify about the orphan
+        } catch (cleanupError: unknown) {
+          // eslint-disable-next-line no-console
+          console.error('Failed to clean up orphaned sub-workflow:', cleanupError);
         }
 
         if (cleanedUp) {
@@ -244,15 +276,7 @@ export function useWorkflowEditorBridge(
         setExtractModalState(null);
       }
     },
-    [
-      extractModalState,
-      workflowYaml,
-      connectorsData,
-      createWorkflow,
-      deleteWorkflows,
-      dispatch,
-      notifications.toasts,
-    ]
+    [createWorkflow, deleteWorkflows, dispatch, notifications.toasts]
   );
 
   return {

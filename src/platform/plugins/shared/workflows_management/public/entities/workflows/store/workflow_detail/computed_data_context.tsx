@@ -7,7 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { createContext, useContext, useSyncExternalStore } from 'react';
+import { createContext, useCallback, useContext, useSyncExternalStore } from 'react';
 import { useSelector } from 'react-redux';
 import type { ComputedDataCache, NonSerializableComputed } from './computed_data_cache';
 import { selectIsExecutionsTab } from './selectors';
@@ -50,6 +50,9 @@ export function useNonSerializableComputedExecution(): NonSerializableComputed {
 /**
  * Returns the non-serializable computed data that matches the active editor
  * tab (workflow vs. execution), mirroring `selectEditorComputed`.
+ *
+ * Subscribes only to the relevant cache channel so that updates to the
+ * inactive channel do not trigger re-renders.
  */
 export function useEditorNonSerializableComputed(): NonSerializableComputed {
   const cache = useCache();
@@ -57,11 +60,18 @@ export function useEditorNonSerializableComputed(): NonSerializableComputed {
   const hasExecution = useSelector(selectHasExecution);
   const isExecutionMode = isExecutionsTab && hasExecution;
 
-  const computed = useSyncExternalStore(cache.subscribeComputed, cache.getComputedSnapshot);
-  const computedExecution = useSyncExternalStore(
-    cache.subscribeComputedExecution,
-    cache.getComputedExecutionSnapshot
+  const subscribe = useCallback(
+    (listener: () => void) =>
+      isExecutionMode
+        ? cache.subscribeComputedExecution(listener)
+        : cache.subscribeComputed(listener),
+    [cache, isExecutionMode]
   );
 
-  return isExecutionMode ? computedExecution : computed;
+  const getSnapshot = useCallback(
+    () => (isExecutionMode ? cache.getComputedExecutionSnapshot() : cache.getComputedSnapshot()),
+    [cache, isExecutionMode]
+  );
+
+  return useSyncExternalStore(subscribe, getSnapshot);
 }
