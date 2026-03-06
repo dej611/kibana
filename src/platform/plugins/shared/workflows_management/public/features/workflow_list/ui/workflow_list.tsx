@@ -36,11 +36,7 @@ import { useKibana } from '../../../hooks/use_kibana';
 import { useTelemetry } from '../../../hooks/use_telemetry';
 import { getRunTooltipContent, StatusBadge, WorkflowStatus } from '../../../shared/ui';
 import { NextExecutionTime } from '../../../shared/ui/next_execution_time';
-import {
-  areSimilarResults,
-  keepPreviousWorkflowOrder,
-  shouldShowWorkflowsEmptyState,
-} from '../../../shared/utils/workflow_utils';
+import { shouldShowWorkflowsEmptyState } from '../../../shared/utils/workflow_utils';
 import { WorkflowsTriggersList } from '../../../widgets/worflows_triggers_list/worflows_triggers_list';
 import { WorkflowTags } from '../../../widgets/workflow_tags/workflow_tags';
 import type { WorkflowTriggerTab } from '../../run_workflow/ui/types';
@@ -95,14 +91,6 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
     async (previousWorkflows?: WorkflowListDto) => {
       const result = await refetch();
 
-      if (previousWorkflows && result.data && areSimilarResults(result.data, previousWorkflows)) {
-        const ordered = keepPreviousWorkflowOrder({
-          previousData: previousWorkflows,
-          freshData: result.data,
-        });
-        queryClient.setQueryData(['workflows', search], ordered);
-      }
-
       const currentSelectedItems = selectedItemsRef.current;
       if (result.data?.results && currentSelectedItems.length > 0) {
         const selectedIds = new Set(currentSelectedItems.map((item) => item.id));
@@ -112,7 +100,7 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
         setSelectedItems(updatedSelectedItems);
       }
     },
-    [refetch, queryClient, search]
+    [refetch]
   );
 
   const handleRunWorkflow = useCallback(
