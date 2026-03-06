@@ -19,7 +19,7 @@ import {
 import { css } from '@emotion/react';
 import type { Node, NodeProps } from '@xyflow/react';
 import { Handle, NodeToolbar, Position } from '@xyflow/react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { i18n } from '@kbn/i18n';
 import { ExecutionStatus } from '@kbn/workflows';
@@ -27,6 +27,7 @@ import { ActionsMenuGroup } from '@kbn/workflows-extensions/public';
 import { useKibana } from '../../../hooks/use_kibana';
 import { getExecutionStatusColors } from '../../../shared/ui/status_badge';
 import { StepIcon } from '../../../shared/ui/step_icons/step_icon';
+import { useTruncationCheck } from '../hooks/use_truncation_check';
 import { FLOW_CONTROL_STEP_TYPES, TRIGGER_STEP_TYPES } from '../model/types';
 import type { NodeVisualCategory, WorkflowStepNodeData } from '../model/types';
 
@@ -149,18 +150,7 @@ export function WorkflowGraphNode(node: NodeProps<Node<WorkflowStepNodeData>>) {
   }, [onDeleteStep, node.data.label]);
 
   const labelRef = useRef<HTMLSpanElement>(null);
-  const [isLabelTruncated, setIsLabelTruncated] = useState(false);
-
-  useEffect(() => {
-    const el = labelRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => {
-      setIsLabelTruncated(el.scrollWidth > el.clientWidth);
-    });
-    observer.observe(el);
-    setIsLabelTruncated(el.scrollWidth > el.clientWidth);
-    return () => observer.disconnect();
-  }, [label]);
+  const isLabelTruncated = useTruncationCheck(labelRef, label);
 
   return (
     <>

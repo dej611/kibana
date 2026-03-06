@@ -13,6 +13,8 @@ import type {
   ElasticsearchGraphNode,
   KibanaGraphNode,
   WaitGraphNode,
+  WorkflowExecuteAsyncGraphNode,
+  WorkflowExecuteGraphNode,
 } from './nodes/base';
 import type {
   EnterConditionBranchNode,
@@ -99,3 +101,10 @@ export const isEnterStepTimeoutZone = (node: GraphNodeUnion): node is EnterTimeo
 
 export const isExitStepTimeoutZone = (node: GraphNodeUnion): node is ExitTimeoutZoneNode =>
   node.type === 'exit-timeout-zone' && node.stepType !== 'workflow_level_timeout';
+
+export const isWorkflowExecute = (node: GraphNodeUnion): node is WorkflowExecuteGraphNode =>
+  node.type === 'workflow.execute';
+
+export const isWorkflowExecuteAsync = (
+  node: GraphNodeUnion
+): node is WorkflowExecuteAsyncGraphNode => node.type === 'workflow.executeAsync';

@@ -91,7 +91,7 @@ export const ExecutionGraph: React.FC = () => {
     try {
       result = convertWorkflowGraphToReactFlow(workflowGraph);
     } catch (e) {
-      error = e.message;
+      error = e instanceof Error ? e.message : String(e);
     }
     return { result, error };
   }, [workflowGraph]);

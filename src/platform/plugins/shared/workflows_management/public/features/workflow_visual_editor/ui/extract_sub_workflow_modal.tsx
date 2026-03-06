@@ -46,20 +46,26 @@ export const ExtractSubWorkflowModal: React.FC<ExtractSubWorkflowModalProps> = (
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isNameValid = name.trim().length > 0;
+  const MAX_NAME_LENGTH = 128;
+  const FORBIDDEN_PATTERN = /[{}[\]:\n\r]/;
+  const trimmedName = name.trim();
+  const isNameValid =
+    trimmedName.length > 0 &&
+    trimmedName.length <= MAX_NAME_LENGTH &&
+    !FORBIDDEN_PATTERN.test(trimmedName);
 
   const handleConfirm = useCallback(async () => {
     if (!isNameValid) return;
     setIsLoading(true);
     setError(null);
     try {
-      await onConfirm(name.trim());
+      await onConfirm(trimmedName);
     } catch (e: unknown) {
       setError(getErrorMessage(e));
     } finally {
       setIsLoading(false);
     }
-  }, [name, isNameValid, onConfirm]);
+  }, [trimmedName, isNameValid, onConfirm]);
 
   return (
     <EuiModal onClose={onCancel} maxWidth={500}>
@@ -79,9 +85,19 @@ export const ExtractSubWorkflowModal: React.FC<ExtractSubWorkflowModalProps> = (
           isInvalid={!isNameValid && name.length > 0}
           error={
             !isNameValid && name.length > 0
-              ? i18n.translate('workflows.extractSubWorkflow.modal.nameRequired', {
-                  defaultMessage: 'Name is required',
-                })
+              ? trimmedName.length > MAX_NAME_LENGTH
+                ? i18n.translate('workflows.extractSubWorkflow.modal.nameTooLong', {
+                    defaultMessage: 'Name must be {max} characters or fewer',
+                    values: { max: MAX_NAME_LENGTH },
+                  })
+                : FORBIDDEN_PATTERN.test(trimmedName)
+                ? i18n.translate('workflows.extractSubWorkflow.modal.nameForbiddenChars', {
+                    defaultMessage:
+                      'Name must not contain special characters like braces, brackets, or colons',
+                  })
+                : i18n.translate('workflows.extractSubWorkflow.modal.nameRequired', {
+                    defaultMessage: 'Name is required',
+                  })
               : undefined
           }
         >

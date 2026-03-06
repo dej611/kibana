@@ -90,4 +90,6 @@ export {
   isExitStepTimeoutZone,
   isEnterWorkflowTimeoutZone,
   isExitWorkflowTimeoutZone,
+  isWorkflowExecute,
+  isWorkflowExecuteAsync,
 } from './guards';

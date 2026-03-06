@@ -70,4 +70,6 @@ export {
   isExitStepTimeoutZone,
   isEnterWorkflowTimeoutZone,
   isExitWorkflowTimeoutZone,
+  isWorkflowExecute,
+  isWorkflowExecuteAsync,
 } from './types';

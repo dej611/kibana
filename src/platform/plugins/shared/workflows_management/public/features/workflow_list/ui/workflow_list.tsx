@@ -26,8 +26,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { useQueryClient } from '@kbn/react-query';
-import type { WorkflowListDto, WorkflowListItemDto, WorkflowsSearchParams } from '@kbn/workflows';
+import type { WorkflowListItemDto, WorkflowsSearchParams } from '@kbn/workflows';
 import { useWorkflows } from '@kbn/workflows-ui';
 import { WorkflowsUtilityBar } from './workflows_utility_bar';
 import { WorkflowsEmptyState } from '../../../components';
@@ -51,14 +50,11 @@ interface WorkflowListProps {
 
 export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowListProps) {
   const { application, notifications } = useKibana().services;
-  const queryClient = useQueryClient();
   const { data: workflows, isLoading: isLoadingWorkflows, error, refetch } = useWorkflows(search);
   const { deleteWorkflows, runWorkflow, cloneWorkflow, updateWorkflow } = useWorkflowActions();
   const [workflowToDelete, setWorkflowToDelete] = useState<WorkflowListItemDto | null>(null);
   const modalTitleId = useGeneratedHtmlId();
   const telemetry = useTelemetry();
-  const workflowsRef = useRef(workflows);
-  workflowsRef.current = workflows;
 
   // Report list viewed telemetry when workflows are loaded
   React.useEffect(() => {
@@ -87,21 +83,18 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
     setSelectedItems([]);
   }, []);
 
-  const onRefresh = useCallback(
-    async (previousWorkflows?: WorkflowListDto) => {
-      const result = await refetch();
+  const onRefresh = useCallback(async () => {
+    const result = await refetch();
 
-      const currentSelectedItems = selectedItemsRef.current;
-      if (result.data?.results && currentSelectedItems.length > 0) {
-        const selectedIds = new Set(currentSelectedItems.map((item) => item.id));
-        const updatedSelectedItems = result.data.results.filter((workflow) =>
-          selectedIds.has(workflow.id)
-        );
-        setSelectedItems(updatedSelectedItems);
-      }
-    },
-    [refetch]
-  );
+    const currentSelectedItems = selectedItemsRef.current;
+    if (result.data?.results && currentSelectedItems.length > 0) {
+      const selectedIds = new Set(currentSelectedItems.map((item) => item.id));
+      const updatedSelectedItems = result.data.results.filter((workflow) =>
+        selectedIds.has(workflow.id)
+      );
+      setSelectedItems(updatedSelectedItems);
+    }
+  }, [refetch]);
 
   const handleRunWorkflow = useCallback(
     (id: string, event: Record<string, unknown>, triggerTab?: WorkflowTriggerTab) => {
@@ -119,7 +112,7 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
             );
           },
           onError: (err: unknown) => {
-            notifications?.toasts.addError(err as Error, {
+            notifications?.toasts.addError(err instanceof Error ? err : new Error(String(err)), {
               toastLifeTimeMs: 3000,
               title: 'Failed to run workflow',
             });
@@ -148,7 +141,7 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
         { id: item.id },
         {
           onError: (err: unknown) => {
-            notifications?.toasts.addError(err as Error, {
+            notifications?.toasts.addError(err instanceof Error ? err : new Error(String(err)), {
               toastLifeTimeMs: 3000,
               title: 'Failed to clone workflow',
             });
@@ -161,7 +154,6 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
 
   const handleToggleWorkflow = useCallback(
     (item: WorkflowListItemDto) => {
-      const preOptimisticWorkflows = workflowsRef.current;
       updateWorkflow.mutate(
         {
           id: item.id,
@@ -172,10 +164,10 @@ export function WorkflowList({ search, setSearch, onCreateWorkflow }: WorkflowLi
         },
         {
           onSuccess: () => {
-            onRefresh(preOptimisticWorkflows);
+            onRefresh();
           },
           onError: (err: unknown) => {
-            notifications?.toasts.addError(err as Error, {
+            notifications?.toasts.addError(err instanceof Error ? err : new Error(String(err)), {
               toastLifeTimeMs: 3000,
               title: 'Failed to update workflow',
             });

@@ -152,151 +152,88 @@ function visitAbstractStep(currentStep: BaseStep, context: GraphBuildContext): W
     return visitKibanaStep(currentStep as KibanaStep, context);
   }
 
-  if ((currentStep as WorkflowExecuteStep).type === 'workflow.execute') {
+  if (currentStep.type === 'workflow.execute') {
     return visitWorkflowExecuteStep(currentStep as WorkflowExecuteStep, context);
   }
 
-  if ((currentStep as WorkflowExecuteAsyncStep).type === 'workflow.executeAsync') {
+  if (currentStep.type === 'workflow.executeAsync') {
     return visitWorkflowExecuteAsyncStep(currentStep as WorkflowExecuteAsyncStep, context);
   }
 
   return visitAtomicStep(currentStep, context);
 }
 
+/**
+ * Creates a single-node graph for a leaf step (one with no child steps).
+ * Unifies the previously duplicated visitWaitStep, visitDataSetStep, etc.
+ *
+ * @param nodeType - The graph node type literal (e.g. 'wait', 'atomic', or
+ *   `currentStep.type` for dynamic types like elasticsearch/kibana).
+ */
+function createLeafStepGraph(
+  currentStep: BaseStep,
+  context: GraphBuildContext,
+  nodeType: string
+): WorkflowGraphType {
+  const stepId = getStepId(currentStep, context);
+  const graph = createTypedGraph({ directed: true });
+  graph.setNode(stepId, {
+    id: stepId,
+    type: nodeType,
+    stepId,
+    stepType: currentStep.type,
+    configuration: { ...currentStep },
+  });
+  return graph;
+}
+
 export function visitWaitStep(
   currentStep: WaitStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const stepId = getStepId(currentStep, context);
-  const graph = createTypedGraph({ directed: true });
-  const waitNode: WaitGraphNode = {
-    id: getStepId(currentStep, context),
-    type: 'wait',
-    stepId,
-    stepType: currentStep.type,
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(waitNode.id, waitNode);
-
-  return graph;
+  return createLeafStepGraph(currentStep, context, 'wait');
 }
 
 export function visitDataSetStep(
   currentStep: DataSetStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const stepId = getStepId(currentStep, context);
-  const graph = createTypedGraph({ directed: true });
-  const dataSetNode: DataSetGraphNode = {
-    id: getStepId(currentStep, context),
-    type: 'data.set',
-    stepId,
-    stepType: currentStep.type,
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(dataSetNode.id, dataSetNode);
-
-  return graph;
+  return createLeafStepGraph(currentStep, context, 'data.set');
 }
 
 export function visitElasticsearchStep(
   currentStep: ElasticsearchStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const graph = createTypedGraph({ directed: true });
-  const elasticsearchNode: ElasticsearchGraphNode = {
-    id: getStepId(currentStep, context),
-    stepId: getStepId(currentStep, context),
-    stepType: currentStep.type,
-    type: currentStep.type, // e.g., 'elasticsearch.search.query'
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(elasticsearchNode.id, elasticsearchNode);
-
-  return graph;
+  return createLeafStepGraph(currentStep, context, currentStep.type);
 }
 
 export function visitKibanaStep(
   currentStep: KibanaStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const graph = createTypedGraph({ directed: true });
-  const kibanaNode: KibanaGraphNode = {
-    id: getStepId(currentStep, context),
-    stepId: getStepId(currentStep, context),
-    stepType: currentStep.type,
-    type: currentStep.type, // e.g., 'kibana.cases.create'
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(kibanaNode.id, kibanaNode);
-
-  return graph;
+  return createLeafStepGraph(currentStep, context, currentStep.type);
 }
 
 export function visitWorkflowExecuteStep(
   currentStep: WorkflowExecuteStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const stepId = getStepId(currentStep, context);
-  const graph = createTypedGraph({ directed: true });
-  const workflowExecuteNode: WorkflowExecuteGraphNode = {
-    id: stepId,
-    type: 'workflow.execute',
-    stepId,
-    stepType: currentStep.type,
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(workflowExecuteNode.id, workflowExecuteNode);
-  return graph;
+  return createLeafStepGraph(currentStep, context, 'workflow.execute');
 }
 
 export function visitWorkflowExecuteAsyncStep(
   currentStep: WorkflowExecuteAsyncStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const stepId = getStepId(currentStep, context);
-  const graph = createTypedGraph({ directed: true });
-  const workflowExecuteAsyncNode: WorkflowExecuteAsyncGraphNode = {
-    id: stepId,
-    type: 'workflow.executeAsync',
-    stepId,
-    stepType: currentStep.type,
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(workflowExecuteAsyncNode.id, workflowExecuteAsyncNode);
-  return graph;
+  return createLeafStepGraph(currentStep, context, 'workflow.executeAsync');
 }
 
 export function visitAtomicStep(
   currentStep: BaseStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
-  const stepId = getStepId(currentStep, context);
-  const graph = createTypedGraph({ directed: true });
-  const atomicNode: AtomicGraphNode = {
-    id: getStepId(currentStep, context),
-    type: 'atomic',
-    stepId,
-    stepType: currentStep.type,
-    configuration: {
-      ...currentStep,
-    },
-  };
-  graph.setNode(atomicNode.id, atomicNode);
-
-  return graph;
+  return createLeafStepGraph(currentStep, context, 'atomic');
 }
 
 function createIfGraph(
@@ -508,7 +445,7 @@ function handleWorkflowLevelOnFailure(
     id: `workflowLevelOnFailure_${getStepId(step, { ...context, parentKey: '' })}`,
     type: 'workflow-level-on-failure',
     stepId: getStepId(step, { ...context, parentKey: '' }),
-    stepType: step.name,
+    stepType: step.type,
   };
 
   if (
@@ -818,7 +755,7 @@ export function convertToWorkflowGraph(
   workflowSchema: WorkflowYaml,
   defaultSettings?: WorkflowSettings
 ): graphlib.Graph<GraphNodeUnion> {
-  const resolvedSettings = resolveWorklfowSettings(workflowSchema.settings, defaultSettings);
+  const resolvedSettings = resolveWorkflowSettings(workflowSchema.settings, defaultSettings);
   const context: GraphBuildContext = {
     settings: resolvedSettings,
     stack: [],
@@ -840,7 +777,7 @@ export function convertToWorkflowGraph(
   return finalGraph;
 }
 
-function resolveWorklfowSettings(
+function resolveWorkflowSettings(
   workflowSettings?: WorkflowSettings,
   defaultSettings?: WorkflowSettings
 ): WorkflowSettings | undefined {
@@ -856,7 +793,7 @@ function resolveWorklfowSettings(
     ...workflowSettings,
     timeout: workflowSettings.timeout ?? defaultSettings.timeout,
     'on-failure': workflowSettings['on-failure'] ?? defaultSettings['on-failure'],
-    timezone: workflowSettings.timeout ?? defaultSettings.timezone,
+    timezone: workflowSettings.timezone ?? defaultSettings.timezone,
   };
 }
 
