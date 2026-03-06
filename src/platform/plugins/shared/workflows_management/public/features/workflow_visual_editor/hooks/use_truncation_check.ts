@@ -10,10 +10,11 @@
 import type { RefObject } from 'react';
 import { useEffect, useState } from 'react';
 
+const callbacks = new WeakMap<Element, () => void>();
 let sharedObserver: ResizeObserver | null = null;
-const callbacks = new Map<Element, () => void>();
+let observedCount = 0;
 
-function getSharedObserver(): ResizeObserver {
+function acquireObserver(): ResizeObserver {
   if (!sharedObserver) {
     sharedObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -24,9 +25,17 @@ function getSharedObserver(): ResizeObserver {
   return sharedObserver;
 }
 
+function releaseObserver(): void {
+  if (observedCount === 0 && sharedObserver) {
+    sharedObserver.disconnect();
+    sharedObserver = null;
+  }
+}
+
 /**
  * Checks whether a text element is truncated (scrollWidth > clientWidth)
  * using a single shared ResizeObserver for all mounted consumers.
+ * The observer is disposed automatically when the last consumer unmounts.
  */
 export const useTruncationCheck = (ref: RefObject<HTMLElement | null>, label: string): boolean => {
   const [isTruncated, setIsTruncated] = useState(false);
@@ -38,13 +47,16 @@ export const useTruncationCheck = (ref: RefObject<HTMLElement | null>, label: st
     const check = () => setIsTruncated(el.scrollWidth > el.clientWidth);
     check();
 
-    const observer = getSharedObserver();
+    const observer = acquireObserver();
     callbacks.set(el, check);
     observer.observe(el);
+    observedCount++;
 
     return () => {
       observer.unobserve(el);
       callbacks.delete(el);
+      observedCount--;
+      releaseObserver();
     };
   }, [ref, label]);
 

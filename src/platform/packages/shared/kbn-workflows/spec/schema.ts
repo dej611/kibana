@@ -534,9 +534,15 @@ export type BuiltInStepType = (typeof BuiltInStepTypes)[number];
 
 /* --- Workflow --- */
 // Base schema without transform - can be extended (used in generate_yaml_schema_from_connectors.ts)
+export const WORKFLOW_NAME_PATTERN = /^[^{}[\]:\n\r]*$/;
+
 const WorkflowSchemaBase = z.object({
   version: z.literal('1').optional().default('1').describe('The version of the workflow schema'),
-  name: z.string().min(1),
+  name: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(WORKFLOW_NAME_PATTERN, 'Workflow name must not contain YAML-special characters'),
   description: z.string().optional(),
   settings: WorkflowSettingsSchema.optional(),
   enabled: z.boolean().default(true),

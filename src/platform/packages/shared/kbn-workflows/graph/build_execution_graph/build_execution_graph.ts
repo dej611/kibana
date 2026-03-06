@@ -163,17 +163,19 @@ function visitAbstractStep(currentStep: BaseStep, context: GraphBuildContext): W
   return visitAtomicStep(currentStep, context);
 }
 
-/**
- * Creates a single-node graph for a leaf step (one with no child steps).
- * Unifies the previously duplicated visitWaitStep, visitDataSetStep, etc.
- *
- * @param nodeType - The graph node type literal (e.g. 'wait', 'atomic', or
- *   `currentStep.type` for dynamic types like elasticsearch/kibana).
- */
+type LeafNodeType =
+  | 'atomic'
+  | 'wait'
+  | 'data.set'
+  | 'workflow.execute'
+  | 'workflow.executeAsync'
+  | `elasticsearch.${string}`
+  | `kibana.${string}`;
+
 function createLeafStepGraph(
   currentStep: BaseStep,
   context: GraphBuildContext,
-  nodeType: string
+  nodeType: LeafNodeType
 ): WorkflowGraphType {
   const stepId = getStepId(currentStep, context);
   const graph = createTypedGraph({ directed: true });
@@ -201,10 +203,23 @@ export function visitDataSetStep(
   return createLeafStepGraph(currentStep, context, 'data.set');
 }
 
+function assertElasticsearchType(type: string): asserts type is `elasticsearch.${string}` {
+  if (!type.startsWith('elasticsearch.')) {
+    throw new Error(`Expected elasticsearch step type, got: ${type}`);
+  }
+}
+
+function assertKibanaType(type: string): asserts type is `kibana.${string}` {
+  if (!type.startsWith('kibana.')) {
+    throw new Error(`Expected kibana step type, got: ${type}`);
+  }
+}
+
 export function visitElasticsearchStep(
   currentStep: ElasticsearchStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
+  assertElasticsearchType(currentStep.type);
   return createLeafStepGraph(currentStep, context, currentStep.type);
 }
 
@@ -212,6 +227,7 @@ export function visitKibanaStep(
   currentStep: KibanaStep,
   context: GraphBuildContext
 ): WorkflowGraphType {
+  assertKibanaType(currentStep.type);
   return createLeafStepGraph(currentStep, context, currentStep.type);
 }
 

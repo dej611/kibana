@@ -27,7 +27,10 @@ import {
 } from '@elastic/eui';
 import React, { useCallback, useState } from 'react';
 import { i18n } from '@kbn/i18n';
+import { WORKFLOW_NAME_PATTERN } from '@kbn/workflows';
 import { getErrorMessage } from '../model/types';
+
+const MAX_NAME_LENGTH = 128;
 
 interface ExtractSubWorkflowModalProps {
   selectedStepNames: string[];
@@ -46,13 +49,11 @@ export const ExtractSubWorkflowModal: React.FC<ExtractSubWorkflowModalProps> = (
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const MAX_NAME_LENGTH = 128;
-  const FORBIDDEN_PATTERN = /[{}[\]:\n\r]/;
   const trimmedName = name.trim();
   const isNameValid =
     trimmedName.length > 0 &&
     trimmedName.length <= MAX_NAME_LENGTH &&
-    !FORBIDDEN_PATTERN.test(trimmedName);
+    WORKFLOW_NAME_PATTERN.test(trimmedName);
 
   const handleConfirm = useCallback(async () => {
     if (!isNameValid) return;
@@ -90,7 +91,7 @@ export const ExtractSubWorkflowModal: React.FC<ExtractSubWorkflowModalProps> = (
                     defaultMessage: 'Name must be {max} characters or fewer',
                     values: { max: MAX_NAME_LENGTH },
                   })
-                : FORBIDDEN_PATTERN.test(trimmedName)
+                : !WORKFLOW_NAME_PATTERN.test(trimmedName)
                 ? i18n.translate('workflows.extractSubWorkflow.modal.nameForbiddenChars', {
                     defaultMessage:
                       'Name must not contain special characters like braces, brackets, or colons',

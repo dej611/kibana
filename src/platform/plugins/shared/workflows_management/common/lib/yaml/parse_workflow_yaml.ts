@@ -23,18 +23,28 @@ interface ParseFailure {
 
 export type ParseWorkflowYamlResult = ParseSuccess | ParseFailure;
 
+function hasWorkflowYamlShape(data: unknown): data is WorkflowYaml {
+  if (typeof data !== 'object' || data === null) return false;
+  const record = data as Record<string, unknown>;
+  return typeof record.name === 'string' && Array.isArray(record.steps);
+}
+
 /**
  * Typed wrapper around `parseWorkflowYamlToJSON` that returns `WorkflowYaml`
  * directly.  The Zod schema validates the structural shape at runtime; the
- * narrowing from `unknown` to `WorkflowYaml` is safe after successful
- * validation.
+ * type guard provides an additional runtime check so the narrowing never
+ * relies on an unchecked cast.
  */
 export function parseWorkflowYaml(yamlString: string, schema: ZodType): ParseWorkflowYamlResult {
   const result = parseWorkflowYamlToJSON(yamlString, schema);
   if (!result.success) {
     return { success: false, error: result.error };
   }
-  // Safe: Zod validated the shape at runtime; narrowing through `unknown`.
-  const data: WorkflowYaml = result.data as unknown as WorkflowYaml;
-  return { success: true, data };
+  if (!hasWorkflowYamlShape(result.data)) {
+    return {
+      success: false,
+      error: new Error('Parsed YAML does not match WorkflowYaml structure'),
+    };
+  }
+  return { success: true, data: result.data };
 }

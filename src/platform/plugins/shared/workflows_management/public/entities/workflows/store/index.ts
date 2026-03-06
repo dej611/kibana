@@ -16,6 +16,7 @@ export type * from './workflow_detail/computed_data_cache';
 export * from './workflow_detail/slice';
 // Store
 export { createWorkflowsStore as createWorkflowDetailStore } from './store';
+export type { WorkflowsStoreBundle } from './store';
 
 // Selectors
 export * from './workflow_detail/selectors';

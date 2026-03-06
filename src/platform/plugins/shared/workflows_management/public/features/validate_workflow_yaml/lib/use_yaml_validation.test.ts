@@ -79,9 +79,8 @@ const renderHookWithProviders = (
   editor: monaco.editor.IStandaloneCodeEditor | null,
   yamlContent: string
 ) => {
-  const store = createWorkflowsStore(createStartServicesMock());
+  const { store } = createWorkflowsStore(createStartServicesMock());
 
-  // Set the YAML content which will trigger computation via middleware
   store.dispatch(setYamlString(yamlContent));
   store.dispatch(setActiveTab('workflow'));
 

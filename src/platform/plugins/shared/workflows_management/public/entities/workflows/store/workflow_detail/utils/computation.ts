@@ -19,6 +19,12 @@ import {
 import type { NonSerializableComputed } from '../computed_data_cache';
 import type { SerializableComputedData } from '../types';
 
+function hasWorkflowYamlShape(data: unknown): data is WorkflowYaml {
+  if (typeof data !== 'object' || data === null) return false;
+  const record = data as Record<string, unknown>;
+  return typeof record.name === 'string' && Array.isArray(record.steps);
+}
+
 /**
  * Full computed result containing both serializable and non-serializable parts.
  * The middleware splits this: serializable goes to Redux, non-serializable goes
@@ -53,10 +59,8 @@ export const performComputation = (
   let workflowDefinition = loadedDefinition;
   if (!workflowDefinition) {
     const parsingResult = parseWorkflowYamlForAutocomplete(correctedYamlString);
-    if (parsingResult.success) {
-      // The autocomplete schema is a superset of WorkflowYaml structurally;
-      // this cast bridges the two Zod schemas at a controlled boundary.
-      workflowDefinition = parsingResult.data as WorkflowYaml;
+    if (parsingResult.success && hasWorkflowYamlShape(parsingResult.data)) {
+      workflowDefinition = parsingResult.data;
     }
   }
 

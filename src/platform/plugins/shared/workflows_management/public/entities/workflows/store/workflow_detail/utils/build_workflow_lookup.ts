@@ -7,8 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
-
 import type { LineCounter } from 'yaml';
 import YAML from 'yaml';
 export interface StepInfo {
@@ -40,7 +38,7 @@ export interface TriggerInfo {
  */
 export function getValueFromValueNode(valueNode: StepPropInfo['valueNode']): unknown {
   if (!valueNode) return undefined;
-  return (valueNode as { value?: unknown }).value;
+  return valueNode.value;
 }
 
 /**
@@ -94,37 +92,37 @@ export function buildWorkflowLookup(
     };
   }
 
-  // Only process the 'steps' section, not the entire document
-  // This prevents inputs (which also have 'name' and 'type') from being treated as steps
-  const stepsNode = (yamlDocument.contents as any).get('steps');
+  const contents = yamlDocument.contents;
+
+  const stepsNode = contents.get('steps');
   if (stepsNode) {
-    Object.assign(
-      steps,
-      inspectStep(stepsNode, lineCounter) // stepItems can be null if there are no steps defined yet
-    );
+    Object.assign(steps, inspectStep(stepsNode, lineCounter));
   }
 
-  const triggersNode = (yamlDocument.contents as any).get('triggers');
+  const triggersNode = contents.get('triggers');
   if (YAML.isSeq(triggersNode)) {
     triggersNode.items.forEach((item) => {
       if (!YAML.isMap(item) || !item.range) return;
+      const { range } = item;
       let triggerType: string | undefined;
       item.items.forEach((pair) => {
         if (
           YAML.isPair(pair) &&
           YAML.isScalar(pair.key) &&
           pair.key.value === 'type' &&
-          YAML.isScalar(pair.value)
+          YAML.isScalar(pair.value) &&
+          typeof pair.value.value === 'string'
         ) {
-          triggerType = pair.value.value as string;
+          triggerType = pair.value.value;
         }
       });
       if (triggerType) {
+        const endOffset = Math.max(range[2] - 1, 0);
         triggers[triggerType] = {
           triggerType,
           triggerYamlNode: item,
-          lineStart: lineCounter.linePos(item.range![0]).line,
-          lineEnd: lineCounter.linePos(item.range![2] - 1).line,
+          lineStart: lineCounter.linePos(range[0]).line,
+          lineEnd: lineCounter.linePos(endOffset).line,
         };
       }
     });
@@ -139,7 +137,7 @@ export function buildWorkflowLookup(
 const NESTED_STEP_KEYS = ['steps', 'else', 'fallback'];
 
 export function inspectStep(
-  node: any,
+  node: unknown,
   lineCounter: LineCounter,
   parentStepId?: string
 ): Record<string, StepInfo> {
@@ -149,21 +147,21 @@ export function inspectStep(
   let stepType: string | undefined;
 
   if (YAML.isMap(node)) {
-    // First pass: collect stepId and stepType, and handle non-nested step properties
     node.items.forEach((item) => {
       if (YAML.isPair(item)) {
         if (YAML.isScalar(item.key)) {
-          if (YAML.isScalar(item.value)) {
+          if (YAML.isScalar(item.value) && typeof item.value.value === 'string') {
             if (item.key.value === 'name') {
-              stepId = item.value.value as string;
+              stepId = item.value.value;
             } else if (item.key.value === 'type') {
-              stepType = item.value.value as string;
+              stepType = item.value.value;
             }
           }
         }
-        // For non-nested step keys (steps, else, fallback), we'll handle them in a second pass
-        // after we know the stepId. For other values, recurse with current stepId as parent.
-        const keyValue = YAML.isScalar(item.key) ? (item.key.value as string) : undefined;
+        const keyValue =
+          YAML.isScalar(item.key) && typeof item.key.value === 'string'
+            ? item.key.value
+            : undefined;
         if (!keyValue || !NESTED_STEP_KEYS.includes(keyValue)) {
           const currentParentStepId = stepId ?? parentStepId;
           Object.assign(result, inspectStep(item.value, lineCounter, currentParentStepId));
@@ -171,12 +169,10 @@ export function inspectStep(
       }
     });
 
-    // Second pass: handle nested step keys (steps, else, fallback) with stepId as parentStepId
     if (stepId) {
       node.items.forEach((item) => {
-        if (YAML.isPair(item) && YAML.isScalar(item.key)) {
-          const keyValue = item.key.value as string;
-          if (NESTED_STEP_KEYS.includes(keyValue)) {
+        if (YAML.isPair(item) && YAML.isScalar(item.key) && typeof item.key.value === 'string') {
+          if (NESTED_STEP_KEYS.includes(item.key.value)) {
             Object.assign(result, inspectStep(item.value, lineCounter, stepId));
           }
         }
@@ -188,23 +184,26 @@ export function inspectStep(
     });
   }
 
-  if (stepId && stepType && YAML.isMap(node)) {
+  if (stepId && stepType && YAML.isMap(node) && node.range) {
     const propNodes: Record<string, StepPropInfo> = {};
     node.items.forEach((innerNode) => {
-      if (YAML.isPair(innerNode) && YAML.isScalar(innerNode.key)) {
-        if (!NESTED_STEP_KEYS.includes(innerNode.key.value as string)) {
+      if (
+        YAML.isPair(innerNode) &&
+        YAML.isScalar(innerNode.key) &&
+        typeof innerNode.key.value === 'string'
+      ) {
+        if (!NESTED_STEP_KEYS.includes(innerNode.key.value)) {
           Object.assign(propNodes, visitStepProps(innerNode));
         }
       }
     });
-    const lineStart = lineCounter.linePos(node.range![0]).line;
-    const lineEnd = lineCounter.linePos(node.range![2] - 1).line;
+    const endOffset = Math.max(node.range[2] - 1, 0);
     result[stepId] = {
       stepId,
       stepType,
       stepYamlNode: node,
-      lineStart,
-      lineEnd,
+      lineStart: lineCounter.linePos(node.range[0]).line,
+      lineEnd: lineCounter.linePos(endOffset).line,
       propInfos: propNodes,
       parentStepId,
     };
@@ -221,15 +220,24 @@ export function inspectStep(
  * a liquid template string), not when it is a map. Consumers can assume every
  * propInfo.valueNode is a Scalar.
  */
-function visitStepProps(node: any, stack: string[] = []): Record<string, StepPropInfo> {
+function visitStepProps(
+  node: YAML.Pair<unknown, unknown>,
+  stack: string[] = []
+): Record<string, StepPropInfo> {
   const result: Record<string, StepPropInfo> = {};
-  if (YAML.isMap(node.value)) {
+  if (YAML.isMap(node.value) && YAML.isScalar(node.key) && typeof node.key.value === 'string') {
     stack.push(node.key.value);
-    node.value.items.forEach((childNode: any) => {
-      Object.assign(result, visitStepProps(childNode, stack));
+    node.value.items.forEach((childNode) => {
+      if (YAML.isPair(childNode)) {
+        Object.assign(result, visitStepProps(childNode, stack));
+      }
     });
     stack.pop();
-  } else {
+  } else if (
+    YAML.isScalar(node.key) &&
+    typeof node.key.value === 'string' &&
+    YAML.isScalar(node.value)
+  ) {
     const path = [...stack, node.key.value];
     const composedKey = path.join('.');
     result[composedKey] = {

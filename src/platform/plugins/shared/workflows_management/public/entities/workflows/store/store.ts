@@ -7,17 +7,19 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { EnhancedStore } from '@reduxjs/toolkit';
 import { configureStore } from '@reduxjs/toolkit';
 import { ComputedDataCache } from './workflow_detail/computed_data_cache';
 import { createWorkflowDetailMiddleware } from './workflow_detail/middleware';
 import { ignoredActions, ignoredPaths, workflowDetailReducer } from './workflow_detail/slice';
 import type { WorkflowsServices } from '../../../types';
 
-export interface WorkflowsStoreExtras {
+export interface WorkflowsStoreBundle {
+  store: EnhancedStore<{ detail: ReturnType<typeof workflowDetailReducer> }>;
   computedDataCache: ComputedDataCache;
 }
 
-export const createWorkflowsStore = (services: WorkflowsServices) => {
+export const createWorkflowsStore = (services: WorkflowsServices): WorkflowsStoreBundle => {
   const computedDataCache = new ComputedDataCache();
   const middleware = createWorkflowDetailMiddleware(computedDataCache);
 
@@ -35,7 +37,7 @@ export const createWorkflowsStore = (services: WorkflowsServices) => {
       }).concat(middleware),
   });
 
-  return Object.assign(store, { computedDataCache });
+  return { store, computedDataCache };
 };
 
-export type AppDispatch = ReturnType<typeof createWorkflowsStore>['dispatch'];
+export type AppDispatch = WorkflowsStoreBundle['store']['dispatch'];

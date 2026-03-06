@@ -25,16 +25,14 @@ export function WorkflowDetailStoreProvider({ children }: React.PropsWithChildre
   const servicesWithWorkflowsManagement = services as typeof services & {
     workflowsManagement?: WorkflowsPublicPluginStart;
   };
-  const workflowsStore = useMemo(
+  const { store, computedDataCache } = useMemo(
     () => createWorkflowsStore(servicesWithWorkflowsManagement),
     [servicesWithWorkflowsManagement]
   );
 
   return (
-    <Provider store={workflowsStore}>
-      <ComputedDataCacheProvider value={workflowsStore.computedDataCache}>
-        {children}
-      </ComputedDataCacheProvider>
+    <Provider store={store}>
+      <ComputedDataCacheProvider value={computedDataCache}>{children}</ComputedDataCacheProvider>
     </Provider>
   );
 }
