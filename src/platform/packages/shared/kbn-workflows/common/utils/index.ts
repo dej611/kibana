@@ -18,6 +18,12 @@ export {
   type ValidateKqlAgainstSchemaOptions,
 } from './validate_kql_against_schema/validate_kql_against_schema';
 export { isPropertyAccess } from './is_property_access/is_property_access';
+export {
+  isRecordObject,
+  isRRuleConfig,
+  type RRuleConfig,
+  type ValidatedRRuleConfig,
+} from './type_guards';
 export { getOrResolveObject } from './json_schema/get_or_resolve_object';
 export {
   LIQUID_ALLOWED_TAGS,

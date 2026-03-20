@@ -84,12 +84,10 @@ export interface QueueMetrics {
 }
 
 /**
- * Typed shape of the `context` bag stored on a workflow execution document.
+ * Known fields on the `context` bag stored on a workflow execution document.
  * All fields are optional because the context is built incrementally.
- * The index signature allows ad-hoc runtime fields (e.g. `workflowRunId`,
- * `triggeredBy`) that are set by various execution paths.
  */
-export interface WorkflowExecutionContextData {
+interface WorkflowExecutionContextKnownFields {
   /** Trigger event data. Shape varies by trigger type (alert, scheduled, custom, etc.). */
   event?: Record<string, unknown>;
   output?: Record<string, unknown> | null;
@@ -101,8 +99,16 @@ export interface WorkflowExecutionContextData {
   parentWorkflowId?: string;
   parentWorkflowExecutionId?: string;
   parentDepth?: number;
-  [key: string]: unknown;
 }
+
+/**
+ * Typed shape of the `context` bag stored on a workflow execution document.
+ * The intersection with `Record<string, unknown>` allows ad-hoc runtime fields
+ * (e.g. `workflowRunId`, `triggeredBy`) that are set by various execution paths,
+ * while preserving the types of known fields when accessed via dot notation.
+ */
+export type WorkflowExecutionContextData = WorkflowExecutionContextKnownFields &
+  Record<string, unknown>;
 
 export interface EsWorkflowExecution {
   spaceId: string;

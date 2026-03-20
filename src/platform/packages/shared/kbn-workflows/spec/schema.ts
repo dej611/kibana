@@ -712,9 +712,9 @@ export const WorkflowConstsSchema = z.record(
     z.string(),
     z.number(),
     z.boolean(),
-    z.record(z.string(), z.any()),
+    z.record(z.string(), z.unknown()),
     z.object({}),
-    z.array(z.any()),
+    z.array(z.unknown()),
   ])
 );
 
@@ -913,7 +913,7 @@ export const AlertSchema = z.object({
   _id: z.string(),
   _index: z.string(),
   kibana: z.object({
-    alert: z.any(),
+    alert: z.unknown(),
   }),
   '@timestamp': z.string(),
 });
@@ -929,14 +929,14 @@ export const RuleSchema = z.object({
 
 /**
  * Alert-specific event properties. Only present when the workflow has an alert trigger.
- * Uses z.any() for alerts union and params because alert shapes are defined by io-ts
+ * Uses z.unknown() for alerts union and params because alert shapes are defined by io-ts
  * runtime types which don't have Zod equivalents yet.
  */
 
 export const AlertEventPropsSchema = z.object({
-  alerts: z.array(z.union([AlertSchema, z.any()])),
+  alerts: z.array(z.union([AlertSchema, z.unknown()])),
   rule: RuleSchema,
-  params: z.any(),
+  params: z.unknown(),
 });
 
 /**
@@ -991,7 +991,7 @@ export const WorkflowContextSchema = z.object({
       ])
     )
     .optional(),
-  consts: z.record(z.string(), z.any()).optional(),
+  consts: z.record(z.string(), z.unknown()).optional(),
   now: z.date().optional(),
   parent: z
     .object({
@@ -1017,8 +1017,8 @@ export const DynamicWorkflowContextSchema = WorkflowContextSchema.extend({
 export type DynamicWorkflowContext = z.infer<typeof DynamicWorkflowContextSchema>;
 
 export const StepDataSchema = z.object({
-  output: z.any().optional(),
-  error: z.any().optional(),
+  output: z.unknown().optional(),
+  error: z.unknown().optional(),
 });
 export type StepData = z.infer<typeof StepDataSchema>;
 

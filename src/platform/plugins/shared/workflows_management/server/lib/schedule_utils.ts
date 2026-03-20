@@ -7,14 +7,15 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any, complexity */
+/* eslint-disable complexity */
 
 import { Frequency } from '@kbn/rrule';
+import { isRRuleConfig, type ValidatedRRuleConfig } from '@kbn/workflows';
 
 // Define the trigger type based on the schema
 export interface WorkflowTrigger {
   type: 'alert' | 'scheduled' | 'manual';
-  with?: Record<string, any>;
+  with?: Record<string, unknown>;
 }
 
 /**
@@ -40,18 +41,6 @@ export function parseIntervalString(
   return { value, unit };
 }
 
-// RRule configuration interface for YAML
-export interface WorkflowRRuleConfig {
-  freq: 'DAILY' | 'WEEKLY' | 'MONTHLY';
-  interval: number;
-  tzid: string;
-  dtstart?: string;
-  byhour?: number[];
-  byminute?: number[];
-  byweekday?: string[];
-  bymonthday?: number[];
-}
-
 /**
  * Converts a workflow scheduled trigger to a task manager schedule format
  */
@@ -63,13 +52,13 @@ export function convertWorkflowScheduleToTaskSchedule(trigger: WorkflowTrigger) 
   const config = trigger.with || {};
 
   // Handle RRule-based scheduling (new)
-  if (config.rrule) {
+  if (isRRuleConfig(config.rrule)) {
     return convertRRuleToTaskSchedule(config.rrule);
   }
 
   // Handle legacy interval-based scheduling (e.g., every 5 minutes)
   if (config.every && config.unit) {
-    const every = parseInt(config.every, 10);
+    const every = parseInt(String(config.every), 10);
     const unit = String(config.unit).toLowerCase();
 
     if (isNaN(every) || every < 1) {
@@ -126,7 +115,7 @@ export function getScheduledTriggers(triggers: WorkflowTrigger[]): WorkflowTrigg
 /**
  * Converts RRule configuration from YAML to taskmanager format
  */
-export function convertRRuleToTaskSchedule(rruleConfig: WorkflowRRuleConfig) {
+export function convertRRuleToTaskSchedule(rruleConfig: ValidatedRRuleConfig) {
   // Validate required fields
   if (
     !rruleConfig.freq ||
@@ -155,7 +144,7 @@ export function convertRRuleToTaskSchedule(rruleConfig: WorkflowRRuleConfig) {
   }
 
   // Build the RRule object
-  const rrule: any = {
+  const rrule: Record<string, unknown> = {
     freq,
     interval: rruleConfig.interval,
     tzid: rruleConfig.tzid,

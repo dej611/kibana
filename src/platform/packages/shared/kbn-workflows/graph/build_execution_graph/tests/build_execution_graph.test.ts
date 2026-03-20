@@ -354,9 +354,12 @@ describe('convertToWorkflowGraph', () => {
       const executionGraph = convertToWorkflowGraph(rawApiWorkflow as any);
       const node = executionGraph.node('testKibanaRawStep') as unknown as KibanaGraphNode;
       expect(node.type).toBe('kibana.cases.get');
-      expect(
-        (node.configuration.with as Record<string, Record<string, unknown>>).request.path
-      ).toBe('/api/cases/test-case-id');
+      const { request } = node.configuration.with;
+      if (isObject(request) && 'path' in request && typeof request.path === 'string') {
+        expect(request.path).toBe('/api/cases/test-case-id');
+      } else {
+        fail('Expected kibana step configuration to have request property');
+      }
     });
   });
 

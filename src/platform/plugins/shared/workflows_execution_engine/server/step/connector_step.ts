@@ -8,7 +8,6 @@
  */
 
 import type { ActionTypeExecutorResult } from '@kbn/actions-plugin/common';
-import type { JsonObject } from '@kbn/utility-types';
 import { SystemConnectorsMap } from '@kbn/workflows/common/constants';
 import { ExecutionError } from '@kbn/workflows/server';
 import { ResponseSizeLimitError } from './errors';
@@ -31,7 +30,7 @@ const CONNECTOR_TYPES_WITH_LAYER_1 = new Set<string>(['http']);
 // Extend BaseStep for connector-specific properties
 export interface ConnectorStep extends BaseStep {
   'connector-id'?: string;
-  with?: JsonObject;
+  with?: Record<string, unknown>;
 }
 
 export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorStep> {
@@ -51,7 +50,7 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
     );
   }
 
-  public async _run(withInputs?: JsonObject): Promise<RunStepResult> {
+  public async _run(withInputs?: Record<string, unknown>): Promise<RunStepResult> {
     const inputs = withInputs ?? {};
 
     try {

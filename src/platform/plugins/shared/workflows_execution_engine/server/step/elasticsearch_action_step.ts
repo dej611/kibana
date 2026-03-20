@@ -9,8 +9,7 @@
 
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { isMaximumResponseSizeExceededError } from '@kbn/es-errors';
-import type { JsonObject } from '@kbn/utility-types';
-import { buildElasticsearchRequest } from '@kbn/workflows';
+import { buildElasticsearchRequest, isRecordObject } from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
 import { formatBytes, ResponseSizeLimitError } from './errors';
 import type { BaseStep, RunStepResult } from './node_implementation';
@@ -61,25 +60,21 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
     super(step, contextManager, undefined, workflowRuntime);
   }
 
-  public getInput(): JsonObject {
+  public getInput(): Record<string, unknown> {
     // Render inputs from 'with' - support both direct step.with and step.configuration.with
-    const stepWith = this.step.with || this.step.configuration?.with || {};
-    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(
-      stepWith as JsonObject
-    );
+    const rawWith = this.step.with || this.step.configuration?.with;
+    const stepWith = isRecordObject(rawWith) ? rawWith : {};
+    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(stepWith);
   }
 
-  public async _run(withInputs?: JsonObject): Promise<RunStepResult> {
+  public async _run(withInputs?: Record<string, unknown>): Promise<RunStepResult> {
     try {
       // Support both direct step types (elasticsearch.search.query) and atomic+configuration pattern
       const configType = this.step.configuration?.type;
       const stepType = this.step.type || (typeof configType === 'string' ? configType : undefined);
       // Use rendered inputs if provided, otherwise fall back to raw step.with or configuration.with
       const rawConfigWith = this.step.configuration?.with;
-      const configWith =
-        typeof rawConfigWith === 'object' && rawConfigWith !== null && !Array.isArray(rawConfigWith)
-          ? (rawConfigWith as Record<string, unknown>)
-          : undefined;
+      const configWith = isRecordObject(rawConfigWith) ? rawConfigWith : undefined;
       const stepWith = withInputs || this.step.with || configWith;
 
       this.workflowLogger.logInfo(`Executing Elasticsearch action: ${stepType}`, {
@@ -119,10 +114,7 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
       const errorStepType =
         (typeof errorConfigType === 'string' ? errorConfigType : undefined) || this.step.type;
       const rawErrorWith = withInputs || this.step.with || this.step.configuration?.with;
-      const errorStepWith =
-        typeof rawErrorWith === 'object' && rawErrorWith !== null && !Array.isArray(rawErrorWith)
-          ? (rawErrorWith as Record<string, unknown>)
-          : undefined;
+      const errorStepWith = isRecordObject(rawErrorWith) ? rawErrorWith : undefined;
 
       // Map ES transport maxResponseSize exceeded to our ResponseSizeLimitError
       if (isMaximumResponseSizeExceededError(error)) {
@@ -135,22 +127,16 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
           const esClient = this.stepExecutionRuntime.contextManager.getEsClientAsUser();
 
           // Extract index, query, and size from the step inputs (supports both raw and sugar formats)
-          const rawRequest =
-            typeof errorStepWith?.request === 'object' && errorStepWith.request !== null
-              ? (errorStepWith.request as Record<string, unknown>)
-              : undefined;
-          const rawBody =
-            typeof errorStepWith?.body === 'object' && errorStepWith.body !== null
-              ? (errorStepWith.body as Record<string, unknown>)
-              : undefined;
+          const rawRequest = isRecordObject(errorStepWith?.request)
+            ? errorStepWith.request
+            : undefined;
+          const rawBody = isRecordObject(errorStepWith?.body) ? errorStepWith.body : undefined;
           const index =
             errorStepWith?.index || rawRequest?.path?.toString().replace(/^\//, '').split('/')[0];
           const query =
             errorStepWith?.query ||
             rawBody?.query ||
-            (typeof rawRequest?.body === 'object' && rawRequest.body !== null
-              ? (rawRequest.body as Record<string, unknown>).query
-              : undefined);
+            (isRecordObject(rawRequest?.body) ? rawRequest.body.query : undefined);
           const requestedSize = Number(errorStepWith?.size ?? rawBody?.size ?? 0);
 
           if (index) {
@@ -248,7 +234,7 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
           },
         }
       );
-      return this.handleFailure(errorStepWith as JsonObject | undefined, error);
+      return this.handleFailure(errorStepWith, error);
     }
   }
 

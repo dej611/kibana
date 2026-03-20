@@ -7,9 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { JsonObject } from '@kbn/utility-types';
 import type { FetcherConfigSchema } from '@kbn/workflows';
-import { buildKibanaRequest } from '@kbn/workflows';
+import { buildKibanaRequest, isRecordObject } from '@kbn/workflows';
 import { z } from '@kbn/zod/v4';
 import { ResponseSizeLimitError } from './errors';
 import type { BaseStep, RunStepResult } from './node_implementation';
@@ -53,23 +52,20 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
     super(step, stepExecutionRuntime, undefined, workflowRuntime);
   }
 
-  public getInput(): JsonObject {
+  public getInput(): Record<string, unknown> {
     // Render inputs from 'with' - support both direct step.with and step.configuration.with
-    const stepWith = this.step.with || this.step.configuration?.with || {};
-    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(
-      stepWith as JsonObject
-    );
+    const rawWith = this.step.with || this.step.configuration?.with;
+    const stepWith = isRecordObject(rawWith) ? rawWith : {};
+    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(stepWith);
   }
 
-  public async _run(withInputs?: JsonObject): Promise<RunStepResult> {
+  public async _run(withInputs?: Record<string, unknown>): Promise<RunStepResult> {
     // Support both direct step types (kibana.createCase) and atomic+configuration pattern
     const configType = this.step.configuration?.type;
     const stepType = this.step.type || (typeof configType === 'string' ? configType : '') || '';
     // Use rendered inputs if provided, otherwise fall back to raw step.with or configuration.with
-    const stepWith = (withInputs ||
-      this.step.with ||
-      this.step.configuration?.with ||
-      {}) as Record<string, unknown>;
+    const rawWith = withInputs || this.step.with || this.step.configuration?.with;
+    const stepWith: Record<string, unknown> = isRecordObject(rawWith) ? rawWith : {};
     // Extract meta params (not forwarded as HTTP request params)
     const useServerInfo = stepWith.use_server_info === true;
     const useLocalhost = stepWith.use_localhost === true;
@@ -129,7 +125,7 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
         },
       });
 
-      const failure = this.handleFailure(stepWith as JsonObject, error);
+      const failure = this.handleFailure(stepWith, error);
       if (debug && failure.error) {
         const kibanaUrl = this.getKibanaUrl(useServerInfo, useLocalhost);
         failure.error = {
@@ -178,10 +174,9 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
 
     // Extract and remove fetcher configuration from params (it's only for our internal use)
     const { fetcher: rawFetcherOptions, ...cleanParams } = params;
-    const fetcherOptions: FetcherOptions | undefined =
-      typeof rawFetcherOptions === 'object' && rawFetcherOptions !== null
-        ? (rawFetcherOptions as FetcherOptions)
-        : undefined;
+    const fetcherOptions: FetcherOptions | undefined = isRecordObject(rawFetcherOptions)
+      ? (rawFetcherOptions as FetcherOptions)
+      : undefined;
 
     // Build the request config from either raw API format or connector definitions
     let requestConfig: {
@@ -229,10 +224,7 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
     const result = await this.makeHttpRequest(kibanaUrl, requestConfig, fetcherOptions);
 
     if (debug) {
-      const resultObj = (typeof result === 'object' && result !== null ? result : {}) as Record<
-        string,
-        unknown
-      >;
+      const resultObj = isRecordObject(result) ? result : {};
       return {
         ...resultObj,
         _debug: {

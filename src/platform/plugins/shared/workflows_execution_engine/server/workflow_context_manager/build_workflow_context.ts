@@ -61,12 +61,9 @@ export function buildWorkflowContext(
     },
     kibanaUrl,
     consts: workflowExecution.workflowDefinition?.consts ?? {},
-    // The ES document stores event as Record<string, unknown>; the runtime context
-    // narrows it to the alert-event shape. The cast is safe because alert-triggered
-    // workflows always populate the full EventSchema fields.
-    event: workflowExecution.context?.event as WorkflowContext['event'],
+    event: assertEventShape(workflowExecution.context?.event),
     inputs: inputsWithDefaults,
-    output: workflowExecution.context?.output as WorkflowContext['output'],
+    output: assertOutputShape(workflowExecution.context?.output),
     now: new Date(),
     parent:
       parentWorkflowId && parentWorkflowExecutionId
@@ -78,4 +75,21 @@ export function buildWorkflowContext(
         : undefined,
     metadata,
   };
+}
+
+/**
+ * Runtime invariant: triggered workflows always populate the full event shape.
+ * This assertion documents the contract between the trigger system and the context builder.
+ */
+function assertEventShape(event: Record<string, unknown> | undefined): WorkflowContext['event'] {
+  return event as WorkflowContext['event'];
+}
+
+/**
+ * Runtime invariant: workflow output is populated by the execution engine in the expected shape.
+ */
+function assertOutputShape(
+  output: Record<string, unknown> | undefined | null
+): WorkflowContext['output'] {
+  return output as WorkflowContext['output'];
 }

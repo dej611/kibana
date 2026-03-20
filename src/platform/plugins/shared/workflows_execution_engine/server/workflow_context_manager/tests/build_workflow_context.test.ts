@@ -497,7 +497,13 @@ describe('buildWorkflowContext', () => {
       expect(context.event).toBeDefined();
       expect(context.event?.spaceId).toBe('default');
       expect(context.event?.alerts).toHaveLength(1);
-      expect(context.event?.alerts?.[0]._id).toBe('alert-1');
+      const firstAlert = context.event?.alerts?.[0];
+      expect(firstAlert).toBeDefined();
+      expect(
+        typeof firstAlert === 'object' && firstAlert !== null && '_id' in firstAlert
+          ? firstAlert._id
+          : undefined
+      ).toBe('alert-1');
       expect(context.event?.rule?.name).toBe('Test Rule');
       expect(context.event?.params).toEqual({ threshold: 10 });
     });

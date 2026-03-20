@@ -7,11 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { JsonObject } from '@kbn/utility-types';
+import { isRecordObject } from '@kbn/workflows';
 import type { AtomicGraphNode } from '@kbn/workflows/graph';
 import { ExecutionError } from '@kbn/workflows/server';
 import type { ServerStepDefinition, StepHandlerContext } from '@kbn/workflows-extensions/server';
-import type { BaseStep, CancellableNode, RunStepResult } from './node_implementation';
+import type { BaseStep, RunStepResult } from './node_implementation';
 import { BaseAtomicNodeImplementation } from './node_implementation';
 import type { ConnectorExecutor } from '../connector_executor';
 import type { StepExecutionRuntime } from '../workflow_context_manager/step_execution_runtime';
@@ -30,6 +30,8 @@ import type { IWorkflowEventLogger } from '../workflow_event_logger';
  * cleanup on cancellation.
  */
 export class CustomStepImpl extends BaseAtomicNodeImplementation<BaseStep> {
+  public onCancel?: () => Promise<void>;
+
   constructor(
     private node: AtomicGraphNode,
     private stepDefinition: ServerStepDefinition,
@@ -51,7 +53,7 @@ export class CustomStepImpl extends BaseAtomicNodeImplementation<BaseStep> {
 
     if (stepDefinition.onCancel) {
       const onCancelFn = stepDefinition.onCancel;
-      (this as unknown as CancellableNode).onCancel = async () => {
+      this.onCancel = async () => {
         await onCancelFn(this.createHandlerContext(this.getInput()));
       };
     }
@@ -60,12 +62,9 @@ export class CustomStepImpl extends BaseAtomicNodeImplementation<BaseStep> {
   /**
    * Get and validate the input for this step
    */
-  public override getInput(): JsonObject {
+  public override getInput(): Record<string, unknown> {
     const rawWith = this.node.configuration.with;
-    const withData: JsonObject =
-      typeof rawWith === 'object' && rawWith !== null && !Array.isArray(rawWith)
-        ? (rawWith as JsonObject)
-        : {};
+    const withData = isRecordObject(rawWith) ? rawWith : {};
     return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(withData);
   }
 

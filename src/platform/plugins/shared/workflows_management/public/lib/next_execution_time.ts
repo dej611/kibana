@@ -11,7 +11,8 @@
 
 import { Frequency, RRule, Weekday } from '@kbn/rrule';
 import type { ConstructorOptions as RRuleConstructorOptions } from '@kbn/rrule';
-import type { WorkflowExecutionHistoryModel } from '@kbn/workflows';
+import type { ValidatedRRuleConfig, WorkflowExecutionHistoryModel } from '@kbn/workflows';
+import { isRRuleConfig } from '@kbn/workflows';
 import { parseIntervalString, type WorkflowTrigger } from '../../server/lib/schedule_utils';
 
 /**
@@ -28,12 +29,12 @@ export function calculateNextExecutionTime(
   const config = trigger.with || {};
 
   // Handle RRule-based scheduling
-  if (config.rrule) {
+  if (isRRuleConfig(config.rrule)) {
     return calculateRRuleNextExecution(config.rrule, lastRun);
   }
 
   // Handle interval-based scheduling format (e.g., every: "5m")
-  if (config.every && typeof config.every === 'string') {
+  if (typeof config.every === 'string') {
     const parsed = parseIntervalString(config.every);
     if (parsed) {
       return calculateIntervalNextExecution(parsed.value, parsed.unit, lastRun);
@@ -46,18 +47,10 @@ export function calculateNextExecutionTime(
 /**
  * Calculates next execution time for RRule-based schedules
  */
-interface RRuleConfig {
-  freq?: string;
-  interval?: number;
-  tzid?: string;
-  dtstart?: string;
-  byhour?: number[];
-  byminute?: number[];
-  byweekday?: string[];
-  bymonthday?: number[];
-}
-
-function calculateRRuleNextExecution(rruleConfig: RRuleConfig, lastRun: Date | null): Date | null {
+function calculateRRuleNextExecution(
+  rruleConfig: ValidatedRRuleConfig,
+  lastRun: Date | null
+): Date | null {
   try {
     // Validate required fields
     if (!rruleConfig.freq || !rruleConfig.interval || !rruleConfig.tzid) {

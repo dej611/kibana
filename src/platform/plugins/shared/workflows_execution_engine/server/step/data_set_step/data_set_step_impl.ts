@@ -7,7 +7,6 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import type { JsonObject } from '@kbn/utility-types';
 import type { DataSetGraphNode } from '@kbn/workflows/graph';
 import { ExecutionError } from '@kbn/workflows/server';
 import type { StepExecutionRuntime } from '../../workflow_context_manager/step_execution_runtime';
@@ -37,10 +36,8 @@ export class DataSetStepImpl extends BaseAtomicNodeImplementation<DataSetStep> {
     super(dataSetStep, stepExecutionRuntime, undefined, workflowRuntime);
   }
 
-  public override getInput(): JsonObject {
-    // node.configuration.with is Record<string, unknown> from the DataSetStepSchema;
-    // cast to JsonObject is safe since renderValueAccordingToContext accepts JsonObject.
-    const withData = (this.node.configuration.with || {}) as JsonObject;
+  public override getInput(): Record<string, unknown> {
+    const withData = this.node.configuration.with || {};
     return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(withData);
   }
 

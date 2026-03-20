@@ -8,8 +8,8 @@
  */
 
 import apm from 'elastic-apm-node';
-import type { JsonObject } from '@kbn/utility-types';
 import type { SerializedError } from '@kbn/workflows';
+import { isRecordObject } from '@kbn/workflows';
 import { ExecutionError } from '@kbn/workflows/server';
 import {
   DEFAULT_MAX_STEP_SIZE,
@@ -155,7 +155,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
     return this.step.name;
   }
 
-  public getInput(): JsonObject {
+  public getInput(): Record<string, unknown> {
     return {};
   }
 
@@ -166,7 +166,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
       return;
     }
 
-    let input: JsonObject | undefined;
+    let input: Record<string, unknown> | undefined;
     this.stepExecutionRuntime.startStep();
     // flush event logs after start step
     await this.stepExecutionRuntime.flushEventLogs();
@@ -214,12 +214,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
           stepSpan.setOutcome('failure');
         }
       } else {
-        const output =
-          typeof result.output === 'object' &&
-          result.output !== null &&
-          !Array.isArray(result.output)
-            ? (result.output as Record<string, unknown>)
-            : undefined;
+        const output = isRecordObject(result.output) ? result.output : undefined;
         this.stepExecutionRuntime.finishStep(output);
         if (stepSpan) {
           stepSpan.setOutcome('success');
@@ -244,7 +239,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
   }
 
   // Subclasses implement this to execute the step logic
-  protected abstract _run(input?: JsonObject): Promise<RunStepResult>;
+  protected abstract _run(input?: Record<string, unknown>): Promise<RunStepResult>;
 
   /**
    * Resolves the maximum step size in bytes.
@@ -282,7 +277,10 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
   }
 
   // Helper for handling on-failure, retries, etc.
-  protected handleFailure(input: JsonObject | undefined, error: unknown): RunStepResult {
+  protected handleFailure(
+    input: Record<string, unknown> | undefined,
+    error: unknown
+  ): RunStepResult {
     return {
       input,
       output: undefined,

@@ -6,7 +6,7 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import type { JsonObject } from '@kbn/utility-types';
+import { isRecordObject } from '@kbn/workflows';
 import type { AtomicGraphNode } from '@kbn/workflows/graph';
 import type { ConnectorExecutor } from '../../connector_executor';
 import type { StepExecutionRuntime } from '../../workflow_context_manager/step_execution_runtime';
@@ -57,10 +57,7 @@ export class AtomicStepImpl implements NodeImplementation {
       type: this.node.stepType,
       spaceId: this.stepExecutionRuntime.contextManager.getContext().workflow.spaceId,
       'connector-id': typeof rawConnectorId === 'string' ? rawConnectorId : undefined,
-      with:
-        typeof rawWith === 'object' && rawWith !== null && !Array.isArray(rawWith)
-          ? (rawWith as JsonObject)
-          : undefined,
+      with: isRecordObject(rawWith) ? rawWith : undefined,
       'max-step-size': typeof rawMaxStepSize === 'string' ? rawMaxStepSize : undefined,
     };
 
