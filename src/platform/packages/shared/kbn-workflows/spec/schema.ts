@@ -237,7 +237,7 @@ export const StepWithOnFailureSchema = z.object({
 
 export const BaseConnectorStepSchema = BaseStepSchema.extend({
   type: z.string().min(1),
-  with: z.record(z.string(), z.any()).optional(),
+  with: z.record(z.string(), z.unknown()).optional(),
 })
   .merge(StepWithIfConditionSchema)
   .merge(StepWithForEachSchema)
@@ -322,7 +322,7 @@ export const ElasticsearchStepInputSchema = z.union([
     request: z.object({
       method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']).optional().default('GET'),
       path: z.string().min(1),
-      body: z.any().optional(),
+      body: z.unknown().optional(),
     }),
   }),
   // Sugar syntax for common operations
@@ -330,16 +330,16 @@ export const ElasticsearchStepInputSchema = z.union([
     .object({
       index: z.string().optional(),
       id: z.string().optional(),
-      query: z.record(z.string(), z.any()).optional(),
-      body: z.record(z.string(), z.any()).optional(),
+      query: z.record(z.string(), z.unknown()).optional(),
+      body: z.record(z.string(), z.unknown()).optional(),
       size: z.number().optional(),
       from: z.number().optional(),
-      sort: z.array(z.any()).optional(),
+      sort: z.array(z.unknown()).optional(),
       _source: z.union([z.boolean(), z.array(z.string()), z.string()]).optional(),
-      aggs: z.record(z.string(), z.any()).optional(),
-      aggregations: z.record(z.string(), z.any()).optional(),
+      aggs: z.record(z.string(), z.unknown()).optional(),
+      aggregations: z.record(z.string(), z.unknown()).optional(),
     })
-    .and(z.record(z.string(), z.any())), // Allow additional properties for flexibility
+    .and(z.record(z.string(), z.unknown())), // Allow additional properties for flexibility
 ]);
 // Generic Elasticsearch step schema for backend validation
 export const ElasticsearchStepSchema = BaseStepSchema.extend({
@@ -373,7 +373,7 @@ export const KibanaStepInputSchema = z.union([
     request: z.object({
       method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']).optional().default('GET'),
       path: z.string().min(1),
-      body: z.any().optional(),
+      body: z.unknown().optional(),
       headers: z.record(z.string(), z.string()).optional(),
     }),
     fetcher: FetcherConfigSchema,
@@ -389,8 +389,8 @@ export const KibanaStepInputSchema = z.union([
       severity: z.enum(['low', 'medium', 'high', 'critical']).optional(),
       assignees: z.array(z.string()).optional(),
       owner: z.string().optional(),
-      connector: z.record(z.string(), z.any()).optional(),
-      settings: z.record(z.string(), z.any()).optional(),
+      connector: z.record(z.string(), z.unknown()).optional(),
+      settings: z.record(z.string(), z.unknown()).optional(),
       // Generic parameters
       id: z.string().optional(),
       case_id: z.string().optional(),
@@ -401,7 +401,7 @@ export const KibanaStepInputSchema = z.union([
       fetcher: FetcherConfigSchema,
       ...KibanaStepMetaSchema,
     })
-    .and(z.record(z.string(), z.any())), // Allow additional properties for flexibility
+    .and(z.record(z.string(), z.unknown())), // Allow additional properties for flexibility
 ]);
 export const KibanaStepSchema = BaseStepSchema.extend({
   type: z.string().refine((val) => val.startsWith('kibana.'), {
@@ -638,7 +638,7 @@ export const WorkflowExecuteAsyncStepOutputSchema = z.object({
 export const WorkflowOutputStepSchema = BaseStepSchema.extend({
   type: z.literal('workflow.output'),
   status: z.enum(['completed', 'cancelled', 'failed']).optional().default('completed'),
-  with: z.record(z.string(), z.any()),
+  with: z.record(z.string(), z.unknown()),
 }).extend(StepWithIfConditionSchema.shape);
 export type WorkflowOutputStep = z.infer<typeof WorkflowOutputStepSchema>;
 
@@ -659,7 +659,7 @@ export const WorkflowInputTypeEnum = z.enum(['string', 'number', 'boolean', 'cho
 const WorkflowInputBaseSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
-  default: z.any().optional(),
+  default: z.unknown().optional(),
   required: z.boolean().optional(),
 });
 
@@ -908,6 +908,7 @@ export type WorkflowDataContext = z.infer<typeof WorkflowDataContextSchema>;
 
 // Note: AlertSchema from '@kbn/alerts-as-data-utils' uses io-ts runtime types, not Zod.
 // Once a Zod-compatible version is available, we should import and use it instead.
+
 export const AlertSchema = z.object({
   _id: z.string(),
   _index: z.string(),
@@ -928,7 +929,10 @@ export const RuleSchema = z.object({
 
 /**
  * Alert-specific event properties. Only present when the workflow has an alert trigger.
+ * Uses z.any() for alerts union and params because alert shapes are defined by io-ts
+ * runtime types which don't have Zod equivalents yet.
  */
+
 export const AlertEventPropsSchema = z.object({
   alerts: z.array(z.union([AlertSchema, z.any()])),
   rule: RuleSchema,

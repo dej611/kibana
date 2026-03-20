@@ -83,13 +83,34 @@ export interface QueueMetrics {
   scheduleDelayMs: number | null;
 }
 
+/**
+ * Typed shape of the `context` bag stored on a workflow execution document.
+ * All fields are optional because the context is built incrementally.
+ * The index signature allows ad-hoc runtime fields (e.g. `workflowRunId`,
+ * `triggeredBy`) that are set by various execution paths.
+ */
+export interface WorkflowExecutionContextData {
+  /** Trigger event data. Shape varies by trigger type (alert, scheduled, custom, etc.). */
+  event?: Record<string, unknown>;
+  output?: Record<string, unknown> | null;
+  inputs?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  /** Deep-partial override for single-step test runs. Spread into the step context. */
+  contextOverride?: Record<string, unknown>;
+  resumeInput?: Record<string, unknown>;
+  parentWorkflowId?: string;
+  parentWorkflowExecutionId?: string;
+  parentDepth?: number;
+  [key: string]: unknown;
+}
+
 export interface EsWorkflowExecution {
   spaceId: string;
   id: string;
   workflowId: string;
   isTestRun: boolean;
   status: ExecutionStatus;
-  context: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  context: WorkflowExecutionContextData;
   workflowDefinition: WorkflowYaml;
   yaml: string;
   currentNodeId?: string; // The node currently being executed
@@ -202,7 +223,7 @@ export interface WorkflowExecutionDto {
   executedBy?: string; // User who executed the workflow
   triggeredBy?: string; // 'manual' or 'scheduled'
   yaml: string;
-  context?: Record<string, unknown>;
+  context?: WorkflowExecutionContextData;
   traceId?: string; // APM trace ID for observability
   entryTransactionId?: string; // APM root transaction ID for trace embeddable
 }

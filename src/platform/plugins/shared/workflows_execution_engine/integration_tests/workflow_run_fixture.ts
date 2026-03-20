@@ -151,7 +151,7 @@ export class WorkflowRunFixture {
   }: {
     workflowYaml: string;
     stepId: string;
-    contextOverride?: Record<string, any>;
+    contextOverride?: Record<string, unknown>;
   }) {
     // clean up before running workflow
     this.cleanup();

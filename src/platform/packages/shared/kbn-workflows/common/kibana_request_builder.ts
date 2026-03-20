@@ -7,12 +7,21 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { z } from '@kbn/zod/v4';
 import { getKibanaConnectors } from '../spec/kibana';
 import { KIBANA_TYPE_ALIASES } from '../spec/kibana/aliases';
 import type { RequestOptions } from '../types/latest';
 
 // Meta params that control step behavior but should never be forwarded as HTTP params
 const KIBANA_STEP_META_KEYS = new Set(['use_server_info', 'use_localhost', 'debug']);
+
+const RawRequestSchema = z.object({
+  method: z.string().default('GET'),
+  path: z.string().min(1),
+  body: z.record(z.string(), z.unknown()).optional(),
+  query: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+});
 
 /**
  * Builds a Kibana HTTP request from connector definitions
@@ -26,31 +35,25 @@ export function buildKibanaRequest(
 ): RequestOptions {
   // Support raw API format first - this always works
   if (params.request) {
-    const {
-      method = 'GET',
-      path,
-      body,
-      query,
-      headers,
-    } = params.request as Record<string, unknown>;
+    const parsed = RawRequestSchema.parse(params.request);
     return {
-      method: method as string,
-      path: path as string,
-      body: body as Record<string, unknown>,
-      query: query as Record<string, string>,
-      headers: headers as Record<string, string>,
+      method: parsed.method,
+      path: parsed.path,
+      body: parsed.body,
+      query: parsed.query,
+      headers: parsed.headers,
     };
   }
 
   // Special case: kibana.request type uses raw API format at top level
   if (actionType === 'kibana.request') {
-    const { method = 'GET', path, body, query, headers } = params;
+    const parsed = RawRequestSchema.parse(params);
     return {
-      method: method as string,
-      path: path as string,
-      body: body as Record<string, unknown>,
-      query: query as Record<string, string>,
-      headers: headers as Record<string, string>,
+      method: parsed.method,
+      path: parsed.path,
+      body: parsed.body,
+      query: parsed.query,
+      headers: parsed.headers,
     };
   }
 
@@ -61,8 +64,7 @@ export function buildKibanaRequest(
   const resolvedActionType = KIBANA_TYPE_ALIASES[actionType] ?? actionType;
 
   // Find the connector definition for this action type
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const connector = kibanaConnectors.find((c: any) => c.type === resolvedActionType);
+  const connector = kibanaConnectors.find((c) => c.type === resolvedActionType);
 
   if (connector && connector.patterns && connector.methods) {
     // Use explicit parameter type metadata (no hardcoded keys!)
@@ -197,7 +199,7 @@ function applySpacePrefix(path: string, spaceId?: string): string {
   // Only prepend space prefix for non-default spaces
   // Default space can use /api/... directly without the /s/default prefix
   if (spaceId && spaceId !== 'default') {
-    return `/s/${spaceId}${path}`;
+    return `/s/${encodeURIComponent(spaceId)}${path}`;
   }
   return path;
 }

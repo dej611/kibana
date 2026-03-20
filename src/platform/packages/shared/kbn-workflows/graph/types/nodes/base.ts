@@ -29,7 +29,7 @@ export const GraphNodeSchema = z.object({
 export const AtomicGraphNodeSchema = GraphNodeSchema.extend({
   id: z.string(),
   type: z.literal('atomic'),
-  configuration: z.any(),
+  configuration: z.record(z.string(), z.unknown()),
 });
 export type AtomicGraphNode = z.infer<typeof AtomicGraphNodeSchema>;
 

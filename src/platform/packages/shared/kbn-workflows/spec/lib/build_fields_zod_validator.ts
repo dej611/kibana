@@ -45,16 +45,16 @@ type RootSchemaType = Parameters<typeof resolveRef>[1];
  */
 export function convertJsonSchemaToZod(jsonSchema: JSONSchema7 | null | undefined): z.ZodType {
   if (!jsonSchema || typeof jsonSchema !== 'object') {
-    return z.any();
+    return z.unknown();
   }
   if (jsonSchema.$ref) {
-    return z.any();
+    return z.unknown();
   }
   const zodSchema = fromJSONSchema(jsonSchema as Record<string, unknown>);
   if (zodSchema !== undefined) {
     return enrichZodSchema(jsonSchema, zodSchema);
   }
-  return z.any();
+  return z.unknown();
 }
 
 /**
