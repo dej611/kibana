@@ -91,16 +91,18 @@ describe('WorkflowExecutionState', () => {
     // Reset mock and set a specific uuid for this test
 
     underTest.upsertStep(stepExecution);
-    expect(underTest.getLatestStepExecution('test-step-execution-id')).toEqual({
+    expect(underTest.getLatestStepExecution('test-step-execution-id')).toMatchObject({
       id: 'fake-id',
       workflowRunId: 'test-workflow-execution-id',
       workflowId: 'test-workflow-id',
       stepId: 'test-step-execution-id',
       status: ExecutionStatus.RUNNING,
       startedAt: '2025-08-05T20:00:00.000Z',
+      scopeStack: [],
+      topologicalIndex: 0,
       stepExecutionIndex: 0,
       globalExecutionIndex: 0,
-    } as EsWorkflowStepExecution);
+    });
     expect(stepExecutionRepository.bulkUpsert).not.toHaveBeenCalled();
   });
 

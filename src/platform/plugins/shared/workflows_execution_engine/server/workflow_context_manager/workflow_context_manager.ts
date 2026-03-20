@@ -269,10 +269,12 @@ export class WorkflowContextManager {
   }
 
   private enrichStepContextWithMockedData(stepContext: StepContext): void {
-    const contextOverride: StepContext | undefined =
-      this.workflowExecutionState.getWorkflowExecution().context?.contextOverride;
+    const rawOverride = this.workflowExecutionState.getWorkflowExecution().context?.contextOverride;
 
-    if (contextOverride) {
+    if (rawOverride) {
+      // contextOverride is stored as Record<string, unknown> in ES but structurally
+      // matches a deep-partial StepContext at runtime (populated by single-step test runs).
+      const contextOverride = rawOverride as Partial<StepContext>;
       stepContext.consts = {
         ...stepContext.consts,
         ...(contextOverride.consts || {}),
@@ -338,10 +340,10 @@ export class WorkflowContextManager {
 
     // When there is only one foreach frame (e.g. single-step run with subgraph), use
     // contextOverride.foreach as the parent so inner expressions like {{foreach.item}} resolve.
-    const contextOverride =
-      this.workflowExecutionState.getWorkflowExecution().context?.contextOverride;
-    if (foreachEntries.length === 1 && contextOverride?.foreach != null) {
-      stepContext.foreach = contextOverride.foreach;
+    const rawForeachOverride = this.workflowExecutionState.getWorkflowExecution().context
+      ?.contextOverride as Partial<StepContext> | undefined;
+    if (foreachEntries.length === 1 && rawForeachOverride?.foreach != null) {
+      stepContext.foreach = rawForeachOverride.foreach;
     }
 
     // Build foreach context in outer-to-inner order so inner expressions like

@@ -33,21 +33,16 @@ export function buildWorkflowContext(
   );
 
   // Extract parent workflow information from context if available
-  const parentWorkflowId = workflowExecution.context?.parentWorkflowId as string | undefined;
-  const parentWorkflowExecutionId = workflowExecution.context?.parentWorkflowExecutionId as
-    | string
-    | undefined;
-  const parentDepth = workflowExecution.context?.parentDepth as number | undefined;
+  const parentWorkflowId = workflowExecution.context?.parentWorkflowId;
+  const parentWorkflowExecutionId = workflowExecution.context?.parentWorkflowExecutionId;
+  const parentDepth = workflowExecution.context?.parentDepth;
 
   const inputsWithDefaults = applyInputDefaults(
-    workflowExecution.context?.inputs as Record<string, unknown> | undefined,
+    workflowExecution.context?.inputs,
     normalizedInputsSchema
   );
 
-  const metadata = (workflowExecution.metadata ??
-    (workflowExecution.context?.metadata as Record<string, unknown> | undefined)) as
-    | Record<string, unknown>
-    | undefined;
+  const metadata = workflowExecution.metadata ?? workflowExecution.context?.metadata;
 
   return {
     execution: {
@@ -66,9 +61,12 @@ export function buildWorkflowContext(
     },
     kibanaUrl,
     consts: workflowExecution.workflowDefinition?.consts ?? {},
-    event: workflowExecution.context?.event,
+    // The ES document stores event as Record<string, unknown>; the runtime context
+    // narrows it to the alert-event shape. The cast is safe because alert-triggered
+    // workflows always populate the full EventSchema fields.
+    event: workflowExecution.context?.event as WorkflowContext['event'],
     inputs: inputsWithDefaults,
-    output: workflowExecution.context?.output,
+    output: workflowExecution.context?.output as WorkflowContext['output'],
     now: new Date(),
     parent:
       parentWorkflowId && parentWorkflowExecutionId

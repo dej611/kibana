@@ -7,10 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// TODO: Remove eslint exceptions comments and fix the issues
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-
-import type { EsWorkflowExecution, EsWorkflowStepExecution } from '@kbn/workflows';
+import {
+  type EsWorkflowExecution,
+  type EsWorkflowStepExecution,
+  ExecutionStatus,
+} from '@kbn/workflows';
 import type { StepExecutionRepository } from '../repositories/step_execution_repository';
 import type { WorkflowExecutionRepository } from '../repositories/workflow_execution_repository';
 
@@ -86,8 +87,8 @@ export class WorkflowExecutionState {
     return (
       this.stepIdExecutionIdIndex
         .get(stepId)
-        ?.map((executionId) => this.stepExecutions.get(executionId) as EsWorkflowStepExecution) ??
-      []
+        ?.map((executionId) => this.stepExecutions.get(executionId))
+        .filter((step): step is EsWorkflowStepExecution => step !== undefined) ?? []
     );
   }
 
@@ -146,42 +147,64 @@ export class WorkflowExecutionState {
   }
 
   private createStep(step: Partial<EsWorkflowStepExecution>) {
-    const stepExecutions = this.getStepExecutionsByStepId(step.stepId as string) || [];
-    if (!stepExecutions.length) {
-      this.stepIdExecutionIdIndex.set(step.stepId as string, []);
+    const { id, stepId } = step;
+    if (!id || !stepId) {
+      throw new Error(
+        'WorkflowExecutionState: Step execution must have both id and stepId to be created'
+      );
     }
-    this.stepIdExecutionIdIndex.get(step.stepId as string)?.push(step.id as string);
+
+    const stepExecutions = this.getStepExecutionsByStepId(stepId) || [];
+    if (!stepExecutions.length) {
+      this.stepIdExecutionIdIndex.set(stepId, []);
+    }
+    this.stepIdExecutionIdIndex.get(stepId)?.push(id);
     const newStep: EsWorkflowStepExecution = {
+      scopeStack: [],
+      status: ExecutionStatus.PENDING,
+      startedAt: new Date().toISOString(),
+      topologicalIndex: 0,
       ...step,
-      id: step.id,
+      id,
+      stepId,
       globalExecutionIndex: this.stepExecutions.size,
       stepExecutionIndex: stepExecutions.length,
       workflowRunId: this.workflowExecution.id,
       workflowId: this.workflowExecution.workflowId,
       spaceId: this.workflowExecution.spaceId,
-    } as EsWorkflowStepExecution;
-    this.stepExecutions.set(step.id as string, newStep);
-    this.stepDocumentsChanges.set(step.id as string, newStep);
+    };
+    this.stepExecutions.set(id, newStep);
+    this.stepDocumentsChanges.set(id, newStep);
     // As we are creating a new step execution, we need to update the workflow execution with the new step execution ID
     // Due to the fact that execution and flushes are synchronous, it's safe to use incremental approach to update the step execution IDs
     // while still keeping the order of the step execution IDs according to the global execution index
     // At the same time it's safer because we don't rely on how many step executions are loaded in resume task.
     this.updateWorkflowExecution({
-      stepExecutionIds: [...(this.workflowExecution.stepExecutionIds || []), step.id as string],
+      stepExecutionIds: [...(this.workflowExecution.stepExecutionIds || []), id],
     });
   }
 
   private updateStep(step: Partial<EsWorkflowStepExecution>) {
-    const existingStep = this.stepExecutions.get(step.id!);
-    const updatedStep = {
+    const { id } = step;
+    if (!id) {
+      throw new Error('WorkflowExecutionState: Step execution must have an id to be updated');
+    }
+
+    const existingStep = this.stepExecutions.get(id);
+    if (!existingStep) {
+      throw new Error(`WorkflowExecutionState: Step execution ${id} not found for update`);
+    }
+
+    const updatedStep: EsWorkflowStepExecution = {
       ...existingStep,
       ...step,
-    } as EsWorkflowStepExecution;
-    this.stepExecutions.set(step.id!, updatedStep);
+      id,
+    };
+    this.stepExecutions.set(id, updatedStep);
     // Accumulate changes for the next flush — merge with any pending changes
     // ES partial update (doc_as_upsert) preserves fields not included in the update
-    this.stepDocumentsChanges.set(step.id as string, {
-      ...(this.stepDocumentsChanges.get(step.id as string) || {}),
+    this.stepDocumentsChanges.set(id, {
+      ...(this.stepDocumentsChanges.get(id) || {}),
       ...step,
     });
   }
@@ -192,7 +215,7 @@ export class WorkflowExecutionState {
       if (!this.stepIdExecutionIdIndex.has(step.stepId)) {
         this.stepIdExecutionIdIndex.set(step.stepId, []);
       }
-      this.stepIdExecutionIdIndex.get(step.stepId)!.push(step.id);
+      this.stepIdExecutionIdIndex.get(step.stepId)?.push(step.id);
     }
 
     for (const [stepId, stepExecutionIds] of this.stepIdExecutionIdIndex.entries()) {

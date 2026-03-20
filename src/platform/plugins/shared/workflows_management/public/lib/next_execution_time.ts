@@ -7,9 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any, complexity */
+/* eslint-disable complexity */
 
 import { Frequency, RRule, Weekday } from '@kbn/rrule';
+import type { ConstructorOptions as RRuleConstructorOptions } from '@kbn/rrule';
 import type { WorkflowExecutionHistoryModel } from '@kbn/workflows';
 import { parseIntervalString, type WorkflowTrigger } from '../../server/lib/schedule_utils';
 
@@ -45,7 +46,18 @@ export function calculateNextExecutionTime(
 /**
  * Calculates next execution time for RRule-based schedules
  */
-function calculateRRuleNextExecution(rruleConfig: any, lastRun: Date | null): Date | null {
+interface RRuleConfig {
+  freq?: string;
+  interval?: number;
+  tzid?: string;
+  dtstart?: string;
+  byhour?: number[];
+  byminute?: number[];
+  byweekday?: string[];
+  bymonthday?: number[];
+}
+
+function calculateRRuleNextExecution(rruleConfig: RRuleConfig, lastRun: Date | null): Date | null {
   try {
     // Validate required fields
     if (!rruleConfig.freq || !rruleConfig.interval || !rruleConfig.tzid) {
@@ -65,7 +77,7 @@ function calculateRRuleNextExecution(rruleConfig: any, lastRun: Date | null): Da
     }
 
     // Build the RRule options
-    const rruleOptions: any = {
+    const rruleOptions: Partial<RRuleConstructorOptions> = {
       freq,
       interval: rruleConfig.interval,
       tzid: rruleConfig.tzid,

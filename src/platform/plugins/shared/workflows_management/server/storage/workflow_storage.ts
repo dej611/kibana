@@ -68,14 +68,16 @@ export interface WorkflowProperties {
 export type WorkflowStorageSettings = typeof storageSettings;
 
 /**
- * The storage adapter generic constraint expects `tags` to be `string`
- * (matching the ES keyword mapping), but at application level `tags` is
- * `string[]` because ES keyword fields transparently accept arrays.
- * We use a storage-level type where `tags` is `string` to satisfy the
- * generic and expose the application type externally.
+ * Storage-level document type where array fields are typed as their ES scalar
+ * type (`keyword` → `string`). ES keyword fields transparently accept arrays,
+ * so the adapter stores `string[]` at runtime even though the generic expects `string`.
  */
-// @ts-expect-error type mismatch for tags type
-export type WorkflowStorage = StorageIndexAdapter<WorkflowStorageSettings, WorkflowProperties>;
+interface WorkflowStorageDocument extends Omit<WorkflowProperties, 'tags' | 'triggerTypes'> {
+  tags: string;
+  triggerTypes: string;
+}
+
+export type WorkflowStorage = StorageIndexAdapter<WorkflowStorageSettings, WorkflowStorageDocument>;
 
 export const createStorage = ({
   logger,
@@ -84,8 +86,7 @@ export const createStorage = ({
   logger: Logger;
   esClient: ElasticsearchClient;
 }): WorkflowStorage => {
-  // @ts-expect-error type mismatch for tags type
-  return new StorageIndexAdapter<WorkflowStorageSettings, WorkflowProperties>(
+  return new StorageIndexAdapter<WorkflowStorageSettings, WorkflowStorageDocument>(
     esClient,
     logger,
     storageSettings
