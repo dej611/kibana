@@ -8,6 +8,7 @@
  */
 
 import { graphlib } from '@dagrejs/dagre';
+import { isObject } from 'lodash';
 import {
   type ConnectorStep,
   DEFAULT_LOOP_MAX_ITERATIONS,
@@ -278,7 +279,12 @@ describe('convertToWorkflowGraph', () => {
         'testElasticsearchRawStep'
       ) as unknown as ElasticsearchGraphNode;
       expect(node.type).toBe('elasticsearch.search');
-      expect(node.configuration.with.request.path).toBe('/logs-*/_search');
+      const { request } = node.configuration.with;
+      if (isObject(request) && 'path' in request && typeof request?.path === 'string') {
+        expect(request.path).toBe('/logs-*/_search');
+      } else {
+        fail('Expected elasticsearch step configuration to have request property');
+      }
     });
   });
 
