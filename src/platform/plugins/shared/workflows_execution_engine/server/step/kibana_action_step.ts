@@ -7,12 +7,10 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// TODO: Remove eslint exceptions comments and fix the issues
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
+import type { JsonObject } from '@kbn/utility-types';
 import type { FetcherConfigSchema } from '@kbn/workflows';
 import { buildKibanaRequest } from '@kbn/workflows';
-import type { z } from '@kbn/zod/v4';
+import { z } from '@kbn/zod/v4';
 import { ResponseSizeLimitError } from './errors';
 import type { BaseStep, RunStepResult } from './node_implementation';
 import { BaseAtomicNodeImplementation } from './node_implementation';
@@ -21,10 +19,19 @@ import type { StepExecutionRuntime } from '../workflow_context_manager/step_exec
 import type { WorkflowExecutionRuntimeManager } from '../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../workflow_event_logger';
 
+/** Zod schema for validating raw Kibana request format. */
+const KibanaRawRequestSchema = z.object({
+  method: z.string().default('GET'),
+  path: z.string().min(1),
+  body: z.record(z.string(), z.unknown()).optional(),
+  query: z.record(z.string(), z.string()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+});
+
 // Extend BaseStep for kibana-specific properties
 export interface KibanaActionStep extends BaseStep {
   type: string; // e.g., 'kibana.createCase'
-  with?: Record<string, any>;
+  with?: Record<string, unknown>;
 }
 
 /**
@@ -33,7 +40,7 @@ export interface KibanaActionStep extends BaseStep {
  */
 type FetcherOptions = NonNullable<z.infer<typeof FetcherConfigSchema>> & {
   // Allow additional undici Agent options to be passed through
-  [key: string]: any;
+  [key: string]: unknown;
 };
 
 export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaActionStep> {
@@ -46,26 +53,30 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
     super(step, stepExecutionRuntime, undefined, workflowRuntime);
   }
 
-  public getInput() {
+  public getInput(): JsonObject {
     // Render inputs from 'with' - support both direct step.with and step.configuration.with
-    const stepWith = this.step.with || (this.step as any).configuration?.with || {};
-    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(stepWith);
+    const stepWith = this.step.with || this.step.configuration?.with || {};
+    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(
+      stepWith as JsonObject
+    );
   }
 
-  public async _run(withInputs?: any): Promise<RunStepResult> {
+  public async _run(withInputs?: JsonObject): Promise<RunStepResult> {
     // Support both direct step types (kibana.createCase) and atomic+configuration pattern
-    const stepType = this.step.type || (this.step as any).configuration?.type;
+    const configType = this.step.configuration?.type;
+    const stepType = this.step.type || (typeof configType === 'string' ? configType : '') || '';
     // Use rendered inputs if provided, otherwise fall back to raw step.with or configuration.with
-    const stepWith = withInputs || this.step.with || (this.step as any).configuration?.with;
+    const stepWith = (withInputs ||
+      this.step.with ||
+      this.step.configuration?.with ||
+      {}) as Record<string, unknown>;
     // Extract meta params (not forwarded as HTTP request params)
-    const {
-      use_server_info = false,
-      use_localhost = false,
-      debug = false,
-      ...httpParams
-    } = stepWith;
+    const useServerInfo = stepWith.use_server_info === true;
+    const useLocalhost = stepWith.use_localhost === true;
+    const debug = stepWith.debug === true;
+    const { use_server_info: _, use_localhost: __, debug: ___, ...httpParams } = stepWith;
 
-    if (use_server_info && use_localhost) {
+    if (useServerInfo && useLocalhost) {
       throw new Error(
         'Cannot set both use_server_info and use_localhost — they are mutually exclusive. ' +
           'Use use_server_info to route via the internal server address, or use_localhost to route via localhost:5601.'
@@ -84,7 +95,7 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
       });
 
       // Get Kibana base URL (respecting force flags) and authentication
-      const kibanaUrl = this.getKibanaUrl(use_server_info, use_localhost);
+      const kibanaUrl = this.getKibanaUrl(useServerInfo, useLocalhost);
       const authHeaders = this.getAuthHeaders();
 
       // Generic approach like Dev Console - just forward the request to Kibana
@@ -118,9 +129,9 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
         },
       });
 
-      const failure = this.handleFailure(stepWith, error);
+      const failure = this.handleFailure(stepWith as JsonObject, error);
       if (debug && failure.error) {
-        const kibanaUrl = this.getKibanaUrl(use_server_info, use_localhost);
+        const kibanaUrl = this.getKibanaUrl(useServerInfo, useLocalhost);
         failure.error = {
           type: failure.error.type,
           message: failure.error.message,
@@ -159,28 +170,44 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
     kibanaUrl: string,
     authHeaders: Record<string, string>,
     stepType: string,
-    params: any,
+    params: Record<string, unknown>,
     debug: boolean = false
-  ): Promise<any> {
+  ): Promise<unknown> {
     // Get current space ID from workflow context
     const spaceId = this.stepExecutionRuntime.contextManager.getContext().workflow.spaceId;
 
     // Extract and remove fetcher configuration from params (it's only for our internal use)
-    const { fetcher: fetcherOptions, ...cleanParams } = params;
+    const { fetcher: rawFetcherOptions, ...cleanParams } = params;
+    const fetcherOptions: FetcherOptions | undefined =
+      typeof rawFetcherOptions === 'object' && rawFetcherOptions !== null
+        ? (rawFetcherOptions as FetcherOptions)
+        : undefined;
 
     // Build the request config from either raw API format or connector definitions
     let requestConfig: {
       method: string;
       path: string;
-      body?: any;
-      query?: any;
+      body?: Record<string, unknown>;
+      query?: Record<string, string>;
       headers?: Record<string, string>;
     };
 
     if (cleanParams.request) {
       // Raw API format: { request: { method, path, body, query, headers } } - like Dev Console
-      const { method = 'GET', path, body, query, headers: customHeaders } = cleanParams.request;
-      requestConfig = { method, path, body, query, headers: { ...authHeaders, ...customHeaders } };
+      const {
+        method,
+        path,
+        body,
+        query: queryParam,
+        headers: customHeaders,
+      } = KibanaRawRequestSchema.parse(cleanParams.request);
+      requestConfig = {
+        method,
+        path,
+        body,
+        query: queryParam,
+        headers: { ...authHeaders, ...customHeaders },
+      };
     } else {
       // Use generated connector definitions to determine method and path (covers all 454+ Kibana APIs)
       const {
@@ -202,8 +229,12 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
     const result = await this.makeHttpRequest(kibanaUrl, requestConfig, fetcherOptions);
 
     if (debug) {
+      const resultObj = (typeof result === 'object' && result !== null ? result : {}) as Record<
+        string,
+        unknown
+      >;
       return {
-        ...result,
+        ...resultObj,
         _debug: {
           fullUrl: this.buildFullUrl(kibanaUrl, requestConfig.path, requestConfig.query),
           method: requestConfig.method,
@@ -227,12 +258,12 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
     requestConfig: {
       method: string;
       path: string;
-      body?: any;
-      query?: any;
+      body?: Record<string, unknown>;
+      query?: Record<string, string>;
       headers?: Record<string, string>;
     },
     fetcherOptions?: FetcherOptions
-  ): Promise<any> {
+  ): Promise<unknown> {
     const { method, path, body, query, headers = {} } = requestConfig;
 
     // Build full URL with query parameters
@@ -261,7 +292,7 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
         ...otherOptions
       } = fetcherOptions;
 
-      const agentOptions: any = { ...otherOptions };
+      const agentOptions: Record<string, unknown> = { ...otherOptions };
 
       // Map our options to undici Agent options
       if (skip_ssl_verification) {
@@ -275,7 +306,7 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
         agentOptions.keepAliveMaxTimeout = keep_alive ? 600000 : 0;
       }
 
-      (fetchOptions as any).dispatcher = new Agent(agentOptions);
+      Object.assign(fetchOptions, { dispatcher: new Agent(agentOptions) });
 
       // Handle redirect at fetch level
       if (follow_redirects === false) {
@@ -305,7 +336,7 @@ export class KibanaActionStepImpl extends BaseAtomicNodeImplementation<KibanaAct
    * Reads a fetch Response body as a stream with size enforcement.
    * Delegates to the shared stream reader with 'throw' behavior on size exceeded.
    */
-  private async readResponseBody(response: Response): Promise<any> {
+  private async readResponseBody(response: Response): Promise<unknown> {
     if (!response.body) {
       return null;
     }

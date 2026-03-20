@@ -6,11 +6,13 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+import type { JsonObject } from '@kbn/utility-types';
 import type { AtomicGraphNode } from '@kbn/workflows/graph';
 import type { ConnectorExecutor } from '../../connector_executor';
 import type { StepExecutionRuntime } from '../../workflow_context_manager/step_execution_runtime';
 import type { WorkflowExecutionRuntimeManager } from '../../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../../workflow_event_logger';
+import type { ConnectorStep } from '../connector_step';
 import { ConnectorStepImpl } from '../connector_step';
 import type { NodeImplementation } from '../node_implementation';
 
@@ -43,8 +45,27 @@ export class AtomicStepImpl implements NodeImplementation {
     // This class should decide what action to take based on action type
     // like connector, logger, http call, etc.
     // for now it only calls ConnectorStepImpl
+
+    // Build a proper ConnectorStep from the graph node fields rather than
+    // casting the unrelated configuration record.
+    const rawWith = this.node.configuration.with;
+    const rawConnectorId = this.node.configuration['connector-id'];
+    const rawMaxStepSize = this.node.configuration['max-step-size'];
+
+    const connectorStep: ConnectorStep = {
+      name: this.node.stepId,
+      type: this.node.stepType,
+      spaceId: this.stepExecutionRuntime.contextManager.getContext().workflow.spaceId,
+      'connector-id': typeof rawConnectorId === 'string' ? rawConnectorId : undefined,
+      with:
+        typeof rawWith === 'object' && rawWith !== null && !Array.isArray(rawWith)
+          ? (rawWith as JsonObject)
+          : undefined,
+      'max-step-size': typeof rawMaxStepSize === 'string' ? rawMaxStepSize : undefined,
+    };
+
     await new ConnectorStepImpl(
-      this.node.configuration,
+      connectorStep,
       this.stepExecutionRuntime,
       this.connectorExecutor,
       this.workflowState,

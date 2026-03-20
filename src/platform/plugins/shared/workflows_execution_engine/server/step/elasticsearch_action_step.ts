@@ -7,12 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// TODO: Remove eslint exceptions comments
-/* eslint-disable @typescript-eslint/no-explicit-any,  */
-
 import type { ElasticsearchClient } from '@kbn/core/server';
 import { isMaximumResponseSizeExceededError } from '@kbn/es-errors';
+import type { JsonObject } from '@kbn/utility-types';
 import { buildElasticsearchRequest } from '@kbn/workflows';
+import { z } from '@kbn/zod/v4';
 import { formatBytes, ResponseSizeLimitError } from './errors';
 import type { BaseStep, RunStepResult } from './node_implementation';
 import { BaseAtomicNodeImplementation } from './node_implementation';
@@ -20,10 +19,36 @@ import type { StepExecutionRuntime } from '../workflow_context_manager/step_exec
 import type { WorkflowExecutionRuntimeManager } from '../workflow_context_manager/workflow_execution_runtime_manager';
 import type { IWorkflowEventLogger } from '../workflow_event_logger';
 
+/** Zod schema for validating raw ES request format (like Dev Console). */
+const EsRawRequestSchema = z.object({
+  method: z.string().default('GET'),
+  path: z.string().min(1),
+  body: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * Lightweight schema for parsing an ES search response in the debug/error path.
+ * Uses `.safeParse` so a malformed response never crashes error handling.
+ */
+const EsSearchDebugResponseSchema = z.object({
+  hits: z.object({
+    total: z.union([z.object({ value: z.number() }), z.number()]),
+    hits: z.array(z.unknown()),
+  }),
+});
+
+/** Zod schema for validating top-level elasticsearch.request format. */
+const EsTopLevelRequestSchema = z.object({
+  method: z.string().default('GET'),
+  path: z.string().min(1),
+  body: z.record(z.string(), z.unknown()).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+});
+
 // Extend BaseStep for elasticsearch-specific properties
 export interface ElasticsearchActionStep extends BaseStep {
   type: string; // e.g., 'elasticsearch.search.query'
-  with?: Record<string, any>;
+  with?: Record<string, unknown>;
 }
 
 export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<ElasticsearchActionStep> {
@@ -36,18 +61,26 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
     super(step, contextManager, undefined, workflowRuntime);
   }
 
-  public getInput() {
+  public getInput(): JsonObject {
     // Render inputs from 'with' - support both direct step.with and step.configuration.with
-    const stepWith = this.step.with || (this.step as any).configuration?.with || {};
-    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(stepWith);
+    const stepWith = this.step.with || this.step.configuration?.with || {};
+    return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(
+      stepWith as JsonObject
+    );
   }
 
-  public async _run(withInputs?: any): Promise<RunStepResult> {
+  public async _run(withInputs?: JsonObject): Promise<RunStepResult> {
     try {
       // Support both direct step types (elasticsearch.search.query) and atomic+configuration pattern
-      const stepType = this.step.type || (this.step as any).configuration?.type;
+      const configType = this.step.configuration?.type;
+      const stepType = this.step.type || (typeof configType === 'string' ? configType : undefined);
       // Use rendered inputs if provided, otherwise fall back to raw step.with or configuration.with
-      const stepWith = withInputs || this.step.with || (this.step as any).configuration?.with;
+      const rawConfigWith = this.step.configuration?.with;
+      const configWith =
+        typeof rawConfigWith === 'object' && rawConfigWith !== null && !Array.isArray(rawConfigWith)
+          ? (rawConfigWith as Record<string, unknown>)
+          : undefined;
+      const stepWith = withInputs || this.step.with || configWith;
 
       this.workflowLogger.logInfo(`Executing Elasticsearch action: ${stepType}`, {
         event: { action: 'elasticsearch-action', outcome: 'unknown' },
@@ -63,9 +96,14 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
       const esClient = this.stepExecutionRuntime.contextManager.getEsClientAsUser();
 
       // Generic approach like Dev Console - just forward the request to ES
-      const result = await this.executeElasticsearchRequest(esClient, stepType, stepWith);
+      const resolvedStepType = stepType ?? this.step.type;
+      const result = await this.executeElasticsearchRequest(
+        esClient,
+        resolvedStepType,
+        stepWith ?? {}
+      );
 
-      this.workflowLogger.logInfo(`Elasticsearch action completed: ${stepType}`, {
+      this.workflowLogger.logInfo(`Elasticsearch action completed: ${resolvedStepType}`, {
         event: { action: 'elasticsearch-action', outcome: 'success' },
         tags: ['elasticsearch', 'internal-action'],
         labels: {
@@ -77,8 +115,14 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
 
       return { input: stepWith, output: result, error: undefined };
     } catch (error) {
-      const stepType = (this.step as any).configuration?.type || this.step.type;
-      const stepWith = withInputs || this.step.with || (this.step as any).configuration?.with;
+      const errorConfigType = this.step.configuration?.type;
+      const errorStepType =
+        (typeof errorConfigType === 'string' ? errorConfigType : undefined) || this.step.type;
+      const rawErrorWith = withInputs || this.step.with || this.step.configuration?.with;
+      const errorStepWith =
+        typeof rawErrorWith === 'object' && rawErrorWith !== null && !Array.isArray(rawErrorWith)
+          ? (rawErrorWith as Record<string, unknown>)
+          : undefined;
 
       // Map ES transport maxResponseSize exceeded to our ResponseSizeLimitError
       if (isMaximumResponseSizeExceededError(error)) {
@@ -89,14 +133,29 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
         // Run a lightweight query to help the user estimate the needed limit
         try {
           const esClient = this.stepExecutionRuntime.contextManager.getEsClientAsUser();
+
+          // Extract index, query, and size from the step inputs (supports both raw and sugar formats)
+          const rawRequest =
+            typeof errorStepWith?.request === 'object' && errorStepWith.request !== null
+              ? (errorStepWith.request as Record<string, unknown>)
+              : undefined;
+          const rawBody =
+            typeof errorStepWith?.body === 'object' && errorStepWith.body !== null
+              ? (errorStepWith.body as Record<string, unknown>)
+              : undefined;
           const index =
-            stepWith?.index || stepWith?.request?.path?.replace(/^\//, '').split('/')[0];
-          const query = stepWith?.query || stepWith?.body?.query || stepWith?.request?.body?.query;
-          const requestedSize = Number(stepWith?.size ?? stepWith?.body?.size ?? 0);
+            errorStepWith?.index || rawRequest?.path?.toString().replace(/^\//, '').split('/')[0];
+          const query =
+            errorStepWith?.query ||
+            rawBody?.query ||
+            (typeof rawRequest?.body === 'object' && rawRequest.body !== null
+              ? (rawRequest.body as Record<string, unknown>).query
+              : undefined);
+          const requestedSize = Number(errorStepWith?.size ?? rawBody?.size ?? 0);
 
           if (index) {
             // Fetch 1 doc + count to estimate full response size
-            const sampleResult: any = await esClient.transport.request({
+            const sampleRaw = await esClient.transport.request({
               method: 'POST',
               path: `/${index}/_search`,
               body: {
@@ -105,12 +164,18 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
                 ...(query ? { query } : {}),
               },
             });
-            const totalHits = sampleResult?.hits?.total?.value ?? sampleResult?.hits?.total ?? 0;
-            const sampleDoc = sampleResult?.hits?.hits?.[0];
+            const parsed = EsSearchDebugResponseSchema.safeParse(sampleRaw);
+            if (!parsed.success) {
+              throw new Error('Unexpected ES response shape in debug query');
+            }
+            const { hits } = parsed.data;
+            const totalHitsNum = typeof hits.total === 'number' ? hits.total : hits.total.value;
+            const sampleDoc = hits.hits[0];
             const sampleDocBytes = sampleDoc
               ? Buffer.byteLength(JSON.stringify(sampleDoc), 'utf8')
               : 0;
-            const docsToFetch = requestedSize > 0 ? Math.min(totalHits, requestedSize) : totalHits;
+            const docsToFetch =
+              requestedSize > 0 ? Math.min(totalHitsNum, requestedSize) : totalHitsNum;
             const estimatedFullResponseBytes =
               sampleDocBytes > 0
                 ? sampleDocBytes * docsToFetch + 500 // 500 bytes for response envelope
@@ -118,7 +183,7 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
 
             if (sizeLimitError.details) {
               sizeLimitError.details._debug = {
-                totalMatchingDocs: totalHits,
+                totalMatchingDocs: totalHitsNum,
                 requestedSize: requestedSize || '?',
                 avgDocSize: sampleDocBytes,
                 docsToFetch,
@@ -129,7 +194,9 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
                   ? `${formatBytes(Math.ceil(estimatedFullResponseBytes * 1.1))}` // 10% headroom
                   : undefined,
                 suggestion:
-                  `Query matches ${totalHits} docs (avg ~${formatBytes(sampleDocBytes)} each), ` +
+                  `Query matches ${totalHitsNum} docs (avg ~${formatBytes(
+                    sampleDocBytes
+                  )} each), ` +
                   `step requests ${requestedSize || 'all'}. ${
                     estimatedFullResponseBytes
                       ? `Estimated full response: ~${formatBytes(estimatedFullResponseBytes)}. `
@@ -151,52 +218,56 @@ export class ElasticsearchActionStepImpl extends BaseAtomicNodeImplementation<El
           // Best-effort -- don't fail the error handling if the debug query fails
           if (sizeLimitError.details) {
             sizeLimitError.details._debug = {
-              stepType,
-              query: stepWith,
+              stepType: errorStepType,
+              query: errorStepWith,
             };
           }
         }
         this.workflowLogger.logError(
-          `Elasticsearch action response size exceeded: ${stepType}`,
+          `Elasticsearch action response size exceeded: ${errorStepType}`,
           sizeLimitError,
           {
             event: { action: 'elasticsearch-action', outcome: 'failure' },
             tags: ['elasticsearch', 'internal-action', 'error', 'response-size-exceeded'],
-            labels: { step_type: stepType, action_type: 'elasticsearch' },
+            labels: { step_type: errorStepType, action_type: 'elasticsearch' },
           }
         );
-        return { input: stepWith, output: undefined, error: sizeLimitError };
+        return { input: errorStepWith, output: undefined, error: sizeLimitError };
       }
 
-      this.workflowLogger.logError(`Elasticsearch action failed: ${stepType}`, error, {
-        event: { action: 'elasticsearch-action', outcome: 'failure' },
-        tags: ['elasticsearch', 'internal-action', 'error'],
-        labels: {
-          step_type: stepType,
-          connector_type: stepType,
-          action_type: 'elasticsearch',
-        },
-      });
-      return this.handleFailure(stepWith, error);
+      this.workflowLogger.logError(
+        `Elasticsearch action failed: ${errorStepType}`,
+        error as Error,
+        {
+          event: { action: 'elasticsearch-action', outcome: 'failure' },
+          tags: ['elasticsearch', 'internal-action', 'error'],
+          labels: {
+            step_type: errorStepType,
+            connector_type: errorStepType,
+            action_type: 'elasticsearch',
+          },
+        }
+      );
+      return this.handleFailure(errorStepWith as JsonObject | undefined, error);
     }
   }
 
   private async executeElasticsearchRequest(
     esClient: ElasticsearchClient,
     stepType: string,
-    params: any
-  ): Promise<any> {
+    params: Record<string, unknown>
+  ): Promise<unknown> {
     const maxResponseBytes = this.getMaxResponseBytes();
     const transportOptions = maxResponseBytes > 0 ? { maxResponseSize: maxResponseBytes } : {};
 
     // Support both raw API format and connector-driven syntax
     if (params.request) {
       // Raw API format: { request: { method, path, body } } - like Dev Console
-      const { method = 'GET', path, body } = params.request;
+      const { method, path, body } = EsRawRequestSchema.parse(params.request);
       return esClient.transport.request({ method, path, body }, transportOptions);
     } else if (stepType === 'elasticsearch.request') {
       // Special case: elasticsearch.request type uses raw API format at top level
-      const { method = 'GET', path, body, headers } = params;
+      const { method, path, body, headers } = EsTopLevelRequestSchema.parse(params);
       return esClient.transport.request(
         { method, path, body },
         { ...transportOptions, ...(headers ? { headers } : {}) }

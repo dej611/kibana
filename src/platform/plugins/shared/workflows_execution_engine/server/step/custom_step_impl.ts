@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import type { JsonObject } from '@kbn/utility-types';
 import type { AtomicGraphNode } from '@kbn/workflows/graph';
 import { ExecutionError } from '@kbn/workflows/server';
 import type { ServerStepDefinition, StepHandlerContext } from '@kbn/workflows-extensions/server';
@@ -41,7 +42,10 @@ export class CustomStepImpl extends BaseAtomicNodeImplementation<BaseStep> {
       name: node.stepId,
       type: node.stepType,
       spaceId: '',
-      'max-step-size': node.configuration['max-step-size'],
+      'max-step-size':
+        typeof node.configuration['max-step-size'] === 'string'
+          ? node.configuration['max-step-size']
+          : undefined,
     };
     super(baseStep, stepExecutionRuntime, connectorExecutor, workflowExecutionRuntime);
 
@@ -56,8 +60,12 @@ export class CustomStepImpl extends BaseAtomicNodeImplementation<BaseStep> {
   /**
    * Get and validate the input for this step
    */
-  public override getInput(): unknown {
-    const withData = this.node.configuration.with || {};
+  public override getInput(): JsonObject {
+    const rawWith = this.node.configuration.with;
+    const withData: JsonObject =
+      typeof rawWith === 'object' && rawWith !== null && !Array.isArray(rawWith)
+        ? (rawWith as JsonObject)
+        : {};
     return this.stepExecutionRuntime.contextManager.renderValueAccordingToContext(withData);
   }
 

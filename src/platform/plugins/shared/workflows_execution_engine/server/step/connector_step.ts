@@ -7,10 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// TODO: Remove eslint exceptions comments and fix the issues
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 import type { ActionTypeExecutorResult } from '@kbn/actions-plugin/common';
+import type { JsonObject } from '@kbn/utility-types';
 import { SystemConnectorsMap } from '@kbn/workflows/common/constants';
 import { ExecutionError } from '@kbn/workflows/server';
 import { ResponseSizeLimitError } from './errors';
@@ -33,7 +31,7 @@ const CONNECTOR_TYPES_WITH_LAYER_1 = new Set<string>(['http']);
 // Extend BaseStep for connector-specific properties
 export interface ConnectorStep extends BaseStep {
   'connector-id'?: string;
-  with?: Record<string, any>;
+  with?: JsonObject;
 }
 
 export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorStep> {
@@ -53,7 +51,9 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
     );
   }
 
-  public async _run(withInputs?: any): Promise<RunStepResult> {
+  public async _run(withInputs?: JsonObject): Promise<RunStepResult> {
+    const inputs = withInputs ?? {};
+
     try {
       const step = this.step;
 
@@ -65,25 +65,26 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
 
       // TODO: remove this once we have a proper connector executor/step for console
       if (step.type === 'console') {
-        this.workflowLogger.logInfo(`Log from step ${step.name}: \n${withInputs.message}`, {
+        const rawMessage = inputs.message;
+        const safeMessage =
+          typeof rawMessage === 'string' ? rawMessage : JSON.stringify(rawMessage ?? '');
+        this.workflowLogger.logInfo(`Log from step ${step.name}: \n${safeMessage}`, {
           workflow: { step_id: step.name },
           event: { action: 'log', outcome: 'success' },
           tags: ['console', 'log'],
         });
         return {
-          input: withInputs,
-          output: withInputs.message,
+          input: inputs,
+          output: safeMessage,
           error: undefined,
         };
       }
 
-      // Build final rendered inputs
-      let renderedInputs = isSubAction
-        ? {
-            subActionParams: withInputs,
-            subAction: subActionName,
-          }
-        : withInputs;
+      // Build final rendered inputs — typed as Record<string, unknown> since
+      // the connector executor accepts arbitrary key-value params.
+      let renderedInputs: Record<string, unknown> = isSubAction
+        ? { subActionParams: inputs, subAction: subActionName }
+        : { ...inputs };
 
       // For connector types with Layer 1 support, inject max_content_length into the fetcher config
       // so axios can abort mid-stream (Layer 1 OOM prevention).
@@ -91,10 +92,14 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
       if (CONNECTOR_TYPES_WITH_LAYER_1.has(rawType)) {
         const maxBytes = this.getMaxResponseBytes();
         if (maxBytes > 0) {
+          const existingFetcher =
+            typeof renderedInputs.fetcher === 'object' && renderedInputs.fetcher !== null
+              ? renderedInputs.fetcher
+              : {};
           renderedInputs = {
             ...renderedInputs,
             fetcher: {
-              ...(renderedInputs.fetcher || {}),
+              ...existingFetcher,
               max_content_length: maxBytes,
             },
           };
@@ -139,7 +144,7 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
 
       if (status === 'ok') {
         return {
-          input: withInputs,
+          input: inputs,
           output: data,
           error: undefined,
         };
@@ -149,14 +154,14 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
         if (errorMsg.includes('maxContentLength')) {
           const limitBytes = this.getMaxResponseBytes();
           return {
-            input: withInputs,
+            input: inputs,
             output: undefined,
             error: new ResponseSizeLimitError(limitBytes, step.name),
           };
         }
 
         return {
-          input: withInputs,
+          input: inputs,
           output: undefined,
           error: new ExecutionError({
             type: 'ConnectorExecutionError',
@@ -165,7 +170,7 @@ export class ConnectorStepImpl extends BaseAtomicNodeImplementation<ConnectorSte
         };
       }
     } catch (error) {
-      return this.handleFailure(withInputs, error);
+      return this.handleFailure(inputs, error);
     }
   }
 }

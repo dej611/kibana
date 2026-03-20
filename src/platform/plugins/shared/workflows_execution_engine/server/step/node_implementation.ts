@@ -7,12 +7,8 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-// TODO: Remove eslint exceptions comments and fix the issues
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-// Import specific step types as needed from schema
-// import { evaluate } from '@marcbachmann/cel-js'
 import apm from 'elastic-apm-node';
+import type { JsonObject } from '@kbn/utility-types';
 import type { SerializedError } from '@kbn/workflows';
 import { ExecutionError } from '@kbn/workflows/server';
 import {
@@ -26,13 +22,18 @@ import type { StepExecutionRuntime } from '../workflow_context_manager/step_exec
 import type { WorkflowExecutionRuntimeManager } from '../workflow_context_manager/workflow_execution_runtime_manager';
 
 export interface RunStepResult {
-  input: any;
-  output: any;
+  input: unknown;
+  output: unknown;
   error: SerializedError | undefined;
 }
 
-// TODO: To remove it and replace with AtomicGraphNode
-// Base step interface
+/**
+ * Base step interface.
+ * TODO: Replace with GraphNodeUnion from @kbn/workflows/graph to unify the
+ * step and graph-node models. Until then, optional graph-node fields
+ * (`stepId`, `configuration`) are declared here so subclasses can access
+ * them without casting.
+ */
 export interface BaseStep {
   name: string;
   type: string;
@@ -41,6 +42,10 @@ export interface BaseStep {
   timeout?: number;
   'max-step-size'?: string;
   spaceId: string;
+  /** Graph node identifier — present when the factory passes a graph node. */
+  stepId?: string;
+  /** Graph node configuration — carries step-specific settings (type, with, …). */
+  configuration?: Record<string, unknown>;
 }
 
 export type StepDefinition = BaseStep;
@@ -125,9 +130,13 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
     // graph node directly (e.g. for ES/Kibana steps), bridge the gap so that
     // error messages and APM spans always have a human-readable step name.
     if (!this.step.name) {
-      const graphStepId = (step as any).stepId;
-      if (graphStepId) {
-        (this.step as any).name = graphStepId;
+      if (step.stepId) {
+        this.step.name = step.stepId;
+      } else {
+        throw new ExecutionError({
+          type: 'InvalidStepConfiguration',
+          message: 'Step must have a name or stepId for identification',
+        });
       }
     }
 
@@ -135,9 +144,9 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
     // This ensures every step respects the YAML limit regardless of how
     // the subclass constructs its step object.
     if (!this.step['max-step-size']) {
-      const nodeConfig = (stepExecutionRuntime.node as any)?.configuration;
-      if (nodeConfig?.['max-step-size']) {
-        this.step['max-step-size'] = nodeConfig['max-step-size'];
+      const configMaxStepSize = step.configuration?.['max-step-size'];
+      if (typeof configMaxStepSize === 'string') {
+        this.step['max-step-size'] = configMaxStepSize;
       }
     }
   }
@@ -146,7 +155,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
     return this.step.name;
   }
 
-  public getInput(): any {
+  public getInput(): JsonObject {
     return {};
   }
 
@@ -157,7 +166,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
       return;
     }
 
-    let input: any;
+    let input: JsonObject | undefined;
     this.stepExecutionRuntime.startStep();
     // flush event logs after start step
     await this.stepExecutionRuntime.flushEventLogs();
@@ -172,7 +181,9 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
 
     try {
       input = await this.getInput();
-      this.stepExecutionRuntime.setInput(input);
+      if (input !== undefined) {
+        this.stepExecutionRuntime.setInput(input);
+      }
       const result = await this._run(input);
 
       // Layer 2: Enforce output size limit before storing in execution state.
@@ -203,7 +214,13 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
           stepSpan.setOutcome('failure');
         }
       } else {
-        this.stepExecutionRuntime.finishStep(result.output);
+        const output =
+          typeof result.output === 'object' &&
+          result.output !== null &&
+          !Array.isArray(result.output)
+            ? (result.output as Record<string, unknown>)
+            : undefined;
+        this.stepExecutionRuntime.finishStep(output);
         if (stepSpan) {
           stepSpan.setOutcome('success');
         }
@@ -227,7 +244,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
   }
 
   // Subclasses implement this to execute the step logic
-  protected abstract _run(input?: any): Promise<RunStepResult>;
+  protected abstract _run(input?: JsonObject): Promise<RunStepResult>;
 
   /**
    * Resolves the maximum step size in bytes.
@@ -254,10 +271,7 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
       // 3. Plugin config default (from kibana.yml)
       const pluginConfig = this.stepExecutionRuntime.contextManager.getDependencies().config;
       if (pluginConfig?.maxResponseSize) {
-        const configValue = pluginConfig.maxResponseSize;
-        return typeof configValue === 'number'
-          ? configValue
-          : (configValue as any).getValueInBytes();
+        return pluginConfig.maxResponseSize.getValueInBytes();
       }
 
       // 4. Hardcoded fallback
@@ -268,11 +282,11 @@ export abstract class BaseAtomicNodeImplementation<TStep extends BaseStep>
   }
 
   // Helper for handling on-failure, retries, etc.
-  protected handleFailure(input: any, error: any): RunStepResult {
+  protected handleFailure(input: JsonObject | undefined, error: unknown): RunStepResult {
     return {
       input,
       output: undefined,
-      error: ExecutionError.fromError(error),
+      error: ExecutionError.fromError(error instanceof Error ? error : new Error(String(error))),
     };
   }
 }
