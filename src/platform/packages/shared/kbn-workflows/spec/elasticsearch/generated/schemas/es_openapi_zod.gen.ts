@@ -2,12 +2,13 @@
 
 import { z } from '@kbn/zod/v4';
 
-export const types_id = z.string();
+export const types_id = z.string().register(z.globalRegistry, { id: 'types_id' });
 
 /**
  * Time unit for milliseconds
  */
 export const types_unit_millis = z.number().register(z.globalRegistry, {
+    id: 'types_unit_millis',
     description: 'Time unit for milliseconds'
 });
 
@@ -21,27 +22,28 @@ export const types_duration = z.union([
     z.string(),
     z.enum(['-1']),
     z.enum(['0'])
-]);
+]).register(z.globalRegistry, { id: 'types_duration' });
 
-export const types_ulong = z.number();
+export const types_ulong = z.number().register(z.globalRegistry, { id: 'types_ulong' });
 
 export const types_byte_size = z.union([
     z.number(),
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'types_byte_size' });
 
 /**
  * Path to field or array of paths. Some API's support wildcards in the path to select multiple fields.
  */
 export const types_field = z.string().register(z.globalRegistry, {
+    id: 'types_field',
     description: 'Path to field or array of paths. Some API\'s support wildcards in the path to select multiple fields.'
 });
 
-export const types_uint = types_ulong;
+export const types_uint = z.number().register(z.globalRegistry, { id: 'types_uint' });
 
-export const types_epoch_time_unit_millis = types_duration_value_unit_millis;
+export const types_epoch_time_unit_millis = types_unit_millis;
 
-export const types_version_string = types_id;
+export const types_version_string = z.string().register(z.globalRegistry, { id: 'types_version_string' });
 
 /**
  * A date and time, either as a string whose format can depend on the context (defaulting to ISO 8601), or a
@@ -51,13 +53,13 @@ export const types_version_string = types_id;
 export const types_date_time = z.union([
     z.string(),
     types_epoch_time_unit_millis
-]);
+]).register(z.globalRegistry, { id: 'types_date_time' });
 
-export const types_sequence_number = types_ulong;
+export const types_sequence_number = z.number().register(z.globalRegistry, { id: 'types_sequence_number' });
 
-export const types_metadata = z.record(z.string(), z.record(z.string(), z.unknown()));
+export const types_metadata = z.record(z.string(), z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_metadata' });
 
-export const types_search_type = z.enum(['query_then_fetch', 'dfs_query_then_fetch']);
+export const types_search_type = z.enum(['query_then_fetch', 'dfs_query_then_fetch']).register(z.globalRegistry, { id: 'types_search_type' });
 
 export const types_expand_wildcard = z.enum([
     'all',
@@ -65,31 +67,31 @@ export const types_expand_wildcard = z.enum([
     'closed',
     'hidden',
     'none'
-]);
+]).register(z.globalRegistry, { id: 'types_expand_wildcard' });
 
 export const types_expand_wildcards = z.union([
     types_expand_wildcard,
     z.array(types_expand_wildcard)
-]);
+]).register(z.globalRegistry, { id: 'types_expand_wildcards' });
 
 export const types_query_dsl_query_base = z.object({
     boost: z.optional(z.number().register(z.globalRegistry, {
         description: 'Floating point number used to decrease or increase the relevance scores of the query.\nBoost values are relative to the default value of 1.0.\nA boost value between 0 and 1.0 decreases the relevance score.\nA value greater than 1.0 increases the relevance score.'
     })),
     _name: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_query_base' });
 
 export const types_query_dsl_type_query = types_query_dsl_query_base.and(z.object({
     value: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_type_query' });
 
 export const types_query_dsl_wrapper_query = types_query_dsl_query_base.and(z.object({
     query: z.string().register(z.globalRegistry, {
         description: 'A base64 encoded query.\nThe binary data format can be any of JSON, YAML, CBOR or SMILE encodings'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_wrapper_query' });
 
-export const types_multi_term_query_rewrite = types_id;
+export const types_multi_term_query_rewrite = z.string().register(z.globalRegistry, { id: 'types_multi_term_query_rewrite' });
 
 export const types_query_dsl_wildcard_query = types_query_dsl_query_base.and(z.object({
     case_insensitive: z.optional(z.boolean().register(z.globalRegistry, {
@@ -102,7 +104,7 @@ export const types_query_dsl_wildcard_query = types_query_dsl_query_base.and(z.o
     wildcard: z.optional(z.string().register(z.globalRegistry, {
         description: 'Wildcard pattern for terms you wish to find in the provided field. Required, when value is not set.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_wildcard_query' });
 
 export const types_token_pruning_config = z.object({
     tokens_freq_ratio_threshold: z.optional(z.number().register(z.globalRegistry, {
@@ -114,7 +116,7 @@ export const types_token_pruning_config = z.object({
     only_score_pruned_tokens: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Whether to only score pruned tokens, vs only scoring kept tokens.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_token_pruning_config' });
 
 export const types_query_dsl_weighted_tokens_query = types_query_dsl_query_base.and(z.object({
     tokens: z.union([
@@ -122,7 +124,7 @@ export const types_query_dsl_weighted_tokens_query = types_query_dsl_query_base.
         z.array(z.record(z.string(), z.number()))
     ]),
     pruning_config: z.optional(types_token_pruning_config)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_weighted_tokens_query' });
 
 export const types_query_dsl_text_expansion_query = types_query_dsl_query_base.and(z.object({
     model_id: z.string().register(z.globalRegistry, {
@@ -132,7 +134,7 @@ export const types_query_dsl_text_expansion_query = types_query_dsl_query_base.a
         description: 'The query text'
     }),
     pruning_config: z.optional(types_token_pruning_config)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_text_expansion_query' });
 
 export const types_script_language = z.union([
     z.enum([
@@ -142,12 +144,12 @@ export const types_script_language = z.union([
         'java'
     ]),
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'types_script_language' });
 
 export const types_mapping_runtime_field_fetch_fields = z.object({
     field: types_field,
     format: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_mapping_runtime_field_fetch_fields' });
 
 export const types_mapping_runtime_field_type = z.enum([
     'boolean',
@@ -160,32 +162,32 @@ export const types_mapping_runtime_field_type = z.enum([
     'keyword',
     'long',
     'lookup'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_runtime_field_type' });
 
 export const types_mapping_composite_sub_field = z.object({
     type: types_mapping_runtime_field_type
-});
+}).register(z.globalRegistry, { id: 'types_mapping_composite_sub_field' });
 
-export const types_index_name = types_id;
+export const types_index_name = z.string().register(z.globalRegistry, { id: 'types_index_name' });
 
 export const global_search_types_point_in_time_reference = z.object({
     id: types_id,
     keep_alive: z.optional(types_duration)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_point_in_time_reference' });
 
 export const global_search_types_suggester = z.object({
     text: z.optional(z.string().register(z.globalRegistry, {
         description: 'Global suggest text, to avoid repetition when the same text is used in several suggesters'
     }))
-});
+}).register(z.globalRegistry, { id: 'global_search_types_suggester' });
 
 export const types_sliced_scroll = z.object({
     field: z.optional(types_field),
     id: types_id,
     max: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_sliced_scroll' });
 
-export const types_diversify_retriever_types = z.enum(['mmr']);
+export const types_diversify_retriever_types = z.enum(['mmr']).register(z.globalRegistry, { id: 'types_diversify_retriever_types' });
 
 export const types_lookup_query_vector_builder = z.object({
     id: z.string().register(z.globalRegistry, {
@@ -200,7 +202,7 @@ export const types_lookup_query_vector_builder = z.object({
     routing: z.optional(z.string().register(z.globalRegistry, {
         description: 'The routing value to use when fetching the document'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_lookup_query_vector_builder' });
 
 export const types_text_embedding = z.object({
     model_id: z.optional(z.string().register(z.globalRegistry, {
@@ -209,21 +211,21 @@ export const types_text_embedding = z.object({
     model_text: z.string().register(z.globalRegistry, {
         description: 'The text to be converted into a vector by the specified model'
     })
-});
+}).register(z.globalRegistry, { id: 'types_text_embedding' });
 
 export const types_query_vector_builder = z.object({
     text_embedding: z.optional(types_text_embedding),
     lookup: z.optional(types_lookup_query_vector_builder)
-});
+}).register(z.globalRegistry, { id: 'types_query_vector_builder' });
 
-export const types_query_vector = z.array(z.number());
+export const types_query_vector = z.array(z.number()).register(z.globalRegistry, { id: 'types_query_vector' });
 
 export const types_specified_document = z.object({
     index: z.optional(types_index_name),
     id: types_id
-});
+}).register(z.globalRegistry, { id: 'types_specified_document' });
 
-export const types_query_dsl_terms_query = types_query_dsl_query_base.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_terms_query = types_query_dsl_query_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_terms_query' });
 
 /**
  * A field value.
@@ -233,7 +235,7 @@ export const types_field_value = z.union([
     z.string(),
     z.boolean(),
     z.null()
-]);
+]).register(z.globalRegistry, { id: 'types_field_value' });
 
 export const types_query_dsl_term_query = z.union([
     z.string().register(z.globalRegistry, {
@@ -245,7 +247,7 @@ export const types_query_dsl_term_query = z.union([
             description: 'Allows ASCII case insensitive matching of the value with the indexed field values when set to `true`.\nWhen `false`, the case sensitivity of matching depends on the underlying field’s mapping.'
         }))
     }))
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_term_query' });
 
 export const types_query_dsl_sparse_vector_query = types_query_dsl_query_base.and(z.object({
     field: types_field,
@@ -261,16 +263,17 @@ export const types_query_dsl_sparse_vector_query = types_query_dsl_query_base.an
         description: 'Dictionary of precomputed sparse vectors and their associated weights.\nOnly one of inference_id or query_vector may be supplied in a request.'
     })),
     inference_id: z.optional(types_id)
-})));
+}))).register(z.globalRegistry, { id: 'types_query_dsl_sparse_vector_query' });
 
 export const types_query_dsl_span_term_query = types_query_dsl_query_base.and(z.object({
     value: types_field_value
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_term_query' });
 
 /**
  * Can only be used as a clause in a span_near query.
  */
 export const types_query_dsl_span_gap_query = z.record(z.string(), z.number()).register(z.globalRegistry, {
+    id: 'types_query_dsl_span_gap_query',
     description: 'Can only be used as a clause in a span_near query.'
 });
 
@@ -288,7 +291,7 @@ export const types_query_dsl_simple_query_string_flag = z.enum([
     'NEAR',
     'SLOP',
     'ALL'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_simple_query_string_flag' });
 
 /**
  * A set of flags that can be represented as a single enum value or a set of values that are encoded
@@ -300,21 +303,27 @@ export const types_query_dsl_simple_query_string_flag = z.enum([
 export const spec_utils_pipe_separated_flags_simple_query_string_flag = z.union([
     types_query_dsl_simple_query_string_flag,
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'spec_utils_pipe_separated_flags_simple_query_string_flag' });
 
 /**
  * Query flags can be either a single flag or a combination of flags, e.g. `OR|AND|PREFIX`
  */
 export const types_query_dsl_simple_query_string_flags = spec_utils_pipe_separated_flags_simple_query_string_flag;
 
-export const types_minimum_should_match = types_byte_size;
+/**
+ * The minimum number of terms that should match as integer, percentage or range
+ */
+export const types_minimum_should_match = z.union([
+    z.number(),
+    z.string()
+]).register(z.globalRegistry, { id: 'types_minimum_should_match' });
 
 export const types_query_dsl_operator = z.enum([
     'and',
     'AND',
     'or',
     'OR'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_operator' });
 
 export const types_query_dsl_simple_query_string_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -350,13 +359,13 @@ export const types_query_dsl_simple_query_string_query = types_query_dsl_query_b
     quote_field_suffix: z.optional(z.string().register(z.globalRegistry, {
         description: 'Suffix appended to quoted text in the query string.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_simple_query_string_query' });
 
 export const types_query_dsl_shape_query = types_query_dsl_query_base.and(z.object({
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'When set to `true` the query ignores an unmapped field and will not match any documents.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_shape_query' });
 
 export const types_query_dsl_semantic_query = types_query_dsl_query_base.and(z.object({
     field: z.string().register(z.globalRegistry, {
@@ -365,13 +374,13 @@ export const types_query_dsl_semantic_query = types_query_dsl_query_base.and(z.o
     query: z.string().register(z.globalRegistry, {
         description: 'The query text'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_semantic_query' });
 
 export const types_score_normalizer = z.enum([
     'none',
     'minmax',
     'l2_norm'
-]);
+]).register(z.globalRegistry, { id: 'types_score_normalizer' });
 
 export const global_search_types_learning_to_rank = z.object({
     model_id: z.string().register(z.globalRegistry, {
@@ -380,7 +389,7 @@ export const global_search_types_learning_to_rank = z.object({
     params: z.optional(z.record(z.string(), z.record(z.string(), z.unknown())).register(z.globalRegistry, {
         description: 'Named parameters to be passed to the query templates used for feature'
     }))
-});
+}).register(z.globalRegistry, { id: 'global_search_types_learning_to_rank' });
 
 export const global_search_types_score_mode = z.enum([
     'avg',
@@ -388,7 +397,7 @@ export const global_search_types_score_mode = z.enum([
     'min',
     'multiply',
     'total'
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_score_mode' });
 
 export const types_mapping_chunk_rescorer_chunking_settings = z.object({
     max_chunk_size: z.number().register(z.globalRegistry, {
@@ -409,27 +418,27 @@ export const types_mapping_chunk_rescorer_chunking_settings = z.object({
     strategy: z.optional(z.string().register(z.globalRegistry, {
         description: 'The chunking strategy: `sentence`, `word`, `none` or `recursive`.\n\n * If `strategy` is set to `recursive`, you must also specify:\n\n- `max_chunk_size`\n- either `separators` or`separator_group`\n\nLearn more about different chunking strategies in the linked documentation.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_mapping_chunk_rescorer_chunking_settings' });
 
 export const types_chunk_rescorer = z.object({
     size: z.optional(z.number().register(z.globalRegistry, {
         description: 'The number of chunks per document to evaluate for reranking.'
     })),
     chunking_settings: z.optional(types_mapping_chunk_rescorer_chunking_settings)
-});
+}).register(z.globalRegistry, { id: 'types_chunk_rescorer' });
 
 export const types_rescore_vector = z.object({
     oversample: z.number().register(z.globalRegistry, {
         description: 'Applies the specified oversample factor to k on the approximate kNN search'
     })
-});
+}).register(z.globalRegistry, { id: 'types_rescore_vector' });
 
-export const types_sort_results = z.array(types_field_value);
+export const types_sort_results = z.array(types_field_value).register(z.globalRegistry, { id: 'types_sort_results' });
 
 export const types_fields = z.union([
     types_field,
     z.array(types_field)
-]);
+]).register(z.globalRegistry, { id: 'types_fields' });
 
 export const global_search_types_source_filter = z.object({
     exclude_vectors: z.optional(z.boolean().register(z.globalRegistry, {
@@ -437,7 +446,7 @@ export const global_search_types_source_filter = z.object({
     })),
     excludes: z.optional(types_fields),
     includes: z.optional(types_fields)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_source_filter' });
 
 /**
  * Defines how to fetch a source. Fetching can be disabled entirely, or the source can be filtered.
@@ -445,19 +454,19 @@ export const global_search_types_source_filter = z.object({
 export const global_search_types_source_config = z.union([
     z.boolean(),
     global_search_types_source_filter
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_source_config' });
 
-export const global_search_types_highlighter_tags_schema = z.enum(['styled']);
+export const global_search_types_highlighter_tags_schema = z.enum(['styled']).register(z.globalRegistry, { id: 'global_search_types_highlighter_tags_schema' });
 
-export const global_search_types_highlighter_order = z.enum(['score']);
+export const global_search_types_highlighter_order = z.enum(['score']).register(z.globalRegistry, { id: 'global_search_types_highlighter_order' });
 
-export const global_search_types_highlighter_fragmenter = z.enum(['simple', 'span']);
+export const global_search_types_highlighter_fragmenter = z.enum(['simple', 'span']).register(z.globalRegistry, { id: 'global_search_types_highlighter_fragmenter' });
 
 export const global_search_types_boundary_scanner = z.enum([
     'chars',
     'sentence',
     'word'
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_boundary_scanner' });
 
 export const global_search_types_highlighter_type = z.union([
     z.enum([
@@ -466,9 +475,9 @@ export const global_search_types_highlighter_type = z.union([
         'unified'
     ]),
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_highlighter_type' });
 
-export const global_search_types_highlighter_encoder = z.enum(['default', 'html']);
+export const global_search_types_highlighter_encoder = z.enum(['default', 'html']).register(z.globalRegistry, { id: 'global_search_types_highlighter_encoder' });
 
 /**
  * A reference to a field with formatting instructions on how to return the value
@@ -480,16 +489,17 @@ export const types_query_dsl_field_and_format = z.object({
     })),
     include_unmapped: z.optional(z.boolean())
 }).register(z.globalRegistry, {
+    id: 'types_query_dsl_field_and_format',
     description: 'A reference to a field with formatting instructions on how to return the value'
 });
 
-export const types_name = types_id;
+export const types_name = z.string().register(z.globalRegistry, { id: 'types_name' });
 
 export const types_script_sort_type = z.enum([
     'string',
     'number',
     'version'
-]);
+]).register(z.globalRegistry, { id: 'types_script_sort_type' });
 
 export const types_sort_mode = z.enum([
     'min',
@@ -497,9 +507,9 @@ export const types_sort_mode = z.enum([
     'sum',
     'avg',
     'median'
-]);
+]).register(z.globalRegistry, { id: 'types_sort_mode' });
 
-export const types_sort_order = z.enum(['asc', 'desc']);
+export const types_sort_order = z.enum(['asc', 'desc']).register(z.globalRegistry, { id: 'types_sort_order' });
 
 export const types_distance_unit = z.enum([
     'in',
@@ -511,15 +521,15 @@ export const types_distance_unit = z.enum([
     'm',
     'cm',
     'mm'
-]);
+]).register(z.globalRegistry, { id: 'types_distance_unit' });
 
-export const types_geo_distance_type = z.enum(['arc', 'plane']);
+export const types_geo_distance_type = z.enum(['arc', 'plane']).register(z.globalRegistry, { id: 'types_geo_distance_type' });
 
 export const types_score_sort = z.object({
     order: z.optional(types_sort_order)
-});
+}).register(z.globalRegistry, { id: 'types_score_sort' });
 
-export const types_rank_base = z.record(z.string(), z.unknown());
+export const types_rank_base = z.record(z.string(), z.unknown()).register(z.globalRegistry, { id: 'types_rank_base' });
 
 export const types_rrf_rank = types_rank_base.and(z.object({
     rank_constant: z.optional(z.number().register(z.globalRegistry, {
@@ -528,11 +538,11 @@ export const types_rrf_rank = types_rank_base.and(z.object({
     rank_window_size: z.optional(z.number().register(z.globalRegistry, {
         description: 'Size of the individual result sets per query'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_rrf_rank' });
 
 export const types_rank_container = z.object({
     rrf: z.optional(types_rrf_rank)
-});
+}).register(z.globalRegistry, { id: 'types_rank_container' });
 
 /**
  * Number of hits matching the query to count accurately. If true, the exact
@@ -543,7 +553,7 @@ export const types_rank_container = z.object({
 export const global_search_types_track_hits = z.union([
     z.boolean(),
     z.number()
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_track_hits' });
 
 export const types_aggregations_value_type = z.enum([
     'string',
@@ -556,25 +566,25 @@ export const types_aggregations_value_type = z.enum([
     'numeric',
     'geo_point',
     'boolean'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_value_type' });
 
-export const types_aggregations_aggregation = types_rank_base;
+export const types_aggregations_aggregation = z.record(z.string(), z.unknown()).register(z.globalRegistry, { id: 'types_aggregations_aggregation' });
 
 export const types_aggregations_missing = z.union([
     z.string(),
     z.number(),
     z.boolean()
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_missing' });
 
 export const types_aggregations_top_metrics_value = z.object({
     field: types_field
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_top_metrics_value' });
 
 export const types_aggregations_t_test_type = z.enum([
     'paired',
     'homoscedastic',
     'heteroscedastic'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_t_test_type' });
 
 export const types_query_dsl_regexp_query = types_query_dsl_query_base.and(z.object({
     case_insensitive: z.optional(z.boolean().register(z.globalRegistry, {
@@ -590,9 +600,9 @@ export const types_query_dsl_regexp_query = types_query_dsl_query_base.and(z.obj
     value: z.string().register(z.globalRegistry, {
         description: 'Regular expression for terms you wish to find in the provided field.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_regexp_query' });
 
-export const types_query_dsl_rank_feature_function = types_rank_base;
+export const types_query_dsl_rank_feature_function = z.record(z.string(), z.unknown()).register(z.globalRegistry, { id: 'types_query_dsl_rank_feature_function' });
 
 export const types_query_dsl_rank_feature_function_sigmoid = types_query_dsl_rank_feature_function.and(z.object({
     pivot: z.number().register(z.globalRegistry, {
@@ -601,21 +611,21 @@ export const types_query_dsl_rank_feature_function_sigmoid = types_query_dsl_ran
     exponent: z.number().register(z.globalRegistry, {
         description: 'Configurable Exponent.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_rank_feature_function_sigmoid' });
 
-export const types_query_dsl_rank_feature_function_linear = types_query_dsl_rank_feature_function.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_rank_feature_function_linear = types_query_dsl_rank_feature_function.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_rank_feature_function_linear' });
 
 export const types_query_dsl_rank_feature_function_logarithm = types_query_dsl_rank_feature_function.and(z.object({
     scaling_factor: z.number().register(z.globalRegistry, {
         description: 'Configurable scaling factor.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_rank_feature_function_logarithm' });
 
 export const types_query_dsl_rank_feature_function_saturation = types_query_dsl_rank_feature_function.and(z.object({
     pivot: z.optional(z.number().register(z.globalRegistry, {
         description: 'Configurable pivot value so that the result will be less than 0.5.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_rank_feature_function_saturation' });
 
 export const types_query_dsl_rank_feature_query = types_query_dsl_query_base.and(z.object({
     field: types_field,
@@ -623,13 +633,13 @@ export const types_query_dsl_rank_feature_query = types_query_dsl_query_base.and
     log: z.optional(types_query_dsl_rank_feature_function_logarithm),
     linear: z.optional(types_query_dsl_rank_feature_function_linear),
     sigmoid: z.optional(types_query_dsl_rank_feature_function_sigmoid)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_rank_feature_query' });
 
 export const types_query_dsl_range_relation = z.enum([
     'within',
     'contains',
     'intersects'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_range_relation' });
 
 export const types_query_dsl_range_query_basestring = types_query_dsl_query_base.and(z.object({
     relation: z.optional(types_query_dsl_range_relation),
@@ -645,9 +655,9 @@ export const types_query_dsl_range_query_basestring = types_query_dsl_query_base
     lte: z.optional(z.string().register(z.globalRegistry, {
         description: 'Less than or equal to.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_range_query_basestring' });
 
-export const types_query_dsl_term_range_query = types_query_dsl_range_query_basestring.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_term_range_query = types_query_dsl_range_query_basestring.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_term_range_query' });
 
 export const types_query_dsl_range_query_basedouble = types_query_dsl_query_base.and(z.object({
     relation: z.optional(types_query_dsl_range_relation),
@@ -663,11 +673,11 @@ export const types_query_dsl_range_query_basedouble = types_query_dsl_query_base
     lte: z.optional(z.number().register(z.globalRegistry, {
         description: 'Less than or equal to.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_range_query_basedouble' });
 
-export const types_query_dsl_number_range_query = types_query_dsl_range_query_basedouble.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_number_range_query = types_query_dsl_range_query_basedouble.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_number_range_query' });
 
-export const types_date_math = types_id;
+export const types_date_math = z.string().register(z.globalRegistry, { id: 'types_date_math' });
 
 export const types_query_dsl_range_query_base_date_math = types_query_dsl_query_base.and(z.object({
     relation: z.optional(types_query_dsl_range_relation),
@@ -675,16 +685,16 @@ export const types_query_dsl_range_query_base_date_math = types_query_dsl_query_
     gte: z.optional(types_date_math),
     lt: z.optional(types_date_math),
     lte: z.optional(types_date_math)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_range_query_base_date_math' });
 
-export const types_time_zone = types_id;
+export const types_time_zone = z.string().register(z.globalRegistry, { id: 'types_time_zone' });
 
-export const types_date_format = types_id;
+export const types_date_format = z.string().register(z.globalRegistry, { id: 'types_date_format' });
 
 export const types_query_dsl_date_range_query = types_query_dsl_range_query_base_date_math.and(z.object({
     format: z.optional(types_date_format),
     time_zone: z.optional(types_time_zone)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_date_range_query' });
 
 export const types_query_dsl_range_query_base = types_query_dsl_query_base.and(z.object({
     relation: z.optional(types_query_dsl_range_relation),
@@ -700,19 +710,19 @@ export const types_query_dsl_range_query_base = types_query_dsl_query_base.and(z
     lte: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
         description: 'Less than or equal to.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_range_query_base' });
 
 export const types_query_dsl_untyped_range_query = types_query_dsl_range_query_base.and(z.object({
     format: z.optional(types_date_format),
     time_zone: z.optional(types_time_zone)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_untyped_range_query' });
 
 export const types_query_dsl_range_query = z.union([
     types_query_dsl_untyped_range_query,
     types_query_dsl_date_range_query,
     types_query_dsl_number_range_query,
     types_query_dsl_term_range_query
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_range_query' });
 
 export const types_query_dsl_text_query_type = z.enum([
     'best_fields',
@@ -721,12 +731,12 @@ export const types_query_dsl_text_query_type = z.enum([
     'phrase',
     'phrase_prefix',
     'bool_prefix'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_text_query_type' });
 
 export const types_fuzziness = z.union([
     z.string(),
     z.number()
-]);
+]).register(z.globalRegistry, { id: 'types_fuzziness' });
 
 export const types_query_dsl_query_string_query = types_query_dsl_query_base.and(z.object({
     allow_leading_wildcard: z.optional(z.boolean().register(z.globalRegistry, {
@@ -786,7 +796,7 @@ export const types_query_dsl_query_string_query = types_query_dsl_query_base.and
     })),
     time_zone: z.optional(types_time_zone),
     type: z.optional(types_query_dsl_text_query_type)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_query_string_query' });
 
 export const types_query_dsl_prefix_query = types_query_dsl_query_base.and(z.object({
     rewrite: z.optional(types_multi_term_query_rewrite),
@@ -796,14 +806,14 @@ export const types_query_dsl_prefix_query = types_query_dsl_query_base.and(z.obj
     case_insensitive: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Allows ASCII case insensitive matching of the value with the indexed field values when set to `true`.\nDefault is `false` which means the case sensitivity of matching depends on the underlying field’s mapping.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_prefix_query' });
 
 export const types_query_dsl_pinned_doc = z.object({
     _id: types_id,
     _index: z.optional(types_index_name)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_pinned_doc' });
 
-export const types_version_number = types_ulong;
+export const types_version_number = z.number().register(z.globalRegistry, { id: 'types_version_number' });
 
 export const types_query_dsl_percolate_query = types_query_dsl_query_base.and(z.object({
     document: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
@@ -825,9 +835,9 @@ export const types_query_dsl_percolate_query = types_query_dsl_query_base.and(z.
         description: 'Routing used to fetch document to percolate.'
     })),
     version: z.optional(types_version_number)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_percolate_query' });
 
-export const types_relation_name = types_id;
+export const types_relation_name = z.string().register(z.globalRegistry, { id: 'types_relation_name' });
 
 export const types_query_dsl_parent_id_query = types_query_dsl_query_base.and(z.object({
     id: z.optional(types_id),
@@ -835,7 +845,7 @@ export const types_query_dsl_parent_id_query = types_query_dsl_query_base.and(z.
         description: 'Indicates whether to ignore an unmapped `type` and not return any documents instead of an error.'
     })),
     type: z.optional(types_relation_name)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_parent_id_query' });
 
 export const types_query_dsl_child_score_mode = z.enum([
     'none',
@@ -843,9 +853,9 @@ export const types_query_dsl_child_score_mode = z.enum([
     'sum',
     'max',
     'min'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_child_score_mode' });
 
-export const types_query_dsl_zero_terms_query = z.enum(['all', 'none']);
+export const types_query_dsl_zero_terms_query = z.enum(['all', 'none']).register(z.globalRegistry, { id: 'types_query_dsl_zero_terms_query' });
 
 export const types_query_dsl_multi_match_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -883,7 +893,7 @@ export const types_query_dsl_multi_match_query = types_query_dsl_query_base.and(
     })),
     type: z.optional(types_query_dsl_text_query_type),
     zero_terms_query: z.optional(types_query_dsl_zero_terms_query)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_multi_match_query' });
 
 export const types_analysis_stop_word_language = z.enum([
     '_arabic_',
@@ -923,7 +933,7 @@ export const types_analysis_stop_word_language = z.enum([
     '_thai_',
     '_turkish_',
     '_none_'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_stop_word_language' });
 
 /**
  * Language value, such as _arabic_ or _thai_. Defaults to _english_.
@@ -933,13 +943,13 @@ export const types_analysis_stop_word_language = z.enum([
 export const types_analysis_stop_words = z.union([
     types_analysis_stop_word_language,
     z.array(z.string())
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_stop_words' });
 
 export const types_version_type = z.enum([
     'internal',
     'external',
     'external_gte'
-]);
+]).register(z.globalRegistry, { id: 'types_version_type' });
 
 /**
  * Only to be used in query and path parameters, as the array form is actually a csv
@@ -947,7 +957,7 @@ export const types_version_type = z.enum([
 export const types_routing = z.union([
     z.string(),
     z.array(z.string())
-]);
+]).register(z.globalRegistry, { id: 'types_routing' });
 
 export const types_query_dsl_like_document = z.object({
     doc: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
@@ -962,7 +972,7 @@ export const types_query_dsl_like_document = z.object({
     routing: z.optional(types_routing),
     version: z.optional(types_version_number),
     version_type: z.optional(types_version_type)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_like_document' });
 
 /**
  * Text that we want similar documents for or a lookup to a document's field for the text.
@@ -970,7 +980,7 @@ export const types_query_dsl_like_document = z.object({
 export const types_query_dsl_like = z.union([
     z.string(),
     types_query_dsl_like_document
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_like' });
 
 export const types_query_dsl_more_like_this_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1019,7 +1029,7 @@ export const types_query_dsl_more_like_this_query = types_query_dsl_query_base.a
     ])),
     version: z.optional(types_version_number),
     version_type: z.optional(types_version_type)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_more_like_this_query' });
 
 export const types_query_dsl_match_phrase_prefix_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1035,7 +1045,7 @@ export const types_query_dsl_match_phrase_prefix_query = types_query_dsl_query_b
         description: 'Maximum number of positions allowed between matching tokens.'
     })),
     zero_terms_query: z.optional(types_query_dsl_zero_terms_query)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_match_phrase_prefix_query' });
 
 export const types_query_dsl_match_phrase_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1048,9 +1058,9 @@ export const types_query_dsl_match_phrase_query = types_query_dsl_query_base.and
         description: 'Maximum number of positions allowed between matching tokens.'
     })),
     zero_terms_query: z.optional(types_query_dsl_zero_terms_query)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_match_phrase_query' });
 
-export const types_query_dsl_match_none_query = types_query_dsl_terms_query;
+export const types_query_dsl_match_none_query = types_query_dsl_query_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_match_none_query' });
 
 export const types_query_dsl_match_bool_prefix_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1072,9 +1082,9 @@ export const types_query_dsl_match_bool_prefix_query = types_query_dsl_query_bas
     query: z.string().register(z.globalRegistry, {
         description: 'Terms you wish to find in the provided field.\nThe last term is used in a prefix query.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_match_bool_prefix_query' });
 
-export const types_query_dsl_match_all_query = types_query_dsl_terms_query;
+export const types_query_dsl_match_all_query = types_query_dsl_query_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_match_all_query' });
 
 export const types_query_dsl_match_query = z.union([
     z.string().register(z.globalRegistry, {
@@ -1111,7 +1121,7 @@ export const types_query_dsl_match_query = z.union([
         ]),
         zero_terms_query: z.optional(types_query_dsl_zero_terms_query)
     }))
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_match_query' });
 
 export const types_query_dsl_intervals_wildcard = z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1121,7 +1131,7 @@ export const types_query_dsl_intervals_wildcard = z.object({
         description: 'Wildcard pattern used to find matching terms.'
     }),
     use_field: z.optional(types_field)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_wildcard' });
 
 export const types_query_dsl_intervals_regexp = z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1131,7 +1141,7 @@ export const types_query_dsl_intervals_regexp = z.object({
         description: 'Regex pattern.'
     }),
     use_field: z.optional(types_field)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_regexp' });
 
 export const types_query_dsl_intervals_range = z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1150,7 +1160,7 @@ export const types_query_dsl_intervals_range = z.object({
         description: 'Upper term, either lte or lt must be provided.'
     })),
     use_field: z.optional(types_field)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_range' });
 
 export const types_query_dsl_intervals_prefix = z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1160,7 +1170,7 @@ export const types_query_dsl_intervals_prefix = z.object({
         description: 'Beginning characters of terms you wish to find in the top-level field.'
     }),
     use_field: z.optional(types_field)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_prefix' });
 
 export const types_query_dsl_intervals_fuzzy = z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -1177,38 +1187,39 @@ export const types_query_dsl_intervals_fuzzy = z.object({
         description: 'Indicates whether edits include transpositions of two adjacent characters (for example, `ab` to `ba`).'
     })),
     use_field: z.optional(types_field)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_fuzzy' });
 
 export const types_ids = z.union([
     types_id,
     z.array(types_id)
-]);
+]).register(z.globalRegistry, { id: 'types_ids' });
 
 export const types_query_dsl_ids_query = types_query_dsl_query_base.and(z.object({
     values: z.optional(types_ids)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_ids_query' });
 
 export const types_query_dsl_geo_shape_query = types_query_dsl_query_base.and(z.object({
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `true` to ignore an unmapped field and not match any documents for this query.\nSet to `false` to throw an exception if the field is not mapped.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_geo_shape_query' });
 
 export const types_query_dsl_geo_validation_method = z.enum([
     'coerce',
     'ignore_malformed',
     'strict'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_geo_validation_method' });
 
 export const types_query_dsl_geo_polygon_query = types_query_dsl_query_base.and(z.object({
     validation_method: z.optional(types_query_dsl_geo_validation_method),
     ignore_unmapped: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_geo_polygon_query' });
 
 /**
  * A map hex cell (H3) reference
  */
 export const types_geo_hex_cell = z.string().register(z.globalRegistry, {
+    id: 'types_geo_hex_cell',
     description: 'A map hex cell (H3) reference'
 });
 
@@ -1216,18 +1227,19 @@ export const types_geo_hex_cell = z.string().register(z.globalRegistry, {
  * A map tile reference, represented as `{zoom}/{x}/{y}`
  */
 export const types_geo_tile = z.string().register(z.globalRegistry, {
+    id: 'types_geo_tile',
     description: 'A map tile reference, represented as `{zoom}/{x}/{y}`'
 });
 
-export const types_geo_hash = types_id;
+export const types_geo_hash = z.string().register(z.globalRegistry, { id: 'types_geo_hash' });
 
 export const types_query_dsl_geo_grid_query = types_query_dsl_query_base.and(z.object({
     geotile: z.optional(types_geo_tile),
     geohash: z.optional(types_geo_hash),
     geohex: z.optional(types_geo_hex_cell)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_geo_grid_query' });
 
-export const types_distance = types_id;
+export const types_distance = z.string().register(z.globalRegistry, { id: 'types_distance' });
 
 export const types_query_dsl_geo_distance_query = types_query_dsl_query_base.and(z.object({
     distance: types_distance,
@@ -1236,9 +1248,9 @@ export const types_query_dsl_geo_distance_query = types_query_dsl_query_base.and
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `true` to ignore an unmapped field and not match any documents for this query.\nSet to `false` to throw an exception if the field is not mapped.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_geo_distance_query' });
 
-export const types_query_dsl_geo_execution = z.enum(['memory', 'indexed']);
+export const types_query_dsl_geo_execution = z.enum(['memory', 'indexed']).register(z.globalRegistry, { id: 'types_query_dsl_geo_execution' });
 
 export const types_query_dsl_geo_bounding_box_query = types_query_dsl_query_base.and(z.object({
     type: z.optional(types_query_dsl_geo_execution),
@@ -1246,7 +1258,7 @@ export const types_query_dsl_geo_bounding_box_query = types_query_dsl_query_base
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `true` to ignore an unmapped field and not match any documents for this query.\nSet to `false` to throw an exception if the field is not mapped.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_geo_bounding_box_query' });
 
 export const types_query_dsl_fuzzy_query = types_query_dsl_query_base.and(z.object({
     max_expansions: z.optional(z.number().register(z.globalRegistry, {
@@ -1265,7 +1277,7 @@ export const types_query_dsl_fuzzy_query = types_query_dsl_query_base.and(z.obje
         z.number(),
         z.boolean()
     ])
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_fuzzy_query' });
 
 export const types_query_dsl_function_score_mode = z.enum([
     'multiply',
@@ -1274,7 +1286,7 @@ export const types_query_dsl_function_score_mode = z.enum([
     'first',
     'max',
     'min'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_function_score_mode' });
 
 export const types_query_dsl_random_score_function = z.object({
     field: z.optional(types_field),
@@ -1282,7 +1294,7 @@ export const types_query_dsl_random_score_function = z.object({
         z.number(),
         z.string()
     ]))
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_random_score_function' });
 
 export const types_query_dsl_field_value_factor_modifier = z.enum([
     'none',
@@ -1295,7 +1307,7 @@ export const types_query_dsl_field_value_factor_modifier = z.enum([
     'square',
     'sqrt',
     'reciprocal'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_field_value_factor_modifier' });
 
 export const types_query_dsl_field_value_factor_score_function = z.object({
     field: types_field,
@@ -1306,39 +1318,45 @@ export const types_query_dsl_field_value_factor_score_function = z.object({
         description: 'Value used if the document doesn’t have that field.\nThe modifier and factor are still applied to it as though it were read from the document.'
     })),
     modifier: z.optional(types_query_dsl_field_value_factor_modifier)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_field_value_factor_score_function' });
 
 export const types_query_dsl_multi_value_mode = z.enum([
     'min',
     'max',
     'avg',
     'sum'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_multi_value_mode' });
 
 export const types_query_dsl_decay_function_base_geo_location_distance = z.object({
     multi_value_mode: z.optional(types_query_dsl_multi_value_mode)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_decay_function_base_geo_location_distance' });
 
-export const types_query_dsl_geo_decay_function = types_query_dsl_decay_function_base_geo_location_distance.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_geo_decay_function = types_query_dsl_decay_function_base_geo_location_distance.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_geo_decay_function' });
 
-export const types_query_dsl_decay_function_basedoubledouble = types_query_dsl_decay_function_base_geo_location_distance;
+export const types_query_dsl_decay_function_basedoubledouble = z.object({
+    multi_value_mode: z.optional(types_query_dsl_multi_value_mode)
+}).register(z.globalRegistry, { id: 'types_query_dsl_decay_function_basedoubledouble' });
 
-export const types_query_dsl_numeric_decay_function = types_query_dsl_decay_function_basedoubledouble.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_numeric_decay_function = types_query_dsl_decay_function_basedoubledouble.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_numeric_decay_function' });
 
-export const types_query_dsl_decay_function_base_date_math_duration = types_query_dsl_decay_function_base_geo_location_distance;
+export const types_query_dsl_decay_function_base_date_math_duration = z.object({
+    multi_value_mode: z.optional(types_query_dsl_multi_value_mode)
+}).register(z.globalRegistry, { id: 'types_query_dsl_decay_function_base_date_math_duration' });
 
-export const types_query_dsl_date_decay_function = types_query_dsl_decay_function_base_date_math_duration.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_date_decay_function = types_query_dsl_decay_function_base_date_math_duration.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_date_decay_function' });
 
-export const types_query_dsl_decay_function_base = types_query_dsl_decay_function_base_geo_location_distance;
+export const types_query_dsl_decay_function_base = z.object({
+    multi_value_mode: z.optional(types_query_dsl_multi_value_mode)
+}).register(z.globalRegistry, { id: 'types_query_dsl_decay_function_base' });
 
-export const types_query_dsl_untyped_decay_function = types_query_dsl_decay_function_base.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_untyped_decay_function = types_query_dsl_decay_function_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_untyped_decay_function' });
 
 export const types_query_dsl_decay_function = z.union([
     types_query_dsl_untyped_decay_function,
     types_query_dsl_date_decay_function,
     types_query_dsl_numeric_decay_function,
     types_query_dsl_geo_decay_function
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_decay_function' });
 
 export const types_query_dsl_function_boost_mode = z.enum([
     'multiply',
@@ -1347,23 +1365,23 @@ export const types_query_dsl_function_boost_mode = z.enum([
     'avg',
     'max',
     'min'
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_function_boost_mode' });
 
 export const types_query_dsl_exists_query = types_query_dsl_query_base.and(z.object({
     field: types_field
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_exists_query' });
 
 export const types_query_dsl_distance_feature_query_base_date_math_duration = types_query_dsl_query_base.and(z.object({
     origin: types_date_math,
     pivot: types_duration,
     field: types_field
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_distance_feature_query_base_date_math_duration' });
 
-export const types_query_dsl_date_distance_feature_query = types_query_dsl_distance_feature_query_base_date_math_duration.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_date_distance_feature_query = types_query_dsl_distance_feature_query_base_date_math_duration.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_date_distance_feature_query' });
 
 export const types_geo_hash_location = z.object({
     geohash: types_geo_hash
-});
+}).register(z.globalRegistry, { id: 'types_geo_hash_location' });
 
 export const types_lat_lon_geo_location = z.object({
     lat: z.number().register(z.globalRegistry, {
@@ -1372,7 +1390,7 @@ export const types_lat_lon_geo_location = z.object({
     lon: z.number().register(z.globalRegistry, {
         description: 'Longitude'
     })
-});
+}).register(z.globalRegistry, { id: 'types_lat_lon_geo_location' });
 
 /**
  * A latitude/longitude as a 2 dimensional point. It can be represented in various ways:
@@ -1386,15 +1404,15 @@ export const types_geo_location = z.union([
     types_geo_hash_location,
     z.array(z.number()),
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'types_geo_location' });
 
 export const types_query_dsl_distance_feature_query_base_geo_location_distance = types_query_dsl_query_base.and(z.object({
     origin: types_geo_location,
     pivot: types_distance,
     field: types_field
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_distance_feature_query_base_geo_location_distance' });
 
-export const types_query_dsl_geo_distance_feature_query = types_query_dsl_distance_feature_query_base_geo_location_distance.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_geo_distance_feature_query = types_query_dsl_distance_feature_query_base_geo_location_distance.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_geo_distance_feature_query' });
 
 export const types_query_dsl_distance_feature_query_base = types_query_dsl_query_base.and(z.object({
     origin: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
@@ -1404,19 +1422,19 @@ export const types_query_dsl_distance_feature_query_base = types_query_dsl_query
         description: 'Distance from the `origin` at which relevance scores receive half of the `boost` value.\nIf the `field` value is a `date` or `date_nanos` field, the `pivot` value must be a time unit, such as `1h` or `10d`. If the `field` value is a `geo_point` field, the `pivot` value must be a distance unit, such as `1km` or `12m`.'
     }),
     field: types_field
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_distance_feature_query_base' });
 
-export const types_query_dsl_untyped_distance_feature_query = types_query_dsl_distance_feature_query_base.and(z.record(z.string(), z.unknown()));
+export const types_query_dsl_untyped_distance_feature_query = types_query_dsl_distance_feature_query_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_query_dsl_untyped_distance_feature_query' });
 
 export const types_query_dsl_distance_feature_query = z.union([
     types_query_dsl_untyped_distance_feature_query,
     types_query_dsl_geo_distance_feature_query,
     types_query_dsl_date_distance_feature_query
-]);
+]).register(z.globalRegistry, { id: 'types_query_dsl_distance_feature_query' });
 
-export const types_query_dsl_combined_fields_zero_terms = z.enum(['none', 'all']);
+export const types_query_dsl_combined_fields_zero_terms = z.enum(['none', 'all']).register(z.globalRegistry, { id: 'types_query_dsl_combined_fields_zero_terms' });
 
-export const types_query_dsl_combined_fields_operator = z.enum(['or', 'and']);
+export const types_query_dsl_combined_fields_operator = z.enum(['or', 'and']).register(z.globalRegistry, { id: 'types_query_dsl_combined_fields_operator' });
 
 export const types_query_dsl_combined_fields_query = types_query_dsl_query_base.and(z.object({
     fields: z.array(types_field).register(z.globalRegistry, {
@@ -1431,7 +1449,7 @@ export const types_query_dsl_combined_fields_query = types_query_dsl_query_base.
     operator: z.optional(types_query_dsl_combined_fields_operator),
     minimum_should_match: z.optional(types_minimum_should_match),
     zero_terms_query: z.optional(types_query_dsl_combined_fields_zero_terms)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_combined_fields_query' });
 
 export const types_query_dsl_common_terms_query = types_query_dsl_query_base.and(z.object({
     analyzer: z.optional(z.string()),
@@ -1440,12 +1458,12 @@ export const types_query_dsl_common_terms_query = types_query_dsl_query_base.and
     low_freq_operator: z.optional(types_query_dsl_operator),
     minimum_should_match: z.optional(types_minimum_should_match),
     query: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_common_terms_query' });
 
 /**
  * Base type for bucket aggregations. These aggregations also accept sub-aggregations.
  */
-export const types_aggregations_bucket_aggregation_base = types_aggregations_aggregation.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_bucket_aggregation_base = types_aggregations_aggregation.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_bucket_aggregation_base' });
 
 export const types_aggregations_time_series_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     size: z.optional(z.number().register(z.globalRegistry, {
@@ -1454,18 +1472,18 @@ export const types_aggregations_time_series_aggregation = types_aggregations_buc
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `true` to associate a unique string key with each bucket and returns the ranges as a hash rather than an array.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_time_series_aggregation' });
 
 export const types_aggregations_aggregate_order = z.union([
     z.record(z.string(), types_sort_order),
     z.array(z.record(z.string(), types_sort_order))
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_aggregate_order' });
 
 export const types_aggregations_missing_order = z.enum([
     'first',
     'last',
     'default'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_missing_order' });
 
 export const types_aggregations_terms_partition = z.object({
     num_partitions: z.number().register(z.globalRegistry, {
@@ -1474,30 +1492,33 @@ export const types_aggregations_terms_partition = z.object({
     partition: z.number().register(z.globalRegistry, {
         description: 'The partition number for this request.'
     })
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_terms_partition' });
 
 export const types_aggregations_terms_include = z.union([
     z.string(),
     z.array(z.string()),
     types_aggregations_terms_partition
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_terms_include' });
 
 export const types_aggregations_terms_aggregation_execution_hint = z.enum([
     'map',
     'global_ordinals',
     'global_ordinals_hash',
     'global_ordinals_low_cardinality'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregation_execution_hint' });
 
-export const types_aggregations_terms_exclude = types_routing;
+export const types_aggregations_terms_exclude = z.union([
+    z.string(),
+    z.array(z.string())
+]).register(z.globalRegistry, { id: 'types_aggregations_terms_exclude' });
 
-export const types_aggregations_terms_aggregation_collect_mode = z.enum(['depth_first', 'breadth_first']);
+export const types_aggregations_terms_aggregation_collect_mode = z.enum(['depth_first', 'breadth_first']).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregation_collect_mode' });
 
 export const types_aggregations_gap_policy = z.enum([
     'skip',
     'insert_zeros',
     'keep_values'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_gap_policy' });
 
 /**
  * Buckets path can be expressed in different ways, and an aggregation may accept some or all of these
@@ -1508,24 +1529,24 @@ export const types_aggregations_buckets_path = z.union([
     z.string(),
     z.array(z.string()),
     z.record(z.string(), z.string())
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_path' });
 
 export const types_aggregations_bucket_path_aggregation = types_aggregations_aggregation.and(z.object({
     buckets_path: z.optional(types_aggregations_buckets_path)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_path_aggregation' });
 
 export const types_aggregations_pipeline_aggregation_base = types_aggregations_bucket_path_aggregation.and(z.object({
     format: z.optional(z.string().register(z.globalRegistry, {
         description: '`DecimalFormat` pattern for the output value.\nIf specified, the formatted value is returned in the aggregation’s `value_as_string` property.'
     })),
     gap_policy: z.optional(types_aggregations_gap_policy)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_pipeline_aggregation_base' });
 
-export const types_aggregations_sum_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_sum_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_sum_bucket_aggregation' });
 
-export const types_aggregations_stats_bucket_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_stats_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_stats_bucket_aggregation' });
 
-export const types_aggregations_percentage_score_heuristic = types_rank_base;
+export const types_aggregations_percentage_score_heuristic = z.record(z.string(), z.unknown()).register(z.globalRegistry, { id: 'types_aggregations_percentage_score_heuristic' });
 
 export const types_aggregations_mutual_information_heuristic = z.object({
     background_is_superset: z.optional(z.boolean().register(z.globalRegistry, {
@@ -1534,12 +1555,13 @@ export const types_aggregations_mutual_information_heuristic = z.object({
     include_negatives: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `false` to filter out the terms that appear less often in the subset than in documents outside the subset.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_mutual_information_heuristic' });
 
 /**
  * For empty Class assignments
  */
 export const types_empty_object = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+    id: 'types_empty_object',
     description: 'For empty Class assignments'
 });
 
@@ -1547,7 +1569,7 @@ export const types_aggregations_google_normalized_distance_heuristic = z.object(
     background_is_superset: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `false` if you defined a custom background filter that represents a different set of documents that you want to compare to.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_google_normalized_distance_heuristic' });
 
 export const types_aggregations_chi_square_heuristic = z.object({
     background_is_superset: z.boolean().register(z.globalRegistry, {
@@ -1556,26 +1578,26 @@ export const types_aggregations_chi_square_heuristic = z.object({
     include_negatives: z.boolean().register(z.globalRegistry, {
         description: 'Set to `false` to filter out the terms that appear less often in the subset than in documents outside the subset.'
     })
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_chi_square_heuristic' });
 
 export const types_aggregations_p_value_heuristic = z.object({
     background_is_superset: z.optional(z.boolean()),
     normalize_above: z.optional(z.number().register(z.globalRegistry, {
         description: 'Should the results be normalized when above the given value.\nAllows for consistent significance results at various scales.\nNote: `0` is a special value which means no normalization'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_p_value_heuristic' });
 
 export const types_aggregations_serial_differencing_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     lag: z.optional(z.number().register(z.globalRegistry, {
         description: 'The historical bucket to subtract from the current value.\nMust be a positive, non-zero integer.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_serial_differencing_aggregation' });
 
 export const types_aggregations_sampler_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     shard_size: z.optional(z.number().register(z.globalRegistry, {
         description: 'Limits how many top-scoring documents are collected in the sample processed on each shard.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_sampler_aggregation' });
 
 export const types_aggregations_random_sampler_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     probability: z.number().register(z.globalRegistry, {
@@ -1587,13 +1609,13 @@ export const types_aggregations_random_sampler_aggregation = types_aggregations_
     shard_seed: z.optional(z.number().register(z.globalRegistry, {
         description: 'When combined with seed, setting shard_seed ensures 100% consistent sampling over shards where data is exactly the same.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_random_sampler_aggregation' });
 
 export const types_aggregations_reverse_nested_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     path: z.optional(types_field)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_reverse_nested_aggregation' });
 
-export const types_aggregations_rate_mode = z.enum(['sum', 'value_count']);
+export const types_aggregations_rate_mode = z.enum(['sum', 'value_count']).register(z.globalRegistry, { id: 'types_aggregations_rate_mode' });
 
 export const types_aggregations_calendar_interval = z.enum([
     'second',
@@ -1612,7 +1634,7 @@ export const types_aggregations_calendar_interval = z.enum([
     '1q',
     'year',
     '1y'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_calendar_interval' });
 
 export const types_aggregations_rare_terms_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     exclude: z.optional(types_aggregations_terms_exclude),
@@ -1626,7 +1648,7 @@ export const types_aggregations_rare_terms_aggregation = types_aggregations_buck
         description: 'The precision of the internal CuckooFilters.\nSmaller precision leads to better approximation, but higher memory usage.'
     })),
     value_type: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_rare_terms_aggregation' });
 
 export const types_aggregations_aggregation_range = z.object({
     from: z.optional(z.union([
@@ -1642,32 +1664,32 @@ export const types_aggregations_aggregation_range = z.object({
         z.string(),
         z.null()
     ]))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_aggregation_range' });
 
 export const types_aggregations_percentiles_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     percents: z.optional(z.array(z.number()).register(z.globalRegistry, {
         description: 'The list of percentiles to calculate.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_percentiles_bucket_aggregation' });
 
-export const types_aggregations_t_digest_execution_hint = z.enum(['default', 'high_accuracy']);
+export const types_aggregations_t_digest_execution_hint = z.enum(['default', 'high_accuracy']).register(z.globalRegistry, { id: 'types_aggregations_t_digest_execution_hint' });
 
 export const types_aggregations_t_digest = z.object({
     compression: z.optional(z.number().register(z.globalRegistry, {
         description: 'Limits the maximum number of nodes used by the underlying TDigest algorithm to `20 * compression`, enabling control of memory usage and approximation error.'
     })),
     execution_hint: z.optional(types_aggregations_t_digest_execution_hint)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_t_digest' });
 
 export const types_aggregations_hdr_method = z.object({
     number_of_significant_value_digits: z.optional(z.number().register(z.globalRegistry, {
         description: 'Specifies the resolution of values for the histogram in number of significant digits.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_hdr_method' });
 
 export const types_aggregations_parent_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     type: z.optional(types_relation_name)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_parent_aggregation' });
 
 export const types_aggregations_normalize_method = z.enum([
     'rescale_0_1',
@@ -1676,13 +1698,15 @@ export const types_aggregations_normalize_method = z.enum([
     'mean',
     'z-score',
     'softmax'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_normalize_method' });
 
 export const types_aggregations_normalize_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     method: z.optional(types_aggregations_normalize_method)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_normalize_aggregation' });
 
-export const types_aggregations_nested_aggregation = types_aggregations_reverse_nested_aggregation;
+export const types_aggregations_nested_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
+    path: z.optional(types_field)
+})).register(z.globalRegistry, { id: 'types_aggregations_nested_aggregation' });
 
 export const types_aggregations_moving_function_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     script: z.optional(z.string().register(z.globalRegistry, {
@@ -1694,7 +1718,7 @@ export const types_aggregations_moving_function_aggregation = types_aggregations
     window: z.optional(z.number().register(z.globalRegistry, {
         description: 'The size of window to "slide" across the histogram.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_moving_function_aggregation' });
 
 export const types_aggregations_moving_percentiles_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     window: z.optional(z.number().register(z.globalRegistry, {
@@ -1704,9 +1728,9 @@ export const types_aggregations_moving_percentiles_aggregation = types_aggregati
         description: 'By default, the window consists of the last n values excluding the current bucket.\nIncreasing `shift` by 1, moves the starting window position by 1 to the right.'
     })),
     keyed: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_moving_percentiles_aggregation' });
 
-export const types_aggregations_holt_winters_type = z.enum(['add', 'mult']);
+export const types_aggregations_holt_winters_type = z.enum(['add', 'mult']).register(z.globalRegistry, { id: 'types_aggregations_holt_winters_type' });
 
 export const types_aggregations_holt_winters_model_settings = z.object({
     alpha: z.optional(z.number()),
@@ -1715,47 +1739,47 @@ export const types_aggregations_holt_winters_model_settings = z.object({
     pad: z.optional(z.boolean()),
     period: z.optional(z.number()),
     type: z.optional(types_aggregations_holt_winters_type)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_holt_winters_model_settings' });
 
 export const types_aggregations_moving_average_aggregation_base = types_aggregations_pipeline_aggregation_base.and(z.object({
     minimize: z.optional(z.boolean()),
     predict: z.optional(z.number()),
     window: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_moving_average_aggregation_base' });
 
 export const types_aggregations_holt_winters_moving_average_aggregation = types_aggregations_moving_average_aggregation_base.and(z.object({
     model: z.enum(['holt_winters']),
     settings: types_aggregations_holt_winters_model_settings
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_holt_winters_moving_average_aggregation' });
 
 export const types_aggregations_holt_linear_model_settings = z.object({
     alpha: z.optional(z.number()),
     beta: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_holt_linear_model_settings' });
 
 export const types_aggregations_holt_moving_average_aggregation = types_aggregations_moving_average_aggregation_base.and(z.object({
     model: z.enum(['holt']),
     settings: types_aggregations_holt_linear_model_settings
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_holt_moving_average_aggregation' });
 
 export const types_aggregations_ewma_model_settings = z.object({
     alpha: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_ewma_model_settings' });
 
 export const types_aggregations_ewma_moving_average_aggregation = types_aggregations_moving_average_aggregation_base.and(z.object({
     model: z.enum(['ewma']),
     settings: types_aggregations_ewma_model_settings
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_ewma_moving_average_aggregation' });
 
 export const types_aggregations_simple_moving_average_aggregation = types_aggregations_moving_average_aggregation_base.and(z.object({
     model: z.enum(['simple']),
     settings: types_empty_object
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_simple_moving_average_aggregation' });
 
 export const types_aggregations_linear_moving_average_aggregation = types_aggregations_moving_average_aggregation_base.and(z.object({
     model: z.enum(['linear']),
     settings: types_empty_object
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_linear_moving_average_aggregation' });
 
 export const types_aggregations_moving_average_aggregation = z.union([
     z.object({
@@ -1773,27 +1797,27 @@ export const types_aggregations_moving_average_aggregation = z.union([
     z.object({
         model: z.literal('holt_winters')
     }).and(types_aggregations_holt_winters_moving_average_aggregation)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_moving_average_aggregation' });
 
 export const types_aggregations_missing_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: z.optional(types_field),
     missing: z.optional(types_aggregations_missing)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_missing_aggregation' });
 
-export const types_aggregations_min_bucket_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_min_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_min_bucket_aggregation' });
 
-export const types_aggregations_max_bucket_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_max_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_max_bucket_aggregation' });
 
 export const types_aggregations_matrix_aggregation = types_aggregations_aggregation.and(z.object({
     fields: z.optional(types_fields),
     missing: z.optional(z.record(z.string(), z.number()).register(z.globalRegistry, {
         description: 'The value to apply to documents that do not have a value.\nBy default, documents without a value are ignored.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_matrix_aggregation' });
 
 export const types_aggregations_matrix_stats_aggregation = types_aggregations_matrix_aggregation.and(z.object({
     mode: z.optional(types_sort_mode)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_matrix_stats_aggregation' });
 
 export const ml_types_classification_inference_options = z.object({
     num_top_classes: z.optional(z.number().register(z.globalRegistry, {
@@ -1811,24 +1835,24 @@ export const ml_types_classification_inference_options = z.object({
     top_classes_results_field: z.optional(z.string().register(z.globalRegistry, {
         description: 'Specifies the field to which the top classes are written. Defaults to top_classes.'
     }))
-});
+}).register(z.globalRegistry, { id: 'ml_types_classification_inference_options' });
 
 export const ml_types_regression_inference_options = z.object({
     results_field: z.optional(types_field),
     num_top_feature_importance_values: z.optional(z.number().register(z.globalRegistry, {
         description: 'Specifies the maximum number of feature importance values per document.'
     }))
-});
+}).register(z.globalRegistry, { id: 'ml_types_regression_inference_options' });
 
 export const types_aggregations_inference_config_container = z.object({
     regression: z.optional(ml_types_regression_inference_options),
     classification: z.optional(ml_types_classification_inference_options)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_inference_config_container' });
 
 export const types_aggregations_inference_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     model_id: types_name,
     inference_config: z.optional(types_aggregations_inference_config_container)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_inference_aggregation' });
 
 export const types_aggregations_ip_prefix_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: types_field,
@@ -1847,7 +1871,7 @@ export const types_aggregations_ip_prefix_aggregation = types_aggregations_bucke
     min_doc_count: z.optional(z.number().register(z.globalRegistry, {
         description: 'Minimum number of documents in a bucket for it to be included in the response.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_ip_prefix_aggregation' });
 
 export const types_aggregations_ip_range_aggregation_range = z.object({
     from: z.optional(z.union([
@@ -1861,14 +1885,14 @@ export const types_aggregations_ip_range_aggregation_range = z.object({
         z.string(),
         z.null()
     ]))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_ip_range_aggregation_range' });
 
 export const types_aggregations_ip_range_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: z.optional(types_field),
     ranges: z.optional(z.array(types_aggregations_ip_range_aggregation_range).register(z.globalRegistry, {
         description: 'Array of IP ranges.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_ip_range_aggregation' });
 
 export const types_aggregations_extended_boundsdouble = z.object({
     max: z.optional(z.number().register(z.globalRegistry, {
@@ -1877,30 +1901,30 @@ export const types_aggregations_extended_boundsdouble = z.object({
     min: z.optional(z.number().register(z.globalRegistry, {
         description: 'Minimum value for the bound.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_extended_boundsdouble' });
 
-export const types_aggregations_global_aggregation = types_aggregations_bucket_aggregation_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_global_aggregation = types_aggregations_bucket_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_global_aggregation' });
 
 export const types_wkt_geo_bounds = z.object({
     wkt: z.string()
-});
+}).register(z.globalRegistry, { id: 'types_wkt_geo_bounds' });
 
 export const types_top_right_bottom_left_geo_bounds = z.object({
     top_right: types_geo_location,
     bottom_left: types_geo_location
-});
+}).register(z.globalRegistry, { id: 'types_top_right_bottom_left_geo_bounds' });
 
 export const types_top_left_bottom_right_geo_bounds = z.object({
     top_left: types_geo_location,
     bottom_right: types_geo_location
-});
+}).register(z.globalRegistry, { id: 'types_top_left_bottom_right_geo_bounds' });
 
 export const types_coords_geo_bounds = z.object({
     top: z.number(),
     bottom: z.number(),
     left: z.number(),
     right: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_coords_geo_bounds' });
 
 /**
  * A geo bounding box. It can be represented in various ways:
@@ -1914,7 +1938,7 @@ export const types_geo_bounds = z.union([
     types_top_left_bottom_right_geo_bounds,
     types_top_right_bottom_left_geo_bounds,
     types_wkt_geo_bounds
-]);
+]).register(z.globalRegistry, { id: 'types_geo_bounds' });
 
 export const types_aggregations_geohex_grid_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: types_field,
@@ -1928,9 +1952,9 @@ export const types_aggregations_geohex_grid_aggregation = types_aggregations_buc
     shard_size: z.optional(z.number().register(z.globalRegistry, {
         description: 'Number of buckets returned from each shard.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geohex_grid_aggregation' });
 
-export const types_geo_tile_precision = types_ulong;
+export const types_geo_tile_precision = z.number().register(z.globalRegistry, { id: 'types_geo_tile_precision' });
 
 export const types_aggregations_geo_tile_grid_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: z.optional(types_field),
@@ -1942,11 +1966,15 @@ export const types_aggregations_geo_tile_grid_aggregation = types_aggregations_b
         description: 'The maximum number of buckets to return.'
     })),
     bounds: z.optional(types_geo_bounds)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_tile_grid_aggregation' });
 
-export const types_aggregations_geo_line_sort = types_aggregations_top_metrics_value;
+export const types_aggregations_geo_line_sort = z.object({
+    field: types_field
+}).register(z.globalRegistry, { id: 'types_aggregations_geo_line_sort' });
 
-export const types_aggregations_geo_line_point = types_aggregations_top_metrics_value;
+export const types_aggregations_geo_line_point = z.object({
+    field: types_field
+}).register(z.globalRegistry, { id: 'types_aggregations_geo_line_point' });
 
 export const types_aggregations_geo_line_aggregation = z.object({
     point: types_aggregations_geo_line_point,
@@ -1958,9 +1986,15 @@ export const types_aggregations_geo_line_aggregation = z.object({
     size: z.optional(z.number().register(z.globalRegistry, {
         description: 'The maximum length of the line represented in the aggregation.\nValid sizes are between 1 and 10000.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_geo_line_aggregation' });
 
-export const types_geo_hash_precision = types_byte_size;
+/**
+ * A precision that can be expressed as a geohash length between 1 and 12, or a distance measure like "1km", "10m".
+ */
+export const types_geo_hash_precision = z.union([
+    z.number(),
+    z.string()
+]).register(z.globalRegistry, { id: 'types_geo_hash_precision' });
 
 export const types_aggregations_geo_hash_grid_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     bounds: z.optional(types_geo_bounds),
@@ -1972,7 +2006,7 @@ export const types_aggregations_geo_hash_grid_aggregation = types_aggregations_b
     size: z.optional(z.number().register(z.globalRegistry, {
         description: 'The maximum number of geohash buckets to return.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_hash_grid_aggregation' });
 
 export const types_aggregations_geo_distance_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     distance_type: z.optional(types_geo_distance_type),
@@ -1982,27 +2016,27 @@ export const types_aggregations_geo_distance_aggregation = types_aggregations_bu
         description: 'An array of ranges used to bucket documents.'
     })),
     unit: z.optional(types_distance_unit)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_distance_aggregation' });
 
 export const types_aggregations_frequent_item_sets_field = z.object({
     field: types_field,
     exclude: z.optional(types_aggregations_terms_exclude),
     include: z.optional(types_aggregations_terms_include)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_frequent_item_sets_field' });
 
 export const types_aggregations_extended_stats_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     sigma: z.optional(z.number().register(z.globalRegistry, {
         description: 'The number of standard deviations above/below the mean to display.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_extended_stats_bucket_aggregation' });
 
 export const types_aggregations_sampler_aggregation_execution_hint = z.enum([
     'map',
     'global_ordinals',
     'bytes_hash'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_sampler_aggregation_execution_hint' });
 
-export const types_aggregations_derivative_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_derivative_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_derivative_aggregation' });
 
 /**
  * A date range limit, represented either as a DateMath expression or a number expressed
@@ -2011,7 +2045,7 @@ export const types_aggregations_derivative_aggregation = types_aggregations_sum_
 export const types_aggregations_field_date_math = z.union([
     types_date_math,
     z.number()
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_field_date_math' });
 
 export const types_aggregations_date_range_expression = z.object({
     from: z.optional(types_aggregations_field_date_math),
@@ -2019,7 +2053,7 @@ export const types_aggregations_date_range_expression = z.object({
         description: 'Custom key to return the range with.'
     })),
     to: z.optional(types_aggregations_field_date_math)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_date_range_expression' });
 
 export const types_aggregations_date_range_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: z.optional(types_field),
@@ -2034,41 +2068,44 @@ export const types_aggregations_date_range_aggregation = types_aggregations_buck
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `true` to associate a unique string key with each bucket and returns the ranges as a hash rather than an array.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_date_range_aggregation' });
 
 export const types_aggregations_extended_bounds_field_date_math = z.object({
     max: z.optional(types_aggregations_field_date_math),
     min: z.optional(types_aggregations_field_date_math)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_extended_bounds_field_date_math' });
 
-export const types_aggregations_cumulative_sum_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_cumulative_sum_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_cumulative_sum_aggregation' });
 
-export const types_aggregations_cumulative_cardinality_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_cumulative_cardinality_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_cumulative_cardinality_aggregation' });
 
 /**
  * A date histogram interval. Similar to `Duration` with additional units: `w` (week), `M` (month), `q` (quarter) and
  * `y` (year)
  */
 export const types_duration_large = z.string().register(z.globalRegistry, {
+    id: 'types_duration_large',
     description: 'A date histogram interval. Similar to `Duration` with additional units: `w` (week), `M` (month), `q` (quarter) and\n`y` (year)'
 });
 
-export const types_aggregations_composite_aggregate_key = z.record(z.string(), types_field_value);
+export const types_aggregations_composite_aggregate_key = z.record(z.string(), types_field_value).register(z.globalRegistry, { id: 'types_aggregations_composite_aggregate_key' });
 
-export const types_aggregations_children_aggregation = types_aggregations_parent_aggregation;
+export const types_aggregations_children_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
+    type: z.optional(types_relation_name)
+})).register(z.globalRegistry, { id: 'types_aggregations_children_aggregation' });
 
-export const types_aggregations_change_point_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_change_point_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_change_point_aggregation' });
 
 export const types_aggregations_custom_categorize_text_analyzer = z.object({
     char_filter: z.optional(z.array(z.string())),
     tokenizer: z.optional(z.string()),
     filter: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_custom_categorize_text_analyzer' });
 
 export const types_aggregations_categorize_text_analyzer = z.union([
     z.string(),
     types_aggregations_custom_categorize_text_analyzer
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_categorize_text_analyzer' });
 
 /**
  * A multi-bucket aggregation that groups semi-structured text into buckets. Each text
@@ -2103,7 +2140,7 @@ export const types_aggregations_categorize_text_aggregation = types_aggregations
     shard_min_doc_count: z.optional(z.number().register(z.globalRegistry, {
         description: 'The minimum number of documents in a bucket to be returned from the shard before merging.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_categorize_text_aggregation' });
 
 export const types_aggregations_cardinality_execution_mode = z.enum([
     'global_ordinals',
@@ -2111,7 +2148,7 @@ export const types_aggregations_cardinality_execution_mode = z.enum([
     'direct',
     'save_memory_heuristic',
     'save_time_heuristic'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_cardinality_execution_mode' });
 
 export const types_aggregations_bucket_correlation_function_count_correlation_indicator = z.object({
     doc_count: z.number().register(z.globalRegistry, {
@@ -2123,22 +2160,22 @@ export const types_aggregations_bucket_correlation_function_count_correlation_in
     fractions: z.optional(z.array(z.number()).register(z.globalRegistry, {
         description: 'An array of fractions to use when averaging and calculating variance. This should be used if\nthe pre-calculated data and the buckets_path have known gaps. The length of fractions, if provided,\nmust equal expectations.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_bucket_correlation_function_count_correlation_indicator' });
 
 export const types_aggregations_bucket_correlation_function_count_correlation = z.object({
     indicator: types_aggregations_bucket_correlation_function_count_correlation_indicator
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_bucket_correlation_function_count_correlation' });
 
 export const types_aggregations_bucket_correlation_function = z.object({
     count_correlation: types_aggregations_bucket_correlation_function_count_correlation
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_bucket_correlation_function' });
 
 /**
  * A sibling pipeline aggregation which executes a correlation function on the configured sibling multi-bucket aggregation.
  */
 export const types_aggregations_bucket_correlation_aggregation = types_aggregations_bucket_path_aggregation.and(z.object({
     function: types_aggregations_bucket_correlation_function
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_correlation_aggregation' });
 
 /**
  * A sibling pipeline aggregation which executes a two sample Kolmogorov–Smirnov test (referred
@@ -2161,9 +2198,9 @@ export const types_aggregations_bucket_ks_aggregation = types_aggregations_bucke
     sampling_method: z.optional(z.string().register(z.globalRegistry, {
         description: 'Indicates the sampling methodology when calculating the K-S test. Note, this is sampling of the returned values.\nThis determines the cumulative distribution function (CDF) points used comparing the two samples. Default is\n`upper_tail`, which emphasizes the upper end of the CDF points. Valid options are: `upper_tail`, `uniform`,\nand `lower_tail`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_ks_aggregation' });
 
-export const types_aggregations_average_bucket_aggregation = types_aggregations_sum_bucket_aggregation;
+export const types_aggregations_average_bucket_aggregation = types_aggregations_pipeline_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_average_bucket_aggregation' });
 
 export const types_aggregations_minimum_interval = z.enum([
     'second',
@@ -2172,15 +2209,15 @@ export const types_aggregations_minimum_interval = z.enum([
     'day',
     'month',
     'year'
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_minimum_interval' });
 
-export const types_op_type = z.enum(['index', 'create']);
+export const types_op_type = z.enum(['index', 'create']).register(z.globalRegistry, { id: 'types_op_type' });
 
 export const types_refresh = z.enum([
     'true',
     'false',
     'wait_for'
-]);
+]).register(z.globalRegistry, { id: 'types_refresh' });
 
 export const types_result = z.enum([
     'created',
@@ -2188,7 +2225,7 @@ export const types_result = z.enum([
     'deleted',
     'not_found',
     'noop'
-]);
+]).register(z.globalRegistry, { id: 'types_result' });
 
 /**
  * Cause and details about a request failure. This class defines the properties common to all error types.
@@ -2215,6 +2252,7 @@ export const types_error_cause = z.object({
         return z.optional(z.array(z.lazy((): any => types_error_cause)));
     }
 }).register(z.globalRegistry, {
+    id: 'types_error_cause',
     description: 'Cause and details about a request failure. This class defines the properties common to all error types.\nAdditional details are also provided, that depend on the error type.'
 });
 
@@ -2222,12 +2260,13 @@ export const types_error_cause = z.object({
  * Time unit for nanoseconds
  */
 export const types_unit_nanos = z.number().register(z.globalRegistry, {
+    id: 'types_unit_nanos',
     description: 'Time unit for nanoseconds'
 });
 
 export const types_duration_value_unit_nanos = types_unit_nanos;
 
-export const types_node_id = types_id;
+export const types_node_id = z.string().register(z.globalRegistry, { id: 'types_node_id' });
 
 export const types_inline_get = z.object({
     fields: z.optional(z.record(z.string(), z.record(z.string(), z.unknown()))),
@@ -2236,14 +2275,14 @@ export const types_inline_get = z.object({
     _primary_term: z.optional(z.number()),
     _routing: z.optional(types_routing),
     _source: z.optional(z.record(z.string(), z.unknown()))
-});
+}).register(z.globalRegistry, { id: 'types_inline_get' });
 
 export const global_bulk_failure_store_status = z.enum([
     'not_applicable_or_unknown',
     'used',
     'not_enabled',
     'failed'
-]);
+]).register(z.globalRegistry, { id: 'global_bulk_failure_store_status' });
 
 export const types_shard_failure = z.object({
     index: z.optional(types_index_name),
@@ -2252,7 +2291,7 @@ export const types_shard_failure = z.object({
     shard: z.optional(z.number()),
     status: z.optional(z.string()),
     primary: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'types_shard_failure' });
 
 export const types_shard_statistics = z.object({
     failed: types_uint,
@@ -2260,7 +2299,7 @@ export const types_shard_statistics = z.object({
     total: types_uint,
     failures: z.optional(z.array(types_shard_failure)),
     skipped: z.optional(types_uint)
-});
+}).register(z.globalRegistry, { id: 'types_shard_statistics' });
 
 export const types_write_response_base = z.object({
     _id: types_id,
@@ -2274,28 +2313,28 @@ export const types_write_response_base = z.object({
     _version: types_version_number,
     failure_store: z.optional(global_bulk_failure_store_status),
     forced_refresh: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'types_write_response_base' });
 
 export const global_update_update_write_response_base = types_write_response_base.and(z.object({
     get: z.optional(types_inline_get)
-}));
+})).register(z.globalRegistry, { id: 'global_update_update_write_response_base' });
 
 export const types_indices = z.union([
     types_index_name,
     z.array(types_index_name)
-]);
+]).register(z.globalRegistry, { id: 'types_indices' });
 
-export const types_uuid = types_id;
+export const types_uuid = z.string().register(z.globalRegistry, { id: 'types_uuid' });
 
 export const types_mapping_data_stream_timestamp = z.object({
     enabled: z.boolean()
-});
+}).register(z.globalRegistry, { id: 'types_mapping_data_stream_timestamp' });
 
 export const types_mapping_source_field_mode = z.enum([
     'disabled',
     'stored',
     'synthetic'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_source_field_mode' });
 
 export const types_mapping_source_field = z.object({
     compress: z.optional(z.boolean()),
@@ -2304,23 +2343,29 @@ export const types_mapping_source_field = z.object({
     excludes: z.optional(z.array(z.string())),
     includes: z.optional(z.array(z.string())),
     mode: z.optional(types_mapping_source_field_mode)
-});
+}).register(z.globalRegistry, { id: 'types_mapping_source_field' });
 
-export const types_mapping_size_field = types_mapping_data_stream_timestamp;
+export const types_mapping_size_field = z.object({
+    enabled: z.boolean()
+}).register(z.globalRegistry, { id: 'types_mapping_size_field' });
 
 export const types_mapping_routing_field = z.object({
     required: z.boolean()
-});
+}).register(z.globalRegistry, { id: 'types_mapping_routing_field' });
 
-export const types_mapping_index_field = types_mapping_data_stream_timestamp;
+export const types_mapping_index_field = z.object({
+    enabled: z.boolean()
+}).register(z.globalRegistry, { id: 'types_mapping_index_field' });
 
-export const types_mapping_field_names_field = types_mapping_data_stream_timestamp;
+export const types_mapping_field_names_field = z.object({
+    enabled: z.boolean()
+}).register(z.globalRegistry, { id: 'types_mapping_field_names_field' });
 
-export const types_analysis_icu_collation_case_first = z.enum(['lower', 'upper']);
+export const types_analysis_icu_collation_case_first = z.enum(['lower', 'upper']).register(z.globalRegistry, { id: 'types_analysis_icu_collation_case_first' });
 
-export const types_analysis_icu_collation_alternate = z.enum(['shifted', 'non-ignorable']);
+export const types_analysis_icu_collation_alternate = z.enum(['shifted', 'non-ignorable']).register(z.globalRegistry, { id: 'types_analysis_icu_collation_alternate' });
 
-export const types_analysis_icu_collation_decomposition = z.enum(['no', 'identical']);
+export const types_analysis_icu_collation_decomposition = z.enum(['no', 'identical']).register(z.globalRegistry, { id: 'types_analysis_icu_collation_decomposition' });
 
 export const types_analysis_icu_collation_strength = z.enum([
     'primary',
@@ -2328,27 +2373,27 @@ export const types_analysis_icu_collation_strength = z.enum([
     'tertiary',
     'quaternary',
     'identical'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_icu_collation_strength' });
 
 export const types_mapping_index_options = z.enum([
     'docs',
     'freqs',
     'positions',
     'offsets'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_index_options' });
 
 export const types_mapping_synthetic_source_keep_enum = z.enum([
     'none',
     'arrays',
     'all'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_synthetic_source_keep_enum' });
 
 export const types_mapping_dynamic_mapping = z.enum([
     'strict',
     'runtime',
     'true',
     'false'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_dynamic_mapping' });
 
 export const types_mapping_time_series_metric_type = z.enum([
     'gauge',
@@ -2356,13 +2401,13 @@ export const types_mapping_time_series_metric_type = z.enum([
     'summary',
     'histogram',
     'position'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_time_series_metric_type' });
 
-export const types_mapping_on_script_error = z.enum(['fail', 'continue']);
+export const types_mapping_on_script_error = z.enum(['fail', 'continue']).register(z.globalRegistry, { id: 'types_mapping_on_script_error' });
 
-export const types_short = types_ulong;
+export const types_short = z.number().register(z.globalRegistry, { id: 'types_short' });
 
-export const types_byte = types_ulong;
+export const types_byte = z.number().register(z.globalRegistry, { id: 'types_byte' });
 
 export const types_mapping_geo_orientation = z.enum([
     'right',
@@ -2373,15 +2418,15 @@ export const types_mapping_geo_orientation = z.enum([
     'LEFT',
     'clockwise',
     'cw'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_geo_orientation' });
 
-export const types_mapping_geo_strategy = z.enum(['recursive', 'term']);
+export const types_mapping_geo_strategy = z.enum(['recursive', 'term']).register(z.globalRegistry, { id: 'types_mapping_geo_strategy' });
 
 export const types_mapping_geo_point_metric_type = z.enum([
     'gauge',
     'counter',
     'position'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_geo_point_metric_type' });
 
 export const types_mapping_suggest_context = z.object({
     name: types_name,
@@ -2391,14 +2436,14 @@ export const types_mapping_suggest_context = z.object({
         z.number(),
         z.string()
     ]))
-});
+}).register(z.globalRegistry, { id: 'types_mapping_suggest_context' });
 
 export const types_mapping_sparse_vector_index_options = z.object({
     prune: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Whether to perform pruning, omitting the non-significant tokens from the query to improve query performance.\nIf prune is true but the pruning_config is not specified, pruning will occur but default values will be used.\nDefault: false'
     })),
     pruning_config: z.optional(types_token_pruning_config)
-});
+}).register(z.globalRegistry, { id: 'types_mapping_sparse_vector_index_options' });
 
 export const types_mapping_chunking_settings = z.object({
     strategy: z.string().register(z.globalRegistry, {
@@ -2419,13 +2464,13 @@ export const types_mapping_chunking_settings = z.object({
     separators: z.optional(z.array(z.string()).register(z.globalRegistry, {
         description: 'Only applicable to the `recursive` strategy and required when using it.\n\nA list of strings used as possible split points when chunking text.\n\nEach string can be a plain string or a regular expression (regex) pattern.\nThe system tries each separator in order to split the text, starting from the first item in the list.\n\nAfter splitting, it attempts to recombine smaller pieces into larger chunks that stay within\nthe `max_chunk_size` limit, to reduce the total number of chunks generated.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_mapping_chunking_settings' });
 
 export const types_mapping_dense_vector_index_options_rescore_vector = z.object({
     oversample: z.number().register(z.globalRegistry, {
         description: 'The oversampling factor to use when searching for the nearest neighbor. This is only applicable to the quantized formats: `bbq_*`, `int4_*`, and `int8_*`.\nWhen provided, `oversample * k` vectors will be gathered and then their scores will be re-computed with the original vectors.\n\nvalid values are between `1.0` and `10.0` (inclusive), or `0` exactly to disable oversampling.'
     })
-});
+}).register(z.globalRegistry, { id: 'types_mapping_dense_vector_index_options_rescore_vector' });
 
 export const types_mapping_dense_vector_index_options_type = z.enum([
     'bbq_flat',
@@ -2437,7 +2482,7 @@ export const types_mapping_dense_vector_index_options_type = z.enum([
     'int4_hnsw',
     'int8_flat',
     'int8_hnsw'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_dense_vector_index_options_type' });
 
 export const types_mapping_dense_vector_index_options = z.object({
     confidence_interval: z.optional(z.number().register(z.globalRegistry, {
@@ -2454,46 +2499,46 @@ export const types_mapping_dense_vector_index_options = z.object({
     on_disk_rescore: z.optional(z.boolean().register(z.globalRegistry, {
         description: '`true` if vector rescoring should be done on-disk\n\nOnly applicable to `bbq_disk`, `bbq_hnsw`, `int4_hnsw`, `int8_hnsw`'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_mapping_dense_vector_index_options' });
 
 export const types_mapping_semantic_text_index_options = z.object({
     dense_vector: z.optional(types_mapping_dense_vector_index_options),
     sparse_vector: z.optional(types_mapping_sparse_vector_index_options)
-});
+}).register(z.globalRegistry, { id: 'types_mapping_semantic_text_index_options' });
 
 export const types_mapping_rank_vector_element_type = z.enum([
     'byte',
     'float',
     'bit'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_rank_vector_element_type' });
 
-export const types_mapping_subobjects = z.enum(['true', 'false']);
+export const types_mapping_subobjects = z.enum(['true', 'false']).register(z.globalRegistry, { id: 'types_mapping_subobjects' });
 
 export const types_mapping_dense_vector_similarity = z.enum([
     'cosine',
     'dot_product',
     'l2_norm',
     'max_inner_product'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_dense_vector_similarity' });
 
 export const types_mapping_dense_vector_element_type = z.enum([
     'bit',
     'byte',
     'float',
     'bfloat16'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_dense_vector_element_type' });
 
-export const indices_types_numeric_fielddata_format = z.enum(['array', 'disabled']);
+export const indices_types_numeric_fielddata_format = z.enum(['array', 'disabled']).register(z.globalRegistry, { id: 'indices_types_numeric_fielddata_format' });
 
 export const indices_types_numeric_fielddata = z.object({
     format: indices_types_numeric_fielddata_format
-});
+}).register(z.globalRegistry, { id: 'indices_types_numeric_fielddata' });
 
 export const indices_types_fielddata_frequency_filter = z.object({
     max: z.number(),
     min: z.number(),
     min_segment_size: z.number()
-});
+}).register(z.globalRegistry, { id: 'indices_types_fielddata_frequency_filter' });
 
 export const types_mapping_term_vector_option = z.enum([
     'no',
@@ -2503,14 +2548,14 @@ export const types_mapping_term_vector_option = z.enum([
     'with_positions_offsets',
     'with_positions_offsets_payloads',
     'with_positions_payloads'
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_term_vector_option' });
 
 export const types_mapping_text_index_prefixes = z.object({
     max_chars: z.number(),
     min_chars: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_mapping_text_index_prefixes' });
 
-export const types_mapping_match_type = z.enum(['simple', 'regex']);
+export const types_mapping_match_type = z.enum(['simple', 'regex']).register(z.globalRegistry, { id: 'types_mapping_match_type' });
 
 export const types_mapping_all_field = z.object({
     analyzer: z.string(),
@@ -2523,7 +2568,7 @@ export const types_mapping_all_field = z.object({
     store_term_vector_payloads: z.boolean(),
     store_term_vector_positions: z.boolean(),
     store_term_vectors: z.boolean()
-});
+}).register(z.globalRegistry, { id: 'types_mapping_all_field' });
 
 export const indices_types_storage_type = z.union([
     z.enum([
@@ -2533,7 +2578,7 @@ export const indices_types_storage_type = z.union([
         'hybridfs'
     ]),
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'indices_types_storage_type' });
 
 export const indices_types_storage = z.object({
     type: indices_types_storage_type,
@@ -2541,71 +2586,75 @@ export const indices_types_storage = z.object({
         description: 'You can restrict the use of the mmapfs and the related hybridfs store type via the setting node.store.allow_mmap.\nThis is a boolean setting indicating whether or not memory-mapping is allowed. The default is to allow it. This\nsetting is useful, for example, if you are in an environment where you can not control the ability to create a lot\nof memory maps so you need disable the ability to use memory-mapping.'
     })),
     stats_refresh_interval: z.optional(types_duration)
-});
+}).register(z.globalRegistry, { id: 'indices_types_storage' });
 
 export const indices_types_indexing_pressure_memory = z.object({
     limit: z.optional(z.number().register(z.globalRegistry, {
         description: 'Number of outstanding bytes that may be consumed by indexing requests. When this limit is reached or exceeded,\nthe node will reject new coordinating and primary operations. When replica operations consume 1.5x this limit,\nthe node will reject new replica operations. Defaults to 10% of the heap.'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_indexing_pressure_memory' });
 
 export const indices_types_indexing_pressure = z.object({
     memory: indices_types_indexing_pressure_memory
-});
+}).register(z.globalRegistry, { id: 'indices_types_indexing_pressure' });
 
 export const indices_types_slowlog_treshold_levels = z.object({
     warn: z.optional(types_duration),
     info: z.optional(types_duration),
     debug: z.optional(types_duration),
     trace: z.optional(types_duration)
-});
+}).register(z.globalRegistry, { id: 'indices_types_slowlog_treshold_levels' });
 
 export const indices_types_indexing_slowlog_tresholds = z.object({
     index: z.optional(indices_types_slowlog_treshold_levels)
-});
+}).register(z.globalRegistry, { id: 'indices_types_indexing_slowlog_tresholds' });
 
 export const indices_types_indexing_slowlog_settings = z.object({
     level: z.optional(z.string()),
     source: z.optional(z.number()),
     reformat: z.optional(z.boolean()),
     threshold: z.optional(indices_types_indexing_slowlog_tresholds)
-});
+}).register(z.globalRegistry, { id: 'indices_types_indexing_slowlog_settings' });
 
-export const indices_types_source_mode = types_mapping_source_field_mode;
+export const indices_types_source_mode = z.enum([
+    'disabled',
+    'stored',
+    'synthetic'
+]).register(z.globalRegistry, { id: 'indices_types_source_mode' });
 
 export const indices_types_mapping_limit_settings_source_fields = z.object({
     mode: indices_types_source_mode
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_source_fields' });
 
 export const indices_types_mapping_limit_settings_dimension_fields = z.object({
     limit: z.optional(z.number().register(z.globalRegistry, {
         description: '[preview] This functionality is in technical preview and may be changed or removed in a future release.\nElastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_dimension_fields' });
 
 export const indices_types_mapping_limit_settings_field_name_length = z.object({
     limit: z.optional(z.number().register(z.globalRegistry, {
         description: 'Setting for the maximum length of a field name. This setting isn’t really something that addresses mappings explosion but\nmight still be useful if you want to limit the field length. It usually shouldn’t be necessary to set this setting. The\ndefault is okay unless a user starts to add a huge number of fields with really long names. Default is `Long.MAX_VALUE` (no limit).'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_field_name_length' });
 
 export const indices_types_mapping_limit_settings_nested_objects = z.object({
     limit: z.optional(z.number().register(z.globalRegistry, {
         description: 'The maximum number of nested JSON objects that a single document can contain across all nested types. This limit helps\nto prevent out of memory errors when a document contains too many nested objects.'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_nested_objects' });
 
 export const indices_types_mapping_limit_settings_nested_fields = z.object({
     limit: z.optional(z.number().register(z.globalRegistry, {
         description: 'The maximum number of distinct nested mappings in an index. The nested type should only be used in special cases, when\narrays of objects need to be queried independently of each other. To safeguard against poorly designed mappings, this\nsetting limits the number of unique nested types per index.'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_nested_fields' });
 
 export const indices_types_mapping_limit_settings_depth = z.object({
     limit: z.optional(z.number().register(z.globalRegistry, {
         description: 'The maximum depth for a field, which is measured as the number of inner objects. For instance, if all fields are defined\nat the root object level, then the depth is 1. If there is one object mapping, then the depth is 2, etc.'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_depth' });
 
 export const indices_types_mapping_limit_settings_total_fields = z.object({
     limit: z.optional(z.union([
@@ -2616,7 +2665,7 @@ export const indices_types_mapping_limit_settings_total_fields = z.object({
         z.boolean(),
         z.string()
     ]))
-});
+}).register(z.globalRegistry, { id: 'indices_types_mapping_limit_settings_total_fields' });
 
 /**
  * Mapping Limit Settings
@@ -2635,22 +2684,23 @@ export const indices_types_mapping_limit_settings = z.object({
         z.string()
     ]))
 }).register(z.globalRegistry, {
+    id: 'indices_types_mapping_limit_settings',
     description: 'Mapping Limit Settings'
 });
 
 export const indices_types_settings_similarity_lmj = z.object({
     type: z.enum(['LMJelinekMercer']),
     lambda: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_lmj' });
 
 export const indices_types_settings_similarity_lmd = z.object({
     type: z.enum(['LMDirichlet']),
     mu: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_lmd' });
 
-export const types_ib_lambda = z.enum(['df', 'ttf']);
+export const types_ib_lambda = z.enum(['df', 'ttf']).register(z.globalRegistry, { id: 'types_ib_lambda' });
 
-export const types_ib_distribution = z.enum(['ll', 'spl']);
+export const types_ib_distribution = z.enum(['ll', 'spl']).register(z.globalRegistry, { id: 'types_ib_distribution' });
 
 export const types_normalization = z.enum([
     'no',
@@ -2658,14 +2708,14 @@ export const types_normalization = z.enum([
     'h2',
     'h3',
     'z'
-]);
+]).register(z.globalRegistry, { id: 'types_normalization' });
 
 export const indices_types_settings_similarity_ib = z.object({
     type: z.enum(['IB']),
     distribution: types_ib_distribution,
     lambda: types_ib_lambda,
     normalization: types_normalization
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_ib' });
 
 export const types_dfr_basic_model = z.enum([
     'be',
@@ -2675,63 +2725,65 @@ export const types_dfr_basic_model = z.enum([
     'in',
     'ine',
     'p'
-]);
+]).register(z.globalRegistry, { id: 'types_dfr_basic_model' });
 
 export const types_dfr_after_effect = z.enum([
     'no',
     'b',
     'l'
-]);
+]).register(z.globalRegistry, { id: 'types_dfr_after_effect' });
 
 export const indices_types_settings_similarity_dfr = z.object({
     type: z.enum(['DFR']),
     after_effect: types_dfr_after_effect,
     basic_model: types_dfr_basic_model,
     normalization: types_normalization
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_dfr' });
 
 export const types_dfi_independence_measure = z.enum([
     'standardized',
     'saturated',
     'chisquared'
-]);
+]).register(z.globalRegistry, { id: 'types_dfi_independence_measure' });
 
 export const indices_types_settings_similarity_dfi = z.object({
     type: z.enum(['DFI']),
     independence_measure: types_dfi_independence_measure
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_dfi' });
 
 export const indices_types_settings_similarity_boolean = z.object({
     type: z.enum(['boolean'])
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_boolean' });
 
 export const indices_types_settings_similarity_bm25 = z.object({
     type: z.enum(['BM25']),
     b: z.optional(z.number()),
     discount_overlaps: z.optional(z.boolean()),
     k1: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_bm25' });
 
-export const indices_types_cache_queries = types_mapping_data_stream_timestamp;
+export const indices_types_cache_queries = z.object({
+    enabled: z.boolean()
+}).register(z.globalRegistry, { id: 'indices_types_cache_queries' });
 
 export const indices_types_queries = z.object({
     cache: z.optional(indices_types_cache_queries)
-});
+}).register(z.globalRegistry, { id: 'indices_types_queries' });
 
 export const indices_types_index_settings_time_series = z.object({
     end_time: z.optional(types_date_time),
     start_time: z.optional(types_date_time)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_settings_time_series' });
 
 export const types_analysis_nori_decompound_mode = z.enum([
     'discard',
     'none',
     'mixed'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_nori_decompound_mode' });
 
 export const types_analysis_tokenizer_base = z.object({
     version: z.optional(types_version_string)
-});
+}).register(z.globalRegistry, { id: 'types_analysis_tokenizer_base' });
 
 export const types_analysis_nori_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['nori_tokenizer']),
@@ -2739,13 +2791,13 @@ export const types_analysis_nori_tokenizer = types_analysis_tokenizer_base.and(z
     discard_punctuation: z.optional(z.boolean()),
     user_dictionary: z.optional(z.string()),
     user_dictionary_rules: z.optional(z.array(z.string()))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_nori_tokenizer' });
 
 export const types_analysis_kuromoji_tokenization_mode = z.enum([
     'normal',
     'search',
     'extended'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_kuromoji_tokenization_mode' });
 
 export const types_analysis_kuromoji_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['kuromoji_tokenizer']),
@@ -2756,48 +2808,48 @@ export const types_analysis_kuromoji_tokenizer = types_analysis_tokenizer_base.a
     user_dictionary: z.optional(z.string()),
     user_dictionary_rules: z.optional(z.array(z.string())),
     discard_compound_token: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_kuromoji_tokenizer' });
 
 export const types_analysis_icu_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['icu_tokenizer']),
     rule_files: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_icu_tokenizer' });
 
 export const types_analysis_whitespace_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['whitespace']),
     max_token_length: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_whitespace_tokenizer' });
 
 export const types_analysis_uax_email_url_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['uax_url_email']),
     max_token_length: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_uax_email_url_tokenizer' });
 
 export const types_analysis_thai_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['thai'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_thai_tokenizer' });
 
 export const types_analysis_standard_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['standard']),
     max_token_length: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_standard_tokenizer' });
 
 export const types_analysis_simple_pattern_split_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['simple_pattern_split']),
     pattern: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_simple_pattern_split_tokenizer' });
 
 export const types_analysis_simple_pattern_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['simple_pattern']),
     pattern: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_simple_pattern_tokenizer' });
 
 export const types_analysis_pattern_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['pattern']),
     flags: z.optional(z.string()),
     group: z.optional(z.number()),
     pattern: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_pattern_tokenizer' });
 
 /**
  * Some APIs will return values such as numbers also as a string (notably epoch timestamps). This behavior
@@ -2809,9 +2861,19 @@ export const types_analysis_pattern_tokenizer = types_analysis_tokenizer_base.an
 export const spec_utils_stringifiedboolean = z.union([
     z.boolean(),
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'spec_utils_stringifiedboolean' });
 
-export const spec_utils_stringifiedinteger = types_byte_size;
+/**
+ * Some APIs will return values such as numbers also as a string (notably epoch timestamps). This behavior
+ * is used to capture this behavior while keeping the semantics of the field type.
+ *
+ * Depending on the target language, code generators can keep the union or remove it and leniently parse
+ * strings to the target type.
+ */
+export const spec_utils_stringifiedinteger = z.union([
+    z.number(),
+    z.string()
+]).register(z.globalRegistry, { id: 'spec_utils_stringifiedinteger' });
 
 export const types_analysis_path_hierarchy_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['path_hierarchy']),
@@ -2820,7 +2882,7 @@ export const types_analysis_path_hierarchy_tokenizer = types_analysis_tokenizer_
     replacement: z.optional(z.string()),
     reverse: z.optional(spec_utils_stringifiedboolean),
     skip: z.optional(spec_utils_stringifiedinteger)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_path_hierarchy_tokenizer' });
 
 export const types_analysis_token_char = z.enum([
     'letter',
@@ -2829,7 +2891,7 @@ export const types_analysis_token_char = z.enum([
     'punctuation',
     'symbol',
     'custom'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_token_char' });
 
 export const types_analysis_n_gram_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['ngram']),
@@ -2837,20 +2899,20 @@ export const types_analysis_n_gram_tokenizer = types_analysis_tokenizer_base.and
     max_gram: z.optional(z.number()),
     min_gram: z.optional(z.number()),
     token_chars: z.optional(z.array(types_analysis_token_char))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_n_gram_tokenizer' });
 
 export const types_analysis_lowercase_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['lowercase'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_lowercase_tokenizer' });
 
 export const types_analysis_letter_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['letter'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_letter_tokenizer' });
 
 export const types_analysis_keyword_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['keyword']),
     buffer_size: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_keyword_tokenizer' });
 
 export const types_analysis_edge_n_gram_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['edge_ngram']),
@@ -2858,18 +2920,18 @@ export const types_analysis_edge_n_gram_tokenizer = types_analysis_tokenizer_bas
     max_gram: z.optional(z.number()),
     min_gram: z.optional(z.number()),
     token_chars: z.optional(z.array(types_analysis_token_char))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_edge_n_gram_tokenizer' });
 
 export const types_analysis_classic_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['classic']),
     max_token_length: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_classic_tokenizer' });
 
 export const types_analysis_char_group_tokenizer = types_analysis_tokenizer_base.and(z.object({
     type: z.enum(['char_group']),
     tokenize_on_chars: z.array(z.string()),
     max_token_length: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_char_group_tokenizer' });
 
 export const types_analysis_tokenizer_definition = z.union([
     z.object({
@@ -2926,22 +2988,22 @@ export const types_analysis_tokenizer_definition = z.union([
     z.object({
         type: z.literal('nori_tokenizer')
     }).and(types_analysis_nori_tokenizer)
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_tokenizer_definition' });
 
 export const types_analysis_tokenizer = z.union([
     z.string(),
     types_analysis_tokenizer_definition
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_tokenizer' });
 
 export const types_analysis_custom_normalizer = z.object({
     type: z.enum(['custom']),
     char_filter: z.optional(z.array(z.string())),
     filter: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_custom_normalizer' });
 
 export const types_analysis_lowercase_normalizer = z.object({
     type: z.enum(['lowercase'])
-});
+}).register(z.globalRegistry, { id: 'types_analysis_lowercase_normalizer' });
 
 export const types_analysis_normalizer = z.union([
     z.object({
@@ -2950,9 +3012,11 @@ export const types_analysis_normalizer = z.union([
     z.object({
         type: z.literal('custom')
     }).and(types_analysis_custom_normalizer)
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_normalizer' });
 
-export const types_analysis_token_filter_base = types_analysis_tokenizer_base;
+export const types_analysis_token_filter_base = z.object({
+    version: z.optional(types_version_string)
+}).register(z.globalRegistry, { id: 'types_analysis_token_filter_base' });
 
 export const types_analysis_compound_word_token_filter_base = types_analysis_token_filter_base.and(z.object({
     max_subword_size: z.optional(z.number().register(z.globalRegistry, {
@@ -2973,19 +3037,19 @@ export const types_analysis_compound_word_token_filter_base = types_analysis_tok
     word_list_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'Path to a file that contains a list of subwords to find in the token stream. If found, the subword is included in the token output.\nThis path must be absolute or relative to the config location, and the file must be UTF-8 encoded. Each token in the file must be separated by a line break.\nEither this parameter or `word_list` must be specified.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_compound_word_token_filter_base' });
 
 export const types_analysis_dictionary_decompounder_token_filter = types_analysis_compound_word_token_filter_base.and(z.object({
     type: z.enum(['dictionary_decompounder'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_dictionary_decompounder_token_filter' });
 
-export const types_analysis_phonetic_rule_type = z.enum(['approx', 'exact']);
+export const types_analysis_phonetic_rule_type = z.enum(['approx', 'exact']).register(z.globalRegistry, { id: 'types_analysis_phonetic_rule_type' });
 
 export const types_analysis_phonetic_name_type = z.enum([
     'generic',
     'ashkenazi',
     'sephardic'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_phonetic_name_type' });
 
 export const types_analysis_phonetic_language = z.enum([
     'any',
@@ -3000,7 +3064,7 @@ export const types_analysis_phonetic_language = z.enum([
     'romanian',
     'russian',
     'spanish'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_phonetic_language' });
 
 export const types_analysis_phonetic_encoder = z.enum([
     'metaphone',
@@ -3015,7 +3079,7 @@ export const types_analysis_phonetic_encoder = z.enum([
     'haasephonetik',
     'beider_morse',
     'daitch_mokotoff'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_phonetic_encoder' });
 
 export const types_analysis_phonetic_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['phonetic']),
@@ -3028,31 +3092,31 @@ export const types_analysis_phonetic_token_filter = types_analysis_token_filter_
     name_type: z.optional(types_analysis_phonetic_name_type),
     replace: z.optional(z.boolean()),
     rule_type: z.optional(types_analysis_phonetic_rule_type)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_phonetic_token_filter' });
 
-export const types_analysis_icu_transform_direction = z.enum(['forward', 'reverse']);
+export const types_analysis_icu_transform_direction = z.enum(['forward', 'reverse']).register(z.globalRegistry, { id: 'types_analysis_icu_transform_direction' });
 
 export const types_analysis_icu_transform_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['icu_transform']),
     dir: z.optional(types_analysis_icu_transform_direction),
     id: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_icu_transform_token_filter' });
 
 export const types_analysis_icu_normalization_type = z.enum([
     'nfc',
     'nfkc',
     'nfkc_cf'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_icu_normalization_type' });
 
 export const types_analysis_icu_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['icu_normalizer']),
     name: types_analysis_icu_normalization_type
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_icu_normalization_token_filter' });
 
 export const types_analysis_icu_folding_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['icu_folding']),
     unicode_set_filter: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_icu_folding_token_filter' });
 
 export const types_analysis_icu_collation_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['icu_collation']),
@@ -3068,27 +3132,27 @@ export const types_analysis_icu_collation_token_filter = types_analysis_token_fi
     strength: z.optional(types_analysis_icu_collation_strength),
     variableTop: z.optional(z.string()),
     variant: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_icu_collation_token_filter' });
 
 export const types_analysis_kuromoji_part_of_speech_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['kuromoji_part_of_speech']),
     stoptags: z.array(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_kuromoji_part_of_speech_token_filter' });
 
 export const types_analysis_kuromoji_reading_form_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['kuromoji_readingform']),
     use_romaji: z.boolean()
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_kuromoji_reading_form_token_filter' });
 
 export const types_analysis_kuromoji_stemmer_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['kuromoji_stemmer']),
     minimum_length: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_kuromoji_stemmer_token_filter' });
 
 export const types_analysis_ja_stop_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['ja_stop']),
     stopwords: z.optional(types_analysis_stop_words)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_ja_stop_token_filter' });
 
 export const types_analysis_word_delimiter_token_filter_base = types_analysis_token_filter_base.and(z.object({
     catenate_all: z.optional(z.boolean().register(z.globalRegistry, {
@@ -3128,11 +3192,11 @@ export const types_analysis_word_delimiter_token_filter_base = types_analysis_to
     type_table_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'Path to a file that contains custom type mappings for characters. This allows you to map non-alphanumeric characters as numeric or alphanumeric to avoid splitting on those characters.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_word_delimiter_token_filter_base' });
 
 export const types_analysis_word_delimiter_token_filter = types_analysis_word_delimiter_token_filter_base.and(z.object({
     type: z.enum(['word_delimiter'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_word_delimiter_token_filter' });
 
 export const types_analysis_word_delimiter_graph_token_filter = types_analysis_word_delimiter_token_filter_base.and(z.object({
     type: z.enum(['word_delimiter_graph']),
@@ -3142,31 +3206,31 @@ export const types_analysis_word_delimiter_graph_token_filter = types_analysis_w
     ignore_keywords: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, the filter skips tokens with a keyword attribute of true. Defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_word_delimiter_graph_token_filter' });
 
 export const types_analysis_uppercase_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['uppercase'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_uppercase_token_filter' });
 
 export const types_analysis_unique_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['unique']),
     only_on_same_position: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, only remove duplicate tokens in the same position. Defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_unique_token_filter' });
 
 export const types_analysis_truncate_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['truncate']),
     length: z.optional(z.number().register(z.globalRegistry, {
         description: 'Character limit for each token. Tokens exceeding this limit are truncated. Defaults to `10`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_truncate_token_filter' });
 
 export const types_analysis_trim_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['trim'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_trim_token_filter' });
 
-export const types_analysis_synonym_format = z.enum(['solr', 'wordnet']);
+export const types_analysis_synonym_format = z.enum(['solr', 'wordnet']).register(z.globalRegistry, { id: 'types_analysis_synonym_format' });
 
 export const types_analysis_synonym_token_filter_base = types_analysis_token_filter_base.and(z.object({
     expand: z.optional(z.boolean().register(z.globalRegistry, {
@@ -3191,15 +3255,15 @@ export const types_analysis_synonym_token_filter_base = types_analysis_token_fil
     updateable: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true` allows reloading search analyzers to pick up changes to synonym files. Only to be used for search analyzers. Defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_synonym_token_filter_base' });
 
 export const types_analysis_synonym_token_filter = types_analysis_synonym_token_filter_base.and(z.object({
     type: z.enum(['synonym'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_synonym_token_filter' });
 
 export const types_analysis_synonym_graph_token_filter = types_analysis_synonym_token_filter_base.and(z.object({
     type: z.enum(['synonym_graph'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_synonym_graph_token_filter' });
 
 export const types_analysis_stop_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['stop']),
@@ -3213,12 +3277,12 @@ export const types_analysis_stop_token_filter = types_analysis_token_filter_base
     stopwords_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'Path to a file that contains a list of stop words to remove.\nThis path must be absolute or relative to the `config` location, and the file must be UTF-8 encoded. Each stop word in the file must be separated by a line break.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_stop_token_filter' });
 
 export const types_analysis_stemmer_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['stemmer']),
     language: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_stemmer_token_filter' });
 
 export const types_analysis_stemmer_override_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['stemmer_override']),
@@ -3228,11 +3292,11 @@ export const types_analysis_stemmer_override_token_filter = types_analysis_token
     rules_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'A path (either relative to `config` location, or absolute) to a list of mappings.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_stemmer_override_token_filter' });
 
 export const types_analysis_sorani_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['sorani_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_sorani_normalization_token_filter' });
 
 export const types_analysis_snowball_language = z.enum([
     'Arabic',
@@ -3262,12 +3326,12 @@ export const types_analysis_snowball_language = z.enum([
     'Spanish',
     'Swedish',
     'Turkish'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_snowball_language' });
 
 export const types_analysis_snowball_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['snowball']),
     language: z.optional(types_analysis_snowball_language)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_snowball_token_filter' });
 
 export const types_analysis_shingle_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['shingle']),
@@ -3285,43 +3349,43 @@ export const types_analysis_shingle_token_filter = types_analysis_token_filter_b
     token_separator: z.optional(z.string().register(z.globalRegistry, {
         description: 'Separator used to concatenate adjacent tokens to form a shingle. Defaults to a space (`" "`).'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_shingle_token_filter' });
 
 export const types_analysis_serbian_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['serbian_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_serbian_normalization_token_filter' });
 
 export const types_analysis_scandinavian_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['scandinavian_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_scandinavian_normalization_token_filter' });
 
 export const types_analysis_scandinavian_folding_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['scandinavian_folding'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_scandinavian_folding_token_filter' });
 
 export const types_analysis_russian_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['russian_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_russian_stem_token_filter' });
 
 export const types_analysis_reverse_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['reverse'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_reverse_token_filter' });
 
 export const types_analysis_remove_duplicates_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['remove_duplicates'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_remove_duplicates_token_filter' });
 
 export const types_analysis_porter_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['porter_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_porter_stem_token_filter' });
 
 export const types_analysis_persian_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['persian_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_persian_stem_token_filter' });
 
 export const types_analysis_persian_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['persian_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_persian_normalization_token_filter' });
 
 export const types_analysis_pattern_replace_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['pattern_replace']),
@@ -3335,7 +3399,7 @@ export const types_analysis_pattern_replace_token_filter = types_analysis_token_
     replacement: z.optional(z.string().register(z.globalRegistry, {
         description: 'Replacement substring. Defaults to an empty substring (`""`).'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_pattern_replace_token_filter' });
 
 export const types_analysis_pattern_capture_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['pattern_capture']),
@@ -3343,14 +3407,14 @@ export const types_analysis_pattern_capture_token_filter = types_analysis_token_
         description: 'A list of regular expressions to match.'
     }),
     preserve_original: z.optional(spec_utils_stringifiedboolean)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_pattern_capture_token_filter' });
 
 export const types_analysis_nori_part_of_speech_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['nori_part_of_speech']),
     stoptags: z.optional(z.array(z.string()).register(z.globalRegistry, {
         description: 'An array of part-of-speech tags that should be removed.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_nori_part_of_speech_token_filter' });
 
 export const types_analysis_n_gram_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['ngram']),
@@ -3361,7 +3425,7 @@ export const types_analysis_n_gram_token_filter = types_analysis_token_filter_ba
         description: 'Minimum length of characters in a gram. Defaults to `1`.'
     })),
     preserve_original: z.optional(spec_utils_stringifiedboolean)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_n_gram_token_filter' });
 
 export const types_analysis_multiplexer_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['multiplexer']),
@@ -3369,7 +3433,7 @@ export const types_analysis_multiplexer_token_filter = types_analysis_token_filt
         description: 'A list of token filters to apply to incoming tokens.'
     }),
     preserve_original: z.optional(spec_utils_stringifiedboolean)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_multiplexer_token_filter' });
 
 export const types_analysis_min_hash_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['min_hash']),
@@ -3385,18 +3449,18 @@ export const types_analysis_min_hash_token_filter = types_analysis_token_filter_
     with_rotation: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, the filter fills empty buckets with the value of the first non-empty bucket to its circular right if the `hash_set_size` is `1`. If the `bucket_count` argument is greater than 1, this parameter defaults to `true`. Otherwise, this parameter defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_min_hash_token_filter' });
 
 export const types_analysis_lowercase_token_filter_languages = z.enum([
     'greek',
     'irish',
     'turkish'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_lowercase_token_filter_languages' });
 
 export const types_analysis_lowercase_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['lowercase']),
     language: z.optional(types_analysis_lowercase_token_filter_languages)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_lowercase_token_filter' });
 
 export const types_analysis_limit_token_count_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['limit']),
@@ -3404,7 +3468,7 @@ export const types_analysis_limit_token_count_token_filter = types_analysis_toke
         description: 'If `true`, the limit filter exhausts the token stream, even if the `max_token_count` has already been reached. Defaults to `false`.'
     })),
     max_token_count: z.optional(spec_utils_stringifiedinteger)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_limit_token_count_token_filter' });
 
 export const types_analysis_length_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['length']),
@@ -3414,15 +3478,15 @@ export const types_analysis_length_token_filter = types_analysis_token_filter_ba
     min: z.optional(z.number().register(z.globalRegistry, {
         description: 'Minimum character length of a token. Shorter tokens are excluded from the output. Defaults to `0`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_length_token_filter' });
 
 export const types_analysis_k_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['kstem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_k_stem_token_filter' });
 
 export const types_analysis_keyword_repeat_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['keyword_repeat'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_keyword_repeat_token_filter' });
 
 export const types_analysis_keyword_marker_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['keyword_marker']),
@@ -3439,7 +3503,7 @@ export const types_analysis_keyword_marker_token_filter = types_analysis_token_f
     keywords_pattern: z.optional(z.string().register(z.globalRegistry, {
         description: 'Java regular expression used to match tokens. Tokens that match this expression are marked as keywords and not stemmed.\nThis parameter, `keywords`, or `keywords_path` must be specified. You cannot specify this parameter and `keywords` or `keywords_pattern`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_keyword_marker_token_filter' });
 
 export const types_analysis_keep_words_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['keep']),
@@ -3452,9 +3516,9 @@ export const types_analysis_keep_words_token_filter = types_analysis_token_filte
     keep_words_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'Path to a file that contains a list of words to keep. Only tokens that match words in this list are included in the output.\nThis path must be absolute or relative to the `config` location, and the file must be UTF-8 encoded. Each word in the file must be separated by a line break.\nEither this parameter or `keep_words` must be specified.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_keep_words_token_filter' });
 
-export const types_analysis_keep_types_mode = z.enum(['include', 'exclude']);
+export const types_analysis_keep_types_mode = z.enum(['include', 'exclude']).register(z.globalRegistry, { id: 'types_analysis_keep_types_mode' });
 
 export const types_analysis_keep_types_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['keep_types']),
@@ -3462,11 +3526,11 @@ export const types_analysis_keep_types_token_filter = types_analysis_token_filte
     types: z.array(z.string()).register(z.globalRegistry, {
         description: 'List of token types to keep or remove.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_keep_types_token_filter' });
 
 export const types_analysis_indic_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['indic_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_indic_normalization_token_filter' });
 
 export const types_analysis_hyphenation_decompounder_token_filter = types_analysis_compound_word_token_filter_base.and(z.object({
     type: z.enum(['hyphenation_decompounder']),
@@ -3479,7 +3543,7 @@ export const types_analysis_hyphenation_decompounder_token_filter = types_analys
     no_overlapping_matches: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, do not allow overlapping tokens. Defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_hyphenation_decompounder_token_filter' });
 
 export const types_analysis_hunspell_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['hunspell']),
@@ -3495,27 +3559,27 @@ export const types_analysis_hunspell_token_filter = types_analysis_token_filter_
     longest_only: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, only the longest stemmed version of each token is included in the output. If `false`, all stemmed versions of the token are included. Defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_hunspell_token_filter' });
 
 export const types_analysis_hindi_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['hindi_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_hindi_normalization_token_filter' });
 
 export const types_analysis_german_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['german_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_german_stem_token_filter' });
 
 export const types_analysis_german_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['german_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_german_normalization_token_filter' });
 
 export const types_analysis_french_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['french_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_french_stem_token_filter' });
 
 export const types_analysis_flatten_graph_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['flatten_graph'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_flatten_graph_token_filter' });
 
 export const types_analysis_fingerprint_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['fingerprint']),
@@ -3525,7 +3589,7 @@ export const types_analysis_fingerprint_token_filter = types_analysis_token_filt
     separator: z.optional(z.string().register(z.globalRegistry, {
         description: 'Character to use to concatenate the token stream input. Defaults to a space.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_fingerprint_token_filter' });
 
 export const types_analysis_elision_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['elision']),
@@ -3536,9 +3600,9 @@ export const types_analysis_elision_token_filter = types_analysis_token_filter_b
         description: 'Path to a file that contains a list of elisions to remove.\nThis path must be absolute or relative to the `config` location, and the file must be UTF-8 encoded. Each elision in the file must be separated by a line break.\nTo be removed, the elision must be at the beginning of a token and be immediately followed by an apostrophe. Both the elision and apostrophe are removed.\nFor custom `elision` filters, either this parameter or `articles` must be specified.'
     })),
     articles_case: z.optional(spec_utils_stringifiedboolean)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_elision_token_filter' });
 
-export const types_analysis_edge_n_gram_side = z.enum(['front', 'back']);
+export const types_analysis_edge_n_gram_side = z.enum(['front', 'back']).register(z.globalRegistry, { id: 'types_analysis_edge_n_gram_side' });
 
 export const types_analysis_edge_n_gram_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['edge_ngram']),
@@ -3550,17 +3614,17 @@ export const types_analysis_edge_n_gram_token_filter = types_analysis_token_filt
     })),
     side: z.optional(types_analysis_edge_n_gram_side),
     preserve_original: z.optional(spec_utils_stringifiedboolean)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_edge_n_gram_token_filter' });
 
 export const types_analysis_dutch_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['dutch_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_dutch_stem_token_filter' });
 
 export const types_analysis_delimited_payload_encoding = z.enum([
     'int',
     'float',
     'identity'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_delimited_payload_encoding' });
 
 export const types_analysis_delimited_payload_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['delimited_payload']),
@@ -3568,15 +3632,15 @@ export const types_analysis_delimited_payload_token_filter = types_analysis_toke
         description: 'Character used to separate tokens from payloads. Defaults to `|`.'
     })),
     encoding: z.optional(types_analysis_delimited_payload_encoding)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_delimited_payload_token_filter' });
 
 export const types_analysis_decimal_digit_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['decimal_digit'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_decimal_digit_token_filter' });
 
 export const types_analysis_czech_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['czech_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_czech_stem_token_filter' });
 
 export const types_analysis_common_grams_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['common_grams']),
@@ -3592,22 +3656,22 @@ export const types_analysis_common_grams_token_filter = types_analysis_token_fil
     query_mode: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, the filter excludes the following tokens from the output:\n- Unigrams for common words\n- Unigrams for terms followed by common words\nDefaults to `false`. We recommend enabling this parameter for search analyzers.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_common_grams_token_filter' });
 
 export const types_analysis_classic_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['classic'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_classic_token_filter' });
 
 export const types_analysis_cjk_width_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['cjk_width'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_cjk_width_token_filter' });
 
 export const types_analysis_cjk_bigram_ignored_script = z.enum([
     'han',
     'hangul',
     'hiragana',
     'katakana'
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_cjk_bigram_ignored_script' });
 
 export const types_analysis_cjk_bigram_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['cjk_bigram']),
@@ -3617,67 +3681,69 @@ export const types_analysis_cjk_bigram_token_filter = types_analysis_token_filte
     output_unigrams: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, emit tokens in both bigram and unigram form. If `false`, a CJK character is output in unigram form when it has no adjacent characters. Defaults to `false`.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_cjk_bigram_token_filter' });
 
 export const types_analysis_brazilian_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['brazilian_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_brazilian_stem_token_filter' });
 
 export const types_analysis_bengali_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['bengali_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_bengali_normalization_token_filter' });
 
 export const types_analysis_ascii_folding_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['asciifolding']),
     preserve_original: z.optional(spec_utils_stringifiedboolean)
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_ascii_folding_token_filter' });
 
 export const types_analysis_arabic_normalization_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['arabic_normalization'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_arabic_normalization_token_filter' });
 
 export const types_analysis_arabic_stem_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['arabic_stem'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_arabic_stem_token_filter' });
 
 export const types_analysis_apostrophe_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['apostrophe'])
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_apostrophe_token_filter' });
 
-export const types_analysis_char_filter_base = types_analysis_tokenizer_base;
+export const types_analysis_char_filter_base = z.object({
+    version: z.optional(types_version_string)
+}).register(z.globalRegistry, { id: 'types_analysis_char_filter_base' });
 
 export const types_analysis_kuromoji_iteration_mark_char_filter = types_analysis_char_filter_base.and(z.object({
     type: z.enum(['kuromoji_iteration_mark']),
     normalize_kana: z.boolean(),
     normalize_kanji: z.boolean()
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_kuromoji_iteration_mark_char_filter' });
 
-export const types_analysis_icu_normalization_mode = z.enum(['decompose', 'compose']);
+export const types_analysis_icu_normalization_mode = z.enum(['decompose', 'compose']).register(z.globalRegistry, { id: 'types_analysis_icu_normalization_mode' });
 
 export const types_analysis_icu_normalization_char_filter = types_analysis_char_filter_base.and(z.object({
     type: z.enum(['icu_normalizer']),
     mode: z.optional(types_analysis_icu_normalization_mode),
     name: z.optional(types_analysis_icu_normalization_type),
     unicode_set_filter: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_icu_normalization_char_filter' });
 
 export const types_analysis_pattern_replace_char_filter = types_analysis_char_filter_base.and(z.object({
     type: z.enum(['pattern_replace']),
     flags: z.optional(z.string()),
     pattern: z.string(),
     replacement: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_pattern_replace_char_filter' });
 
 export const types_analysis_mapping_char_filter = types_analysis_char_filter_base.and(z.object({
     type: z.enum(['mapping']),
     mappings: z.optional(z.array(z.string())),
     mappings_path: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_mapping_char_filter' });
 
 export const types_analysis_html_strip_char_filter = types_analysis_char_filter_base.and(z.object({
     type: z.enum(['html_strip']),
     escaped_tags: z.optional(z.array(z.string()))
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_html_strip_char_filter' });
 
 export const types_analysis_char_filter_definition = z.union([
     z.object({
@@ -3695,287 +3761,287 @@ export const types_analysis_char_filter_definition = z.union([
     z.object({
         type: z.literal('kuromoji_iteration_mark')
     }).and(types_analysis_kuromoji_iteration_mark_char_filter)
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_char_filter_definition' });
 
 export const types_analysis_char_filter = z.union([
     z.string(),
     types_analysis_char_filter_definition
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_char_filter' });
 
 export const types_analysis_thai_analyzer = z.object({
     type: z.enum(['thai']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_thai_analyzer' });
 
 export const types_analysis_turkish_analyzer = z.object({
     type: z.enum(['turkish']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_turkish_analyzer' });
 
 export const types_analysis_swedish_analyzer = z.object({
     type: z.enum(['swedish']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_swedish_analyzer' });
 
 export const types_analysis_spanish_analyzer = z.object({
     type: z.enum(['spanish']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_spanish_analyzer' });
 
 export const types_analysis_sorani_analyzer = z.object({
     type: z.enum(['sorani']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_sorani_analyzer' });
 
 export const types_analysis_serbian_analyzer = z.object({
     type: z.enum(['serbian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_serbian_analyzer' });
 
 export const types_analysis_russian_analyzer = z.object({
     type: z.enum(['russian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_russian_analyzer' });
 
 export const types_analysis_romanian_analyzer = z.object({
     type: z.enum(['romanian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_romanian_analyzer' });
 
 export const types_analysis_portuguese_analyzer = z.object({
     type: z.enum(['portuguese']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_portuguese_analyzer' });
 
 export const types_analysis_persian_analyzer = z.object({
     type: z.enum(['persian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_persian_analyzer' });
 
 export const types_analysis_norwegian_analyzer = z.object({
     type: z.enum(['norwegian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_norwegian_analyzer' });
 
 export const types_analysis_lithuanian_analyzer = z.object({
     type: z.enum(['lithuanian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_lithuanian_analyzer' });
 
 export const types_analysis_latvian_analyzer = z.object({
     type: z.enum(['latvian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_latvian_analyzer' });
 
 export const types_analysis_italian_analyzer = z.object({
     type: z.enum(['italian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_italian_analyzer' });
 
 export const types_analysis_irish_analyzer = z.object({
     type: z.enum(['irish']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_irish_analyzer' });
 
 export const types_analysis_indonesian_analyzer = z.object({
     type: z.enum(['indonesian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_indonesian_analyzer' });
 
 export const types_analysis_hungarian_analyzer = z.object({
     type: z.enum(['hungarian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_hungarian_analyzer' });
 
 export const types_analysis_hindi_analyzer = z.object({
     type: z.enum(['hindi']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_hindi_analyzer' });
 
 export const types_analysis_greek_analyzer = z.object({
     type: z.enum(['greek']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_greek_analyzer' });
 
 export const types_analysis_german_analyzer = z.object({
     type: z.enum(['german']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_german_analyzer' });
 
 export const types_analysis_galician_analyzer = z.object({
     type: z.enum(['galician']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_galician_analyzer' });
 
 export const types_analysis_french_analyzer = z.object({
     type: z.enum(['french']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_french_analyzer' });
 
 export const types_analysis_finnish_analyzer = z.object({
     type: z.enum(['finnish']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_finnish_analyzer' });
 
 export const types_analysis_estonian_analyzer = z.object({
     type: z.enum(['estonian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_estonian_analyzer' });
 
 export const types_analysis_english_analyzer = z.object({
     type: z.enum(['english']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_english_analyzer' });
 
 export const types_analysis_dutch_analyzer = z.object({
     type: z.enum(['dutch']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_dutch_analyzer' });
 
 export const types_analysis_danish_analyzer = z.object({
     type: z.enum(['danish']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_danish_analyzer' });
 
 export const types_analysis_czech_analyzer = z.object({
     type: z.enum(['czech']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_czech_analyzer' });
 
 export const types_analysis_cjk_analyzer = z.object({
     type: z.enum(['cjk']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_cjk_analyzer' });
 
 export const types_analysis_chinese_analyzer = z.object({
     type: z.enum(['chinese']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_chinese_analyzer' });
 
 export const types_analysis_catalan_analyzer = z.object({
     type: z.enum(['catalan']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_catalan_analyzer' });
 
 export const types_analysis_bulgarian_analyzer = z.object({
     type: z.enum(['bulgarian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_bulgarian_analyzer' });
 
 export const types_analysis_brazilian_analyzer = z.object({
     type: z.enum(['brazilian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_brazilian_analyzer' });
 
 export const types_analysis_bengali_analyzer = z.object({
     type: z.enum(['bengali']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_bengali_analyzer' });
 
 export const types_analysis_basque_analyzer = z.object({
     type: z.enum(['basque']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_basque_analyzer' });
 
 export const types_analysis_armenian_analyzer = z.object({
     type: z.enum(['armenian']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_armenian_analyzer' });
 
 export const types_analysis_arabic_analyzer = z.object({
     type: z.enum(['arabic']),
     stopwords: z.optional(types_analysis_stop_words),
     stopwords_path: z.optional(z.string()),
     stem_exclusion: z.optional(z.array(z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_arabic_analyzer' });
 
 export const types_analysis_snowball_analyzer = z.object({
     type: z.enum(['snowball']),
     version: z.optional(types_version_string),
     language: types_analysis_snowball_language,
     stopwords: z.optional(types_analysis_stop_words)
-});
+}).register(z.globalRegistry, { id: 'types_analysis_snowball_analyzer' });
 
 export const types_analysis_kuromoji_analyzer = z.object({
     type: z.enum(['kuromoji']),
     mode: z.optional(types_analysis_kuromoji_tokenization_mode),
     user_dictionary: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_kuromoji_analyzer' });
 
 export const types_analysis_icu_analyzer = z.object({
     type: z.enum(['icu_analyzer']),
     method: types_analysis_icu_normalization_type,
     mode: types_analysis_icu_normalization_mode
-});
+}).register(z.globalRegistry, { id: 'types_analysis_icu_analyzer' });
 
 export const types_analysis_whitespace_analyzer = z.object({
     type: z.enum(['whitespace']),
     version: z.optional(types_version_string)
-});
+}).register(z.globalRegistry, { id: 'types_analysis_whitespace_analyzer' });
 
 export const types_analysis_stop_analyzer = z.object({
     type: z.enum(['stop']),
@@ -3984,7 +4050,7 @@ export const types_analysis_stop_analyzer = z.object({
     stopwords_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'The path to a file containing stop words.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_stop_analyzer' });
 
 export const types_analysis_standard_analyzer = z.object({
     type: z.enum(['standard']),
@@ -3995,12 +4061,12 @@ export const types_analysis_standard_analyzer = z.object({
     stopwords_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'The path to a file containing stop words.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_standard_analyzer' });
 
 export const types_analysis_simple_analyzer = z.object({
     type: z.enum(['simple']),
     version: z.optional(types_version_string)
-});
+}).register(z.globalRegistry, { id: 'types_analysis_simple_analyzer' });
 
 export const types_analysis_pattern_analyzer = z.object({
     type: z.enum(['pattern']),
@@ -4018,7 +4084,7 @@ export const types_analysis_pattern_analyzer = z.object({
     stopwords_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'The path to a file containing stop words.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_pattern_analyzer' });
 
 export const types_analysis_nori_analyzer = z.object({
     type: z.enum(['nori']),
@@ -4026,12 +4092,12 @@ export const types_analysis_nori_analyzer = z.object({
     decompound_mode: z.optional(types_analysis_nori_decompound_mode),
     stoptags: z.optional(z.array(z.string())),
     user_dictionary: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_analysis_nori_analyzer' });
 
 export const types_analysis_keyword_analyzer = z.object({
     type: z.enum(['keyword']),
     version: z.optional(types_version_string)
-});
+}).register(z.globalRegistry, { id: 'types_analysis_keyword_analyzer' });
 
 export const types_analysis_fingerprint_analyzer = z.object({
     type: z.enum(['fingerprint']),
@@ -4046,7 +4112,7 @@ export const types_analysis_fingerprint_analyzer = z.object({
     stopwords_path: z.optional(z.string().register(z.globalRegistry, {
         description: 'The path to a file containing stop words.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_analysis_fingerprint_analyzer' });
 
 export const types_analysis_custom_analyzer = z.object({
     type: z.enum(['custom']),
@@ -4061,7 +4127,7 @@ export const types_analysis_custom_analyzer = z.object({
     position_increment_gap: z.optional(z.number()),
     position_offset_gap: z.optional(z.number()),
     tokenizer: z.string()
-});
+}).register(z.globalRegistry, { id: 'types_analysis_custom_analyzer' });
 
 export const types_analysis_analyzer = z.union([
     z.object({
@@ -4211,35 +4277,35 @@ export const types_analysis_analyzer = z.union([
     z.object({
         type: z.literal('thai')
     }).and(types_analysis_thai_analyzer)
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_analyzer' });
 
 export const indices_types_settings_query_string = z.object({
     lenient: spec_utils_stringifiedboolean
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_query_string' });
 
 export const indices_types_translog_retention = z.object({
     size: z.optional(types_byte_size),
     age: z.optional(types_duration)
-});
+}).register(z.globalRegistry, { id: 'indices_types_translog_retention' });
 
 export const indices_types_translog_durability = z.enum([
     'request',
     'REQUEST',
     'async',
     'ASYNC'
-]);
+]).register(z.globalRegistry, { id: 'indices_types_translog_durability' });
 
 export const indices_types_translog = z.object({
     sync_interval: z.optional(types_duration),
     durability: z.optional(indices_types_translog_durability),
     flush_threshold_size: z.optional(types_byte_size),
     retention: z.optional(indices_types_translog_retention)
-});
+}).register(z.globalRegistry, { id: 'indices_types_translog' });
 
 export const indices_types_index_versioning = z.object({
     created: z.optional(types_version_string),
     created_string: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_versioning' });
 
 /**
  * Some APIs will return values such as numbers also as a string (notably epoch timestamps). This behavior
@@ -4251,11 +4317,11 @@ export const indices_types_index_versioning = z.object({
 export const spec_utils_stringified_epoch_time_unit_millis = z.union([
     types_epoch_time_unit_millis,
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'spec_utils_stringified_epoch_time_unit_millis' });
 
 export const indices_types_index_settings_lifecycle_step = z.object({
     wait_time_threshold: z.optional(types_duration)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_settings_lifecycle_step' });
 
 export const indices_types_index_settings_lifecycle = z.object({
     name: z.optional(types_name),
@@ -4274,63 +4340,63 @@ export const indices_types_index_settings_lifecycle = z.object({
         z.boolean(),
         z.string()
     ]))
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_settings_lifecycle' });
 
-export const types_pipeline_name = types_id;
+export const types_pipeline_name = z.string().register(z.globalRegistry, { id: 'types_pipeline_name' });
 
 export const indices_types_index_routing_rebalance_options = z.enum([
     'all',
     'primaries',
     'replicas',
     'none'
-]);
+]).register(z.globalRegistry, { id: 'indices_types_index_routing_rebalance_options' });
 
 export const indices_types_index_routing_rebalance = z.object({
     enable: indices_types_index_routing_rebalance_options
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_routing_rebalance' });
 
 export const indices_types_index_routing_allocation_disk = z.object({
     threshold_enabled: z.optional(z.union([
         z.boolean(),
         z.string()
     ]))
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_routing_allocation_disk' });
 
 export const indices_types_index_routing_allocation_initial_recovery = z.object({
     _id: z.optional(types_id)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_routing_allocation_initial_recovery' });
 
 export const indices_types_index_routing_allocation_include = z.object({
     _tier_preference: z.optional(z.string()),
     _id: z.optional(types_id)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_routing_allocation_include' });
 
 export const indices_types_index_routing_allocation_options = z.enum([
     'all',
     'primaries',
     'new_primaries',
     'none'
-]);
+]).register(z.globalRegistry, { id: 'indices_types_index_routing_allocation_options' });
 
 export const indices_types_index_routing_allocation = z.object({
     enable: z.optional(indices_types_index_routing_allocation_options),
     include: z.optional(indices_types_index_routing_allocation_include),
     initial_recovery: z.optional(indices_types_index_routing_allocation_initial_recovery),
     disk: z.optional(indices_types_index_routing_allocation_disk)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_routing_allocation' });
 
 export const indices_types_index_routing = z.object({
     allocation: z.optional(indices_types_index_routing_allocation),
     rebalance: z.optional(indices_types_index_routing_rebalance)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_routing' });
 
 export const indices_types_settings_highlight = z.object({
     max_analyzed_offset: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_highlight' });
 
 export const indices_types_settings_analyze = z.object({
     max_token_count: z.optional(spec_utils_stringifiedinteger)
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_analyze' });
 
 export const indices_types_index_setting_blocks = z.object({
     read_only: z.optional(spec_utils_stringifiedboolean),
@@ -4338,37 +4404,37 @@ export const indices_types_index_setting_blocks = z.object({
     read: z.optional(spec_utils_stringifiedboolean),
     write: z.optional(spec_utils_stringifiedboolean),
     metadata: z.optional(spec_utils_stringifiedboolean)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_setting_blocks' });
 
 export const indices_types_slowlog_tresholds = z.object({
     query: z.optional(indices_types_slowlog_treshold_levels),
     fetch: z.optional(indices_types_slowlog_treshold_levels)
-});
+}).register(z.globalRegistry, { id: 'indices_types_slowlog_tresholds' });
 
 export const indices_types_slowlog_settings = z.object({
     level: z.optional(z.string()),
     source: z.optional(z.number()),
     reformat: z.optional(z.boolean()),
     threshold: z.optional(indices_types_slowlog_tresholds)
-});
+}).register(z.globalRegistry, { id: 'indices_types_slowlog_settings' });
 
 export const indices_types_search_idle = z.object({
     after: z.optional(types_duration)
-});
+}).register(z.globalRegistry, { id: 'indices_types_search_idle' });
 
 export const indices_types_settings_search = z.object({
     idle: z.optional(indices_types_search_idle),
     slowlog: z.optional(indices_types_slowlog_settings)
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_search' });
 
 export const indices_types_merge_scheduler = z.object({
     max_thread_count: z.optional(spec_utils_stringifiedinteger),
     max_merge_count: z.optional(spec_utils_stringifiedinteger)
-});
+}).register(z.globalRegistry, { id: 'indices_types_merge_scheduler' });
 
 export const indices_types_merge = z.object({
     scheduler: z.optional(indices_types_merge_scheduler)
-});
+}).register(z.globalRegistry, { id: 'indices_types_merge' });
 
 /**
  * A `null` value that is to be interpreted as an actual value, unless other uses of `null` that are equivalent
@@ -4378,29 +4444,29 @@ export const indices_types_merge = z.object({
 export const spec_utils_null_value = z.union([
     z.string(),
     z.null()
-]);
+]).register(z.globalRegistry, { id: 'spec_utils_null_value' });
 
 export const indices_types_index_check_on_startup = z.enum([
     'true',
     'false',
     'checksum'
-]);
+]).register(z.globalRegistry, { id: 'indices_types_index_check_on_startup' });
 
-export const indices_types_segment_sort_missing = z.enum(['_last', '_first']);
+export const indices_types_segment_sort_missing = z.enum(['_last', '_first']).register(z.globalRegistry, { id: 'indices_types_segment_sort_missing' });
 
 export const indices_types_segment_sort_mode = z.enum([
     'min',
     'MIN',
     'max',
     'MAX'
-]);
+]).register(z.globalRegistry, { id: 'indices_types_segment_sort_mode' });
 
 export const indices_types_segment_sort_order = z.enum([
     'asc',
     'ASC',
     'desc',
     'DESC'
-]);
+]).register(z.globalRegistry, { id: 'indices_types_segment_sort_order' });
 
 export const indices_types_index_segment_sort = z.object({
     field: z.optional(types_fields),
@@ -4416,18 +4482,18 @@ export const indices_types_index_segment_sort = z.object({
         indices_types_segment_sort_missing,
         z.array(indices_types_segment_sort_missing)
     ]))
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_segment_sort' });
 
 export const indices_types_retention_lease = z.object({
     period: types_duration
-});
+}).register(z.globalRegistry, { id: 'indices_types_retention_lease' });
 
 export const indices_types_soft_deletes = z.object({
     enabled: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Indicates whether soft deletes are enabled on the index.'
     })),
     retention_lease: z.optional(indices_types_retention_lease)
-});
+}).register(z.globalRegistry, { id: 'indices_types_soft_deletes' });
 
 /**
  * Base type for multi-bucket aggregation results that can hold sub-aggregations results.
@@ -4435,12 +4501,13 @@ export const indices_types_soft_deletes = z.object({
 export const types_aggregations_multi_bucket_base = z.object({
     doc_count: z.number()
 }).register(z.globalRegistry, {
+    id: 'types_aggregations_multi_bucket_base',
     description: 'Base type for multi-bucket aggregation results that can hold sub-aggregations results.'
 });
 
 export const types_aggregations_composite_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: types_aggregations_composite_aggregate_key
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_composite_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4449,19 +4516,19 @@ export const types_aggregations_composite_bucket = types_aggregations_multi_buck
 export const types_aggregations_buckets_composite_bucket = z.union([
     z.record(z.string(), types_aggregations_composite_bucket),
     z.array(types_aggregations_composite_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_composite_bucket' });
 
 export const types_aggregations_aggregate_base = z.object({
     meta: z.optional(types_metadata)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_aggregate_base' });
 
 export const types_aggregations_multi_bucket_aggregate_base_composite_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_composite_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_composite_bucket' });
 
 export const types_aggregations_composite_aggregate = types_aggregations_multi_bucket_aggregate_base_composite_bucket.and(z.object({
     after_key: z.optional(types_aggregations_composite_aggregate_key)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_composite_aggregate' });
 
 export const types_aggregations_range_bucket = types_aggregations_multi_bucket_base.and(z.object({
     from: z.optional(z.number()),
@@ -4471,7 +4538,7 @@ export const types_aggregations_range_bucket = types_aggregations_multi_bucket_b
     key: z.optional(z.string().register(z.globalRegistry, {
         description: 'The bucket key. Present if the aggregation is _not_ keyed'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_range_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4480,23 +4547,23 @@ export const types_aggregations_range_bucket = types_aggregations_multi_bucket_b
 export const types_aggregations_buckets_range_bucket = z.union([
     z.record(z.string(), types_aggregations_range_bucket),
     z.array(types_aggregations_range_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_range_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_range_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_range_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_range_bucket' });
 
-export const types_aggregations_range_aggregate = types_aggregations_multi_bucket_aggregate_base_range_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_range_aggregate = types_aggregations_multi_bucket_aggregate_base_range_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_range_aggregate' });
 
 /**
  * Result of a `date_range` aggregation. Same format as a for a `range` aggregation: `from` and `to`
  * in `buckets` are milliseconds since the Epoch, represented as a floating point number.
  */
-export const types_aggregations_date_range_aggregate = types_aggregations_range_aggregate.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_date_range_aggregate = types_aggregations_range_aggregate.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_date_range_aggregate' });
 
 export const types_aggregations_filters_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_filters_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4505,30 +4572,30 @@ export const types_aggregations_filters_bucket = types_aggregations_multi_bucket
 export const types_aggregations_buckets_filters_bucket = z.union([
     z.record(z.string(), types_aggregations_filters_bucket),
     z.array(types_aggregations_filters_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_filters_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_filters_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_filters_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_filters_bucket' });
 
-export const types_aggregations_filters_aggregate = types_aggregations_multi_bucket_aggregate_base_filters_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_filters_aggregate = types_aggregations_multi_bucket_aggregate_base_filters_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_filters_aggregate' });
 
 /**
  * Base type for single-bucket aggregation results that can hold sub-aggregations results.
  */
 export const types_aggregations_single_bucket_aggregate_base = types_aggregations_aggregate_base.and(z.object({
     doc_count: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_single_bucket_aggregate_base' });
 
-export const types_aggregations_filter_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_filter_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_filter_aggregate' });
 
-export const types_aggregations_missing_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_missing_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_missing_aggregate' });
 
 export const types_aggregations_multi_terms_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.array(types_field_value),
     key_as_string: z.optional(z.string()),
     doc_count_error_upper_bound: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4537,18 +4604,18 @@ export const types_aggregations_multi_terms_bucket = types_aggregations_multi_bu
 export const types_aggregations_buckets_multi_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_multi_terms_bucket),
     z.array(types_aggregations_multi_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_multi_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_multi_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_multi_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_multi_terms_bucket' });
 
 export const types_aggregations_terms_aggregate_base_multi_terms_bucket = types_aggregations_multi_bucket_aggregate_base_multi_terms_bucket.and(z.object({
     doc_count_error_upper_bound: z.optional(z.number()),
     sum_other_doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregate_base_multi_terms_bucket' });
 
-export const types_aggregations_multi_terms_aggregate = types_aggregations_terms_aggregate_base_multi_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_multi_terms_aggregate = types_aggregations_terms_aggregate_base_multi_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_multi_terms_aggregate' });
 
 /**
  * The absence of any type. This is commonly used in APIs that don't return a body.
@@ -4559,6 +4626,7 @@ export const types_aggregations_multi_terms_aggregate = types_aggregations_terms
  * See https://en.m.wikipedia.org/wiki/Unit_type and https://en.m.wikipedia.org/wiki/Bottom_type
  */
 export const spec_utils_void = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+    id: 'spec_utils_void',
     description: 'The absence of any type. This is commonly used in APIs that don\'t return a body.\n\nAlthough "void" is generally used for the unit type that has only one value, this is to be interpreted as\nthe bottom type that has no value at all. Most languages have a unit type, but few have a bottom type.\n\nSee https://en.m.wikipedia.org/wiki/Unit_type and https://en.m.wikipedia.org/wiki/Bottom_type'
 });
 
@@ -4569,30 +4637,30 @@ export const spec_utils_void = z.record(z.string(), z.unknown()).register(z.glob
 export const types_aggregations_buckets_void = z.union([
     z.record(z.string(), spec_utils_void),
     z.array(spec_utils_void)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_void' });
 
 export const types_aggregations_multi_bucket_aggregate_base_void = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_void
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_void' });
 
 export const types_aggregations_terms_aggregate_base_void = types_aggregations_multi_bucket_aggregate_base_void.and(z.object({
     doc_count_error_upper_bound: z.optional(z.number()),
     sum_other_doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregate_base_void' });
 
 /**
  * Result of a `terms` aggregation when the field is unmapped. `buckets` is always empty.
  */
-export const types_aggregations_unmapped_terms_aggregate = types_aggregations_terms_aggregate_base_void.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_unmapped_terms_aggregate = types_aggregations_terms_aggregate_base_void.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_unmapped_terms_aggregate' });
 
 export const types_aggregations_terms_bucket_base = types_aggregations_multi_bucket_base.and(z.object({
     doc_count_error_upper_bound: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_bucket_base' });
 
 export const types_aggregations_double_terms_bucket = types_aggregations_terms_bucket_base.and(z.object({
     key: z.number(),
     key_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_double_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4601,23 +4669,26 @@ export const types_aggregations_double_terms_bucket = types_aggregations_terms_b
 export const types_aggregations_buckets_double_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_double_terms_bucket),
     z.array(types_aggregations_double_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_double_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_double_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_double_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_double_terms_bucket' });
 
 export const types_aggregations_terms_aggregate_base_double_terms_bucket = types_aggregations_multi_bucket_aggregate_base_double_terms_bucket.and(z.object({
     doc_count_error_upper_bound: z.optional(z.number()),
     sum_other_doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregate_base_double_terms_bucket' });
 
 /**
  * Result of a `terms` aggregation when the field is some kind of decimal number like a float, double, or distance.
  */
-export const types_aggregations_double_terms_aggregate = types_aggregations_terms_aggregate_base_double_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_double_terms_aggregate = types_aggregations_terms_aggregate_base_double_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_double_terms_aggregate' });
 
-export const types_aggregations_long_terms_bucket = types_aggregations_double_terms_bucket;
+export const types_aggregations_long_terms_bucket = types_aggregations_terms_bucket_base.and(z.object({
+    key: z.number(),
+    key_as_string: z.optional(z.string())
+})).register(z.globalRegistry, { id: 'types_aggregations_long_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4626,25 +4697,25 @@ export const types_aggregations_long_terms_bucket = types_aggregations_double_te
 export const types_aggregations_buckets_long_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_long_terms_bucket),
     z.array(types_aggregations_long_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_long_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_long_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_long_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_long_terms_bucket' });
 
 export const types_aggregations_terms_aggregate_base_long_terms_bucket = types_aggregations_multi_bucket_aggregate_base_long_terms_bucket.and(z.object({
     doc_count_error_upper_bound: z.optional(z.number()),
     sum_other_doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregate_base_long_terms_bucket' });
 
 /**
  * Result of a `terms` aggregation when the field is some kind of whole number like a integer, long, or a date.
  */
-export const types_aggregations_long_terms_aggregate = types_aggregations_terms_aggregate_base_long_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_long_terms_aggregate = types_aggregations_terms_aggregate_base_long_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_long_terms_aggregate' });
 
 export const types_aggregations_string_terms_bucket = types_aggregations_terms_bucket_base.and(z.object({
     key: types_field_value
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_string_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -4653,21 +4724,21 @@ export const types_aggregations_string_terms_bucket = types_aggregations_terms_b
 export const types_aggregations_buckets_string_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_string_terms_bucket),
     z.array(types_aggregations_string_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_string_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_string_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_string_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_string_terms_bucket' });
 
 export const types_aggregations_terms_aggregate_base_string_terms_bucket = types_aggregations_multi_bucket_aggregate_base_string_terms_bucket.and(z.object({
     doc_count_error_upper_bound: z.optional(z.number()),
     sum_other_doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregate_base_string_terms_bucket' });
 
 /**
  * Result of a `terms` aggregation when the field is a string.
  */
-export const types_aggregations_string_terms_aggregate = types_aggregations_terms_aggregate_base_string_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_string_terms_aggregate = types_aggregations_terms_aggregate_base_string_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_string_terms_aggregate' });
 
 export const types_aggregations_single_metric_aggregate_base = types_aggregations_aggregate_base.and(z.object({
     value: z.union([
@@ -4676,22 +4747,22 @@ export const types_aggregations_single_metric_aggregate_base = types_aggregation
         z.null()
     ]),
     value_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_single_metric_aggregate_base' });
 
 /**
  * Value count aggregation result. `value` is always present.
  */
-export const types_aggregations_value_count_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_value_count_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_value_count_aggregate' });
 
 export const types_aggregations_cardinality_aggregate = types_aggregations_aggregate_base.and(z.object({
     value: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_cardinality_aggregate' });
 
 export const types_acknowledged_response_base = z.object({
     acknowledged: z.boolean().register(z.globalRegistry, {
         description: 'For a successful response, this value is always true. On failure, an exception is returned instead.'
     })
-});
+}).register(z.globalRegistry, { id: 'types_acknowledged_response_base' });
 
 export const global_search_types_term_suggest_option = z.object({
     text: z.string(),
@@ -4699,34 +4770,34 @@ export const global_search_types_term_suggest_option = z.object({
     freq: z.number(),
     highlighted: z.optional(z.string()),
     collate_match: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_term_suggest_option' });
 
 export const global_search_types_suggest_base = z.object({
     length: z.number(),
     offset: z.number(),
     text: z.string()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_suggest_base' });
 
 export const global_search_types_term_suggest = global_search_types_suggest_base.and(z.object({
     options: z.union([
         global_search_types_term_suggest_option,
         z.array(global_search_types_term_suggest_option)
     ])
-}));
+})).register(z.globalRegistry, { id: 'global_search_types_term_suggest' });
 
 export const global_search_types_phrase_suggest_option = z.object({
     text: z.string(),
     score: z.number(),
     highlighted: z.optional(z.string()),
     collate_match: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_phrase_suggest_option' });
 
 export const global_search_types_phrase_suggest = global_search_types_suggest_base.and(z.object({
     options: z.union([
         global_search_types_phrase_suggest_option,
         z.array(global_search_types_phrase_suggest_option)
     ])
-}));
+})).register(z.globalRegistry, { id: 'global_search_types_phrase_suggest' });
 
 /**
  * Text or location that we want similar documents for or a lookup to a document's field for the text.
@@ -4734,7 +4805,7 @@ export const global_search_types_phrase_suggest = global_search_types_suggest_ba
 export const global_search_types_context = z.union([
     z.string(),
     types_geo_location
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_context' });
 
 export const global_search_types_completion_suggest_option = z.object({
     collate_match: z.optional(z.boolean()),
@@ -4747,22 +4818,22 @@ export const global_search_types_completion_suggest_option = z.object({
     _source: z.optional(z.record(z.string(), z.unknown())),
     text: z.string(),
     score: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_completion_suggest_option' });
 
 export const global_search_types_completion_suggest = global_search_types_suggest_base.and(z.object({
     options: z.union([
         global_search_types_completion_suggest_option,
         z.array(global_search_types_completion_suggest_option)
     ])
-}));
+})).register(z.globalRegistry, { id: 'global_search_types_completion_suggest' });
 
 export const global_search_types_suggest = z.union([
     global_search_types_completion_suggest,
     global_search_types_phrase_suggest,
     global_search_types_term_suggest
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_suggest' });
 
-export const types_scroll_id = types_id;
+export const types_scroll_id = z.string().register(z.globalRegistry, { id: 'types_scroll_id' });
 
 export const global_search_types_query_breakdown = z.object({
     advance: z.number(),
@@ -4785,7 +4856,7 @@ export const global_search_types_query_breakdown = z.object({
     count_weight_count: z.number(),
     set_min_competitive_score: z.number(),
     set_min_competitive_score_count: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_query_breakdown' });
 
 export const global_search_types_query_profile = z.object({
     breakdown: global_search_types_query_breakdown,
@@ -4795,7 +4866,7 @@ export const global_search_types_query_profile = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_query_profile)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_query_profile' });
 
 export const global_search_types_collector = z.object({
     name: z.string(),
@@ -4804,18 +4875,18 @@ export const global_search_types_collector = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_collector)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_collector' });
 
 export const global_search_types_search_profile = z.object({
     collector: z.array(global_search_types_collector),
     query: z.array(global_search_types_query_profile),
     rewrite_time: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_search_profile' });
 
 export const global_search_types_fetch_profile_debug = z.object({
     stored_fields: z.optional(z.array(z.string())),
     fast_path: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_fetch_profile_debug' });
 
 export const global_search_types_fetch_profile_breakdown = z.object({
     load_source: z.optional(z.number()),
@@ -4826,7 +4897,7 @@ export const global_search_types_fetch_profile_breakdown = z.object({
     next_reader_count: z.optional(z.number()),
     process_count: z.optional(z.number()),
     process: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_fetch_profile_breakdown' });
 
 export const global_search_types_fetch_profile = z.object({
     type: z.string(),
@@ -4837,7 +4908,7 @@ export const global_search_types_fetch_profile = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_fetch_profile)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_fetch_profile' });
 
 export const global_search_types_knn_collector_result = z.object({
     name: z.string(),
@@ -4847,7 +4918,7 @@ export const global_search_types_knn_collector_result = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_knn_collector_result)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_knn_collector_result' });
 
 export const global_search_types_knn_query_profile_breakdown = z.object({
     advance: z.number(),
@@ -4870,7 +4941,7 @@ export const global_search_types_knn_query_profile_breakdown = z.object({
     set_min_competitive_score_count: z.number(),
     shallow_advance: z.number(),
     shallow_advance_count: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_knn_query_profile_breakdown' });
 
 export const global_search_types_knn_query_profile_result = z.object({
     type: z.string(),
@@ -4882,14 +4953,14 @@ export const global_search_types_knn_query_profile_result = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_knn_query_profile_result)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_knn_query_profile_result' });
 
 export const global_search_types_dfs_knn_profile = z.object({
     vector_operations_count: z.optional(z.number()),
     query: z.array(global_search_types_knn_query_profile_result),
     rewrite_time: z.number(),
     collector: z.array(global_search_types_knn_collector_result)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_dfs_knn_profile' });
 
 export const global_search_types_dfs_statistics_breakdown = z.object({
     collection_statistics: z.number(),
@@ -4900,7 +4971,7 @@ export const global_search_types_dfs_statistics_breakdown = z.object({
     rewrite_count: z.number(),
     term_statistics: z.number(),
     term_statistics_count: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_dfs_statistics_breakdown' });
 
 export const global_search_types_dfs_statistics_profile = z.object({
     type: z.string(),
@@ -4912,19 +4983,19 @@ export const global_search_types_dfs_statistics_profile = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_dfs_statistics_profile)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_dfs_statistics_profile' });
 
 export const global_search_types_dfs_profile = z.object({
     statistics: z.optional(global_search_types_dfs_statistics_profile),
     knn: z.optional(z.array(global_search_types_dfs_knn_profile))
-});
+}).register(z.globalRegistry, { id: 'global_search_types_dfs_profile' });
 
 export const global_search_types_aggregation_profile_delegate_debug_filter = z.object({
     results_from_metadata: z.optional(z.number()),
     query: z.optional(z.string()),
     specialized_for: z.optional(z.string()),
     segments_counted_in_constant_time: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_aggregation_profile_delegate_debug_filter' });
 
 export const global_search_types_aggregation_profile_debug = z.object({
     segments_with_multi_valued_ords: z.optional(z.number()),
@@ -4961,7 +5032,7 @@ export const global_search_types_aggregation_profile_debug = z.object({
     dynamic_pruning_attempted: z.optional(z.number()),
     dynamic_pruning_used: z.optional(z.number()),
     skipped_due_to_no_data: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_aggregation_profile_debug' });
 
 export const global_search_types_aggregation_breakdown = z.object({
     build_aggregation: z.number(),
@@ -4976,7 +5047,7 @@ export const global_search_types_aggregation_breakdown = z.object({
     post_collection_count: z.optional(z.number()),
     reduce: z.number(),
     reduce_count: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_aggregation_breakdown' });
 
 export const global_search_types_aggregation_profile = z.object({
     breakdown: global_search_types_aggregation_breakdown,
@@ -4987,7 +5058,7 @@ export const global_search_types_aggregation_profile = z.object({
     get children() {
         return z.optional(z.array(z.lazy((): any => global_search_types_aggregation_profile)));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_aggregation_profile' });
 
 export const global_search_types_shard_profile = z.object({
     aggregations: z.array(global_search_types_aggregation_profile),
@@ -4999,11 +5070,11 @@ export const global_search_types_shard_profile = z.object({
     node_id: types_node_id,
     searches: z.array(global_search_types_search_profile),
     shard_id: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_shard_profile' });
 
 export const global_search_types_profile = z.object({
     shards: z.array(global_search_types_shard_profile)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_profile' });
 
 export const types_cluster_search_status = z.enum([
     'running',
@@ -5011,7 +5082,7 @@ export const types_cluster_search_status = z.enum([
     'partial',
     'skipped',
     'failed'
-]);
+]).register(z.globalRegistry, { id: 'types_cluster_search_status' });
 
 export const types_cluster_details = z.object({
     status: types_cluster_search_status,
@@ -5020,7 +5091,7 @@ export const types_cluster_details = z.object({
     timed_out: z.boolean(),
     _shards: z.optional(types_shard_statistics),
     failures: z.optional(z.array(types_shard_failure))
-});
+}).register(z.globalRegistry, { id: 'types_cluster_details' });
 
 export const types_cluster_statistics = z.object({
     skipped: z.number(),
@@ -5030,7 +5101,7 @@ export const types_cluster_statistics = z.object({
     partial: z.number(),
     failed: z.number(),
     details: z.optional(z.record(z.string(), types_cluster_details))
-});
+}).register(z.globalRegistry, { id: 'types_cluster_statistics' });
 
 /**
  * A GeoJson GeoLine.
@@ -5043,6 +5114,7 @@ export const types_geo_line = z.object({
         description: 'Array of `[lon, lat]` coordinates'
     })
 }).register(z.globalRegistry, {
+    id: 'types_geo_line',
     description: 'A GeoJson GeoLine.'
 });
 
@@ -5050,7 +5122,7 @@ export const types_aggregations_geo_line_aggregate = types_aggregations_aggregat
     type: z.string(),
     geometry: types_geo_line,
     properties: z.record(z.string(), z.unknown())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_line_aggregate' });
 
 export const types_aggregations_matrix_stats_fields = z.object({
     name: types_field,
@@ -5061,12 +5133,12 @@ export const types_aggregations_matrix_stats_fields = z.object({
     kurtosis: z.number(),
     covariance: z.record(z.string(), z.number()),
     correlation: z.record(z.string(), z.number())
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_matrix_stats_fields' });
 
 export const types_aggregations_matrix_stats_aggregate = types_aggregations_aggregate_base.and(z.object({
     doc_count: z.number(),
     fields: z.optional(z.array(types_aggregations_matrix_stats_fields))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_matrix_stats_aggregate' });
 
 /**
  * Result of the `cumulative_cardinality` aggregation
@@ -5074,11 +5146,21 @@ export const types_aggregations_matrix_stats_aggregate = types_aggregations_aggr
 export const types_aggregations_cumulative_cardinality_aggregate = types_aggregations_aggregate_base.and(z.object({
     value: z.number(),
     value_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_cumulative_cardinality_aggregate' });
 
-export const types_aggregations_rate_aggregate = types_aggregations_cumulative_cardinality_aggregate;
+export const types_aggregations_rate_aggregate = types_aggregations_aggregate_base.and(z.object({
+    value: z.number(),
+    value_as_string: z.optional(z.string())
+})).register(z.globalRegistry, { id: 'types_aggregations_rate_aggregate' });
 
-export const types_aggregations_t_test_aggregate = types_aggregations_single_metric_aggregate_base;
+export const types_aggregations_t_test_aggregate = types_aggregations_aggregate_base.and(z.object({
+    value: z.union([
+        z.number(),
+        z.string(),
+        z.null()
+    ]),
+    value_as_string: z.optional(z.string())
+})).register(z.globalRegistry, { id: 'types_aggregations_t_test_aggregate' });
 
 export const types_aggregations_top_metrics = z.object({
     sort: z.array(z.union([
@@ -5091,11 +5173,11 @@ export const types_aggregations_top_metrics = z.object({
         z.string(),
         z.null()
     ]))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_top_metrics' });
 
 export const types_aggregations_top_metrics_aggregate = types_aggregations_aggregate_base.and(z.object({
     top: z.array(types_aggregations_top_metrics)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_top_metrics_aggregate' });
 
 export const types_aggregations_box_plot_aggregate = types_aggregations_aggregate_base.and(z.object({
     min: z.number(),
@@ -5112,7 +5194,7 @@ export const types_aggregations_box_plot_aggregate = types_aggregations_aggregat
     q3_as_string: z.optional(z.string()),
     lower_as_string: z.optional(z.string()),
     upper_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_box_plot_aggregate' });
 
 export const types_aggregations_string_stats_aggregate = types_aggregations_aggregate_base.and(z.object({
     count: z.number(),
@@ -5144,31 +5226,31 @@ export const types_aggregations_string_stats_aggregate = types_aggregations_aggr
     min_length_as_string: z.optional(z.string()),
     max_length_as_string: z.optional(z.string()),
     avg_length_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_string_stats_aggregate' });
 
 export const types_aggregations_inference_top_class_entry = z.object({
     class_name: types_field_value,
     class_probability: z.number(),
     class_score: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_inference_top_class_entry' });
 
 export const types_aggregations_inference_class_importance = z.object({
     class_name: z.string(),
     importance: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_inference_class_importance' });
 
 export const types_aggregations_inference_feature_importance = z.object({
     feature_name: z.string(),
     importance: z.optional(z.number()),
     classes: z.optional(z.array(types_aggregations_inference_class_importance))
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_inference_feature_importance' });
 
 export const types_aggregations_inference_aggregate = types_aggregations_aggregate_base.and(z.object({
     value: z.optional(types_field_value),
     feature_importance: z.optional(z.array(types_aggregations_inference_feature_importance)),
     top_classes: z.optional(z.array(types_aggregations_inference_top_class_entry)),
     warning: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_inference_aggregate' });
 
 export const global_search_types_nested_identity = z.object({
     field: types_field,
@@ -5176,7 +5258,7 @@ export const global_search_types_nested_identity = z.object({
     get _nested() {
         return z.optional(z.lazy((): any => global_search_types_nested_identity));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_nested_identity' });
 
 export const global_explain_explanation_detail = z.object({
     description: z.string(),
@@ -5184,28 +5266,28 @@ export const global_explain_explanation_detail = z.object({
         return z.optional(z.array(z.lazy((): any => global_explain_explanation_detail)));
     },
     value: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_explain_explanation_detail' });
 
 export const global_explain_explanation = z.object({
     description: z.string(),
     details: z.array(global_explain_explanation_detail),
     value: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_explain_explanation' });
 
-export const global_search_types_total_hits_relation = z.enum(['eq', 'gte']);
+export const global_search_types_total_hits_relation = z.enum(['eq', 'gte']).register(z.globalRegistry, { id: 'global_search_types_total_hits_relation' });
 
 export const global_search_types_total_hits = z.object({
     relation: global_search_types_total_hits_relation,
     value: z.number()
-});
+}).register(z.globalRegistry, { id: 'global_search_types_total_hits' });
 
 export const types_aggregations_scripted_metric_aggregate = types_aggregations_aggregate_base.and(z.object({
     value: z.record(z.string(), z.unknown())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_scripted_metric_aggregate' });
 
 export const types_aggregations_time_series_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.record(z.string(), types_field_value)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_time_series_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5214,18 +5296,18 @@ export const types_aggregations_time_series_bucket = types_aggregations_multi_bu
 export const types_aggregations_buckets_time_series_bucket = z.union([
     z.record(z.string(), types_aggregations_time_series_bucket),
     z.array(types_aggregations_time_series_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_time_series_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_time_series_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_time_series_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_time_series_bucket' });
 
-export const types_aggregations_time_series_aggregate = types_aggregations_multi_bucket_aggregate_base_time_series_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_time_series_aggregate = types_aggregations_multi_bucket_aggregate_base_time_series_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_time_series_aggregate' });
 
 export const types_aggregations_frequent_item_sets_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.record(z.string(), z.array(z.string())),
     support: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_frequent_item_sets_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5234,32 +5316,32 @@ export const types_aggregations_frequent_item_sets_bucket = types_aggregations_m
 export const types_aggregations_buckets_frequent_item_sets_bucket = z.union([
     z.record(z.string(), types_aggregations_frequent_item_sets_bucket),
     z.array(types_aggregations_frequent_item_sets_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_frequent_item_sets_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_frequent_item_sets_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_frequent_item_sets_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_frequent_item_sets_bucket' });
 
-export const types_aggregations_frequent_item_sets_aggregate = types_aggregations_multi_bucket_aggregate_base_frequent_item_sets_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_frequent_item_sets_aggregate = types_aggregations_multi_bucket_aggregate_base_frequent_item_sets_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_frequent_item_sets_aggregate' });
 
 export const types_aggregations_significant_terms_aggregate_base_void = types_aggregations_multi_bucket_aggregate_base_void.and(z.object({
     bg_count: z.optional(z.number()),
     doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_terms_aggregate_base_void' });
 
 /**
  * Result of the `significant_terms` aggregation on an unmapped field. `buckets` is always empty.
  */
-export const types_aggregations_unmapped_significant_terms_aggregate = types_aggregations_significant_terms_aggregate_base_void.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_unmapped_significant_terms_aggregate = types_aggregations_significant_terms_aggregate_base_void.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_unmapped_significant_terms_aggregate' });
 
 export const types_aggregations_significant_terms_bucket_base = types_aggregations_multi_bucket_base.and(z.object({
     score: z.number(),
     bg_count: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_terms_bucket_base' });
 
 export const types_aggregations_significant_string_terms_bucket = types_aggregations_significant_terms_bucket_base.and(z.object({
     key: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_string_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5268,23 +5350,23 @@ export const types_aggregations_significant_string_terms_bucket = types_aggregat
 export const types_aggregations_buckets_significant_string_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_significant_string_terms_bucket),
     z.array(types_aggregations_significant_string_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_significant_string_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_significant_string_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_significant_string_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_significant_string_terms_bucket' });
 
 export const types_aggregations_significant_terms_aggregate_base_significant_string_terms_bucket = types_aggregations_multi_bucket_aggregate_base_significant_string_terms_bucket.and(z.object({
     bg_count: z.optional(z.number()),
     doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_terms_aggregate_base_significant_string_terms_bucket' });
 
-export const types_aggregations_significant_string_terms_aggregate = types_aggregations_significant_terms_aggregate_base_significant_string_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_significant_string_terms_aggregate = types_aggregations_significant_terms_aggregate_base_significant_string_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_significant_string_terms_aggregate' });
 
 export const types_aggregations_significant_long_terms_bucket = types_aggregations_significant_terms_bucket_base.and(z.object({
     key: z.number(),
     key_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_long_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5293,22 +5375,22 @@ export const types_aggregations_significant_long_terms_bucket = types_aggregatio
 export const types_aggregations_buckets_significant_long_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_significant_long_terms_bucket),
     z.array(types_aggregations_significant_long_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_significant_long_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_significant_long_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_significant_long_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_significant_long_terms_bucket' });
 
 export const types_aggregations_significant_terms_aggregate_base_significant_long_terms_bucket = types_aggregations_multi_bucket_aggregate_base_significant_long_terms_bucket.and(z.object({
     bg_count: z.optional(z.number()),
     doc_count: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_terms_aggregate_base_significant_long_terms_bucket' });
 
-export const types_aggregations_significant_long_terms_aggregate = types_aggregations_significant_terms_aggregate_base_significant_long_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_significant_long_terms_aggregate = types_aggregations_significant_terms_aggregate_base_significant_long_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_significant_long_terms_aggregate' });
 
 export const types_aggregations_adjacency_matrix_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.string()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_adjacency_matrix_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5317,20 +5399,20 @@ export const types_aggregations_adjacency_matrix_bucket = types_aggregations_mul
 export const types_aggregations_buckets_adjacency_matrix_bucket = z.union([
     z.record(z.string(), types_aggregations_adjacency_matrix_bucket),
     z.array(types_aggregations_adjacency_matrix_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_adjacency_matrix_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_adjacency_matrix_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_adjacency_matrix_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_adjacency_matrix_bucket' });
 
-export const types_aggregations_adjacency_matrix_aggregate = types_aggregations_multi_bucket_aggregate_base_adjacency_matrix_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_adjacency_matrix_aggregate = types_aggregations_multi_bucket_aggregate_base_adjacency_matrix_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_adjacency_matrix_aggregate' });
 
 export const types_aggregations_ip_prefix_bucket = types_aggregations_multi_bucket_base.and(z.object({
     is_ipv6: z.boolean(),
     key: z.string(),
     prefix_length: z.number(),
     netmask: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_ip_prefix_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5339,19 +5421,19 @@ export const types_aggregations_ip_prefix_bucket = types_aggregations_multi_buck
 export const types_aggregations_buckets_ip_prefix_bucket = z.union([
     z.record(z.string(), types_aggregations_ip_prefix_bucket),
     z.array(types_aggregations_ip_prefix_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_ip_prefix_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_ip_prefix_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_ip_prefix_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_ip_prefix_bucket' });
 
-export const types_aggregations_ip_prefix_aggregate = types_aggregations_multi_bucket_aggregate_base_ip_prefix_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_ip_prefix_aggregate = types_aggregations_multi_bucket_aggregate_base_ip_prefix_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_ip_prefix_aggregate' });
 
 export const types_aggregations_ip_range_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.optional(z.string()),
     from: z.optional(z.string()),
     to: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_ip_range_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5360,19 +5442,22 @@ export const types_aggregations_ip_range_bucket = types_aggregations_multi_bucke
 export const types_aggregations_buckets_ip_range_bucket = z.union([
     z.record(z.string(), types_aggregations_ip_range_bucket),
     z.array(types_aggregations_ip_range_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_ip_range_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_ip_range_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_ip_range_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_ip_range_bucket' });
 
-export const types_aggregations_ip_range_aggregate = types_aggregations_multi_bucket_aggregate_base_ip_range_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_ip_range_aggregate = types_aggregations_multi_bucket_aggregate_base_ip_range_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_ip_range_aggregate' });
 
-export const types_aggregations_geo_distance_aggregate = types_aggregations_date_range_aggregate;
+/**
+ * Result of a `geo_distance` aggregation. The unit for `from` and `to` is meters by default.
+ */
+export const types_aggregations_geo_distance_aggregate = types_aggregations_range_aggregate.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_geo_distance_aggregate' });
 
 export const types_aggregations_geo_hex_grid_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: types_geo_hex_cell
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_hex_grid_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5381,17 +5466,17 @@ export const types_aggregations_geo_hex_grid_bucket = types_aggregations_multi_b
 export const types_aggregations_buckets_geo_hex_grid_bucket = z.union([
     z.record(z.string(), types_aggregations_geo_hex_grid_bucket),
     z.array(types_aggregations_geo_hex_grid_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_geo_hex_grid_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_geo_hex_grid_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_geo_hex_grid_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_geo_hex_grid_bucket' });
 
-export const types_aggregations_geo_hex_grid_aggregate = types_aggregations_multi_bucket_aggregate_base_geo_hex_grid_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_geo_hex_grid_aggregate = types_aggregations_multi_bucket_aggregate_base_geo_hex_grid_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_geo_hex_grid_aggregate' });
 
 export const types_aggregations_geo_tile_grid_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: types_geo_tile
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_tile_grid_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5400,17 +5485,17 @@ export const types_aggregations_geo_tile_grid_bucket = types_aggregations_multi_
 export const types_aggregations_buckets_geo_tile_grid_bucket = z.union([
     z.record(z.string(), types_aggregations_geo_tile_grid_bucket),
     z.array(types_aggregations_geo_tile_grid_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_geo_tile_grid_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_geo_tile_grid_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_geo_tile_grid_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_geo_tile_grid_bucket' });
 
-export const types_aggregations_geo_tile_grid_aggregate = types_aggregations_multi_bucket_aggregate_base_geo_tile_grid_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_geo_tile_grid_aggregate = types_aggregations_multi_bucket_aggregate_base_geo_tile_grid_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_geo_tile_grid_aggregate' });
 
 export const types_aggregations_geo_hash_grid_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: types_geo_hash
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_hash_grid_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5419,34 +5504,36 @@ export const types_aggregations_geo_hash_grid_bucket = types_aggregations_multi_
 export const types_aggregations_buckets_geo_hash_grid_bucket = z.union([
     z.record(z.string(), types_aggregations_geo_hash_grid_bucket),
     z.array(types_aggregations_geo_hash_grid_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_geo_hash_grid_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_geo_hash_grid_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_geo_hash_grid_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_geo_hash_grid_bucket' });
 
-export const types_aggregations_geo_hash_grid_aggregate = types_aggregations_multi_bucket_aggregate_base_geo_hash_grid_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_geo_hash_grid_aggregate = types_aggregations_multi_bucket_aggregate_base_geo_hash_grid_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_geo_hash_grid_aggregate' });
 
-export const types_aggregations_unmapped_sampler_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_unmapped_sampler_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_unmapped_sampler_aggregate' });
 
-export const types_aggregations_sampler_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_sampler_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_sampler_aggregate' });
 
-export const types_aggregations_parent_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_parent_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_parent_aggregate' });
 
-export const types_aggregations_children_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_children_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_children_aggregate' });
 
-export const types_aggregations_global_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_global_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_global_aggregate' });
 
-export const types_aggregations_reverse_nested_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_reverse_nested_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_reverse_nested_aggregate' });
 
-export const types_aggregations_nested_aggregate = types_aggregations_filter_aggregate;
+export const types_aggregations_nested_aggregate = types_aggregations_single_bucket_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_nested_aggregate' });
 
 /**
  * Result of a `rare_terms` aggregation when the field is unmapped. `buckets` is always empty.
  */
-export const types_aggregations_unmapped_rare_terms_aggregate = types_aggregations_multi_bucket_aggregate_base_void.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_unmapped_rare_terms_aggregate = types_aggregations_multi_bucket_aggregate_base_void.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_unmapped_rare_terms_aggregate' });
 
-export const types_aggregations_string_rare_terms_bucket = types_aggregations_adjacency_matrix_bucket;
+export const types_aggregations_string_rare_terms_bucket = types_aggregations_multi_bucket_base.and(z.object({
+    key: z.string()
+})).register(z.globalRegistry, { id: 'types_aggregations_string_rare_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5455,21 +5542,21 @@ export const types_aggregations_string_rare_terms_bucket = types_aggregations_ad
 export const types_aggregations_buckets_string_rare_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_string_rare_terms_bucket),
     z.array(types_aggregations_string_rare_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_string_rare_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_string_rare_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_string_rare_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_string_rare_terms_bucket' });
 
 /**
  * Result of the `rare_terms` aggregation when the field is a string.
  */
-export const types_aggregations_string_rare_terms_aggregate = types_aggregations_multi_bucket_aggregate_base_string_rare_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_string_rare_terms_aggregate = types_aggregations_multi_bucket_aggregate_base_string_rare_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_string_rare_terms_aggregate' });
 
 export const types_aggregations_long_rare_terms_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: z.number(),
     key_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_long_rare_terms_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5478,16 +5565,16 @@ export const types_aggregations_long_rare_terms_bucket = types_aggregations_mult
 export const types_aggregations_buckets_long_rare_terms_bucket = z.union([
     z.record(z.string(), types_aggregations_long_rare_terms_bucket),
     z.array(types_aggregations_long_rare_terms_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_long_rare_terms_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_long_rare_terms_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_long_rare_terms_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_long_rare_terms_bucket' });
 
 /**
  * Result of the `rare_terms` aggregation when the field is some kind of whole number like a integer, long, or a date.
  */
-export const types_aggregations_long_rare_terms_aggregate = types_aggregations_multi_bucket_aggregate_base_long_rare_terms_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_long_rare_terms_aggregate = types_aggregations_multi_bucket_aggregate_base_long_rare_terms_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_long_rare_terms_aggregate' });
 
 export const types_aggregations_variable_width_histogram_bucket = types_aggregations_multi_bucket_base.and(z.object({
     min: z.number(),
@@ -5496,7 +5583,7 @@ export const types_aggregations_variable_width_histogram_bucket = types_aggregat
     min_as_string: z.optional(z.string()),
     key_as_string: z.optional(z.string()),
     max_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_variable_width_histogram_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5505,18 +5592,18 @@ export const types_aggregations_variable_width_histogram_bucket = types_aggregat
 export const types_aggregations_buckets_variable_width_histogram_bucket = z.union([
     z.record(z.string(), types_aggregations_variable_width_histogram_bucket),
     z.array(types_aggregations_variable_width_histogram_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_variable_width_histogram_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_variable_width_histogram_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_variable_width_histogram_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_variable_width_histogram_bucket' });
 
-export const types_aggregations_variable_width_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_variable_width_histogram_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_variable_width_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_variable_width_histogram_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_variable_width_histogram_aggregate' });
 
 export const types_aggregations_date_histogram_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key_as_string: z.optional(z.string()),
     key: types_epoch_time_unit_millis
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_date_histogram_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5525,22 +5612,22 @@ export const types_aggregations_date_histogram_bucket = types_aggregations_multi
 export const types_aggregations_buckets_date_histogram_bucket = z.union([
     z.record(z.string(), types_aggregations_date_histogram_bucket),
     z.array(types_aggregations_date_histogram_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_date_histogram_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_date_histogram_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_date_histogram_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_date_histogram_bucket' });
 
 export const types_aggregations_auto_date_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_date_histogram_bucket.and(z.object({
     interval: types_duration_large
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_auto_date_histogram_aggregate' });
 
-export const types_aggregations_date_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_date_histogram_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_date_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_date_histogram_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_date_histogram_aggregate' });
 
 export const types_aggregations_histogram_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key_as_string: z.optional(z.string()),
     key: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_histogram_bucket' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -5549,36 +5636,36 @@ export const types_aggregations_histogram_bucket = types_aggregations_multi_buck
 export const types_aggregations_buckets_histogram_bucket = z.union([
     z.record(z.string(), types_aggregations_histogram_bucket),
     z.array(types_aggregations_histogram_bucket)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_histogram_bucket' });
 
 export const types_aggregations_multi_bucket_aggregate_base_histogram_bucket = types_aggregations_aggregate_base.and(z.object({
     buckets: types_aggregations_buckets_histogram_bucket
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_bucket_aggregate_base_histogram_bucket' });
 
-export const types_aggregations_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_histogram_bucket.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_histogram_aggregate = types_aggregations_multi_bucket_aggregate_base_histogram_bucket.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_histogram_aggregate' });
 
 export const types_aggregations_geo_centroid_aggregate = types_aggregations_aggregate_base.and(z.object({
     count: z.number(),
     location: z.optional(types_geo_location)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_centroid_aggregate' });
 
 export const types_aggregations_geo_bounds_aggregate = types_aggregations_aggregate_base.and(z.object({
     bounds: z.optional(types_geo_bounds)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_bounds_aggregate' });
 
 export const types_cartesian_point = z.object({
     x: z.number(),
     y: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_cartesian_point' });
 
 export const types_aggregations_cartesian_centroid_aggregate = types_aggregations_aggregate_base.and(z.object({
     count: z.number(),
     location: z.optional(types_cartesian_point)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_cartesian_centroid_aggregate' });
 
 export const types_aggregations_cartesian_bounds_aggregate = types_aggregations_aggregate_base.and(z.object({
     bounds: z.optional(types_top_left_bottom_right_geo_bounds)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_cartesian_bounds_aggregate' });
 
 export const types_aggregations_standard_deviation_bounds_as_string = z.object({
     upper: z.string(),
@@ -5587,7 +5674,7 @@ export const types_aggregations_standard_deviation_bounds_as_string = z.object({
     lower_population: z.string(),
     upper_sampling: z.string(),
     lower_sampling: z.string()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_standard_deviation_bounds_as_string' });
 
 export const types_aggregations_standard_deviation_bounds = z.object({
     upper: z.union([
@@ -5620,7 +5707,7 @@ export const types_aggregations_standard_deviation_bounds = z.object({
         z.string(),
         z.null()
     ])
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_standard_deviation_bounds' });
 
 /**
  * Statistics aggregation result. `min`, `max` and `avg` are missing if there were no values to process
@@ -5648,7 +5735,7 @@ export const types_aggregations_stats_aggregate = types_aggregations_aggregate_b
     max_as_string: z.optional(z.string()),
     avg_as_string: z.optional(z.string()),
     sum_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_stats_aggregate' });
 
 export const types_aggregations_extended_stats_aggregate = types_aggregations_stats_aggregate.and(z.object({
     sum_of_squares: z.union([
@@ -5693,46 +5780,46 @@ export const types_aggregations_extended_stats_aggregate = types_aggregations_st
     variance_sampling_as_string: z.optional(z.string()),
     std_deviation_as_string: z.optional(z.string()),
     std_deviation_bounds_as_string: z.optional(types_aggregations_standard_deviation_bounds_as_string)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_extended_stats_aggregate' });
 
-export const types_aggregations_extended_stats_bucket_aggregate = types_aggregations_extended_stats_aggregate.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_extended_stats_bucket_aggregate = types_aggregations_extended_stats_aggregate.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_extended_stats_bucket_aggregate' });
 
-export const types_aggregations_stats_bucket_aggregate = types_aggregations_stats_aggregate.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_stats_bucket_aggregate = types_aggregations_stats_aggregate.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_stats_bucket_aggregate' });
 
 export const types_aggregations_change_point_bucket = types_aggregations_multi_bucket_base.and(z.object({
     key: types_field_value
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_change_point_bucket' });
 
 export const types_aggregations_trend_change = z.object({
     p_value: z.number(),
     r_value: z.number(),
     change_point: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_trend_change' });
 
 export const types_aggregations_abstract_change_point = z.object({
     p_value: z.number(),
     change_point: z.number()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_abstract_change_point' });
 
-export const types_aggregations_step_change = types_aggregations_abstract_change_point.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_step_change = types_aggregations_abstract_change_point.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_step_change' });
 
-export const types_aggregations_stationary = types_rank_base;
+export const types_aggregations_stationary = z.record(z.string(), z.unknown()).register(z.globalRegistry, { id: 'types_aggregations_stationary' });
 
-export const types_aggregations_spike = types_aggregations_step_change;
+export const types_aggregations_spike = types_aggregations_abstract_change_point.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_spike' });
 
 export const types_aggregations_non_stationary = z.object({
     p_value: z.number(),
     r_value: z.number(),
     trend: z.string()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_non_stationary' });
 
 export const types_aggregations_indeterminable = z.object({
     reason: z.string()
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_indeterminable' });
 
-export const types_aggregations_distribution_change = types_aggregations_step_change;
+export const types_aggregations_distribution_change = types_aggregations_abstract_change_point.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_distribution_change' });
 
-export const types_aggregations_dip = types_aggregations_step_change;
+export const types_aggregations_dip = types_aggregations_abstract_change_point.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_dip' });
 
 export const types_aggregations_change_type = z.object({
     dip: z.optional(types_aggregations_dip),
@@ -5743,35 +5830,41 @@ export const types_aggregations_change_type = z.object({
     stationary: z.optional(types_aggregations_stationary),
     step_change: z.optional(types_aggregations_step_change),
     trend_change: z.optional(types_aggregations_trend_change)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_change_type' });
 
 export const types_aggregations_change_point_aggregate = types_aggregations_aggregate_base.and(z.object({
     type: types_aggregations_change_type,
     bucket: z.optional(types_aggregations_change_point_bucket)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_change_point_aggregate' });
 
 export const types_aggregations_bucket_metric_value_aggregate = types_aggregations_single_metric_aggregate_base.and(z.object({
     keys: z.array(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_metric_value_aggregate' });
 
 export const types_aggregations_derivative_aggregate = types_aggregations_single_metric_aggregate_base.and(z.object({
     normalized_value: z.optional(z.number()),
     normalized_value_as_string: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_derivative_aggregate' });
 
-export const types_aggregations_simple_value_aggregate = types_aggregations_value_count_aggregate;
+export const types_aggregations_simple_value_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_simple_value_aggregate' });
 
-export const types_aggregations_weighted_avg_aggregate = types_aggregations_value_count_aggregate;
+/**
+ * Weighted average aggregation result. `value` is missing if the weight was set to zero.
+ */
+export const types_aggregations_weighted_avg_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_weighted_avg_aggregate' });
 
-export const types_aggregations_avg_aggregate = types_aggregations_value_count_aggregate;
+export const types_aggregations_avg_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_avg_aggregate' });
 
-export const types_aggregations_sum_aggregate = types_aggregations_value_count_aggregate;
+/**
+ * Sum aggregation result. `value` is always present and is zero if there were no values to process.
+ */
+export const types_aggregations_sum_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_sum_aggregate' });
 
-export const types_aggregations_max_aggregate = types_aggregations_value_count_aggregate;
+export const types_aggregations_max_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_max_aggregate' });
 
-export const types_aggregations_min_aggregate = types_aggregations_value_count_aggregate;
+export const types_aggregations_min_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_min_aggregate' });
 
-export const types_aggregations_median_absolute_deviation_aggregate = types_aggregations_value_count_aggregate;
+export const types_aggregations_median_absolute_deviation_aggregate = types_aggregations_single_metric_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_median_absolute_deviation_aggregate' });
 
 export const types_aggregations_array_percentiles_item = z.object({
     key: z.number(),
@@ -5781,36 +5874,36 @@ export const types_aggregations_array_percentiles_item = z.object({
         z.null()
     ]),
     value_as_string: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_array_percentiles_item' });
 
 export const types_aggregations_keyed_percentiles = z.record(z.string(), z.union([
     z.string(),
     z.number(),
     z.null()
-]));
+])).register(z.globalRegistry, { id: 'types_aggregations_keyed_percentiles' });
 
 export const types_aggregations_percentiles = z.union([
     types_aggregations_keyed_percentiles,
     z.array(types_aggregations_array_percentiles_item)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_percentiles' });
 
 export const types_aggregations_percentiles_aggregate_base = types_aggregations_aggregate_base.and(z.object({
     values: types_aggregations_percentiles
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_percentiles_aggregate_base' });
 
-export const types_aggregations_percentiles_bucket_aggregate = types_aggregations_percentiles_aggregate_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_percentiles_bucket_aggregate = types_aggregations_percentiles_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_percentiles_bucket_aggregate' });
 
-export const types_aggregations_t_digest_percentile_ranks_aggregate = types_aggregations_percentiles_bucket_aggregate;
+export const types_aggregations_t_digest_percentile_ranks_aggregate = types_aggregations_percentiles_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_t_digest_percentile_ranks_aggregate' });
 
-export const types_aggregations_t_digest_percentiles_aggregate = types_aggregations_percentiles_bucket_aggregate;
+export const types_aggregations_t_digest_percentiles_aggregate = types_aggregations_percentiles_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_t_digest_percentiles_aggregate' });
 
-export const types_aggregations_hdr_percentile_ranks_aggregate = types_aggregations_percentiles_bucket_aggregate;
+export const types_aggregations_hdr_percentile_ranks_aggregate = types_aggregations_percentiles_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_hdr_percentile_ranks_aggregate' });
 
-export const types_aggregations_hdr_percentiles_aggregate = types_aggregations_percentiles_bucket_aggregate;
+export const types_aggregations_hdr_percentiles_aggregate = types_aggregations_percentiles_aggregate_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_hdr_percentiles_aggregate' });
 
 export const types_indices_response_base = types_acknowledged_response_base.and(z.object({
     _shards: z.optional(types_shard_statistics)
-}));
+})).register(z.globalRegistry, { id: 'types_indices_response_base' });
 
 export const esql_types_esql_shard_failure = z.object({
     shard: z.number(),
@@ -5821,16 +5914,22 @@ export const esql_types_esql_shard_failure = z.object({
     ]),
     node: z.optional(types_node_id),
     reason: types_error_cause
-});
+}).register(z.globalRegistry, { id: 'esql_types_esql_shard_failure' });
 
 export const esql_types_esql_shard_info = z.object({
     total: z.number(),
     successful: z.optional(z.number()),
     skipped: z.optional(z.number()),
     failed: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'esql_types_esql_shard_info' });
 
-export const esql_types_esql_cluster_status = types_cluster_search_status;
+export const esql_types_esql_cluster_status = z.enum([
+    'running',
+    'successful',
+    'partial',
+    'skipped',
+    'failed'
+]).register(z.globalRegistry, { id: 'esql_types_esql_cluster_status' });
 
 export const esql_types_esql_cluster_details = z.object({
     status: esql_types_esql_cluster_status,
@@ -5838,7 +5937,7 @@ export const esql_types_esql_cluster_details = z.object({
     took: z.optional(types_duration_value_unit_millis),
     _shards: z.optional(esql_types_esql_shard_info),
     failures: z.optional(z.array(esql_types_esql_shard_failure))
-});
+}).register(z.globalRegistry, { id: 'esql_types_esql_cluster_details' });
 
 export const esql_types_esql_cluster_info = z.object({
     total: z.number(),
@@ -5848,12 +5947,12 @@ export const esql_types_esql_cluster_info = z.object({
     partial: z.number(),
     failed: z.number(),
     details: z.record(z.string(), esql_types_esql_cluster_details)
-});
+}).register(z.globalRegistry, { id: 'esql_types_esql_cluster_info' });
 
 export const esql_types_esql_column_info = z.object({
     name: z.string(),
     type: z.string()
-});
+}).register(z.globalRegistry, { id: 'esql_types_esql_column_info' });
 
 export const esql_types_esql_result = z.object({
     took: z.optional(types_duration_value_unit_millis),
@@ -5865,37 +5964,46 @@ export const esql_types_esql_result = z.object({
     profile: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
         description: 'Profiling information. Present if `profile` was `true` in the request.\nThe contents of this field are currently unstable.'
     }))
-});
+}).register(z.globalRegistry, { id: 'esql_types_esql_result' });
 
 export const esql_types_table_values_long_double = z.union([
     z.number(),
     z.array(z.number())
-]);
+]).register(z.globalRegistry, { id: 'esql_types_table_values_long_double' });
 
-export const esql_types_table_values_long_value = esql_types_table_values_long_double;
+export const esql_types_table_values_long_value = z.union([
+    z.number(),
+    z.array(z.number())
+]).register(z.globalRegistry, { id: 'esql_types_table_values_long_value' });
 
-export const esql_types_table_values_keyword_value = types_routing;
+export const esql_types_table_values_keyword_value = z.union([
+    z.string(),
+    z.array(z.string())
+]).register(z.globalRegistry, { id: 'esql_types_table_values_keyword_value' });
 
-export const esql_types_table_values_integer_value = esql_types_table_values_long_double;
+export const esql_types_table_values_integer_value = z.union([
+    z.number(),
+    z.array(z.number())
+]).register(z.globalRegistry, { id: 'esql_types_table_values_integer_value' });
 
 export const esql_types_table_values_container = z.object({
     integer: z.optional(z.array(esql_types_table_values_integer_value)),
     keyword: z.optional(z.array(esql_types_table_values_keyword_value)),
     long: z.optional(z.array(esql_types_table_values_long_value)),
     double: z.optional(z.array(esql_types_table_values_long_double))
-});
+}).register(z.globalRegistry, { id: 'esql_types_table_values_container' });
 
 export const esql_types_single_or_multi_value = z.union([
     types_field_value,
     z.array(types_field_value)
-]);
+]).register(z.globalRegistry, { id: 'esql_types_single_or_multi_value' });
 
-export const esql_types_named_value = z.record(z.string(), esql_types_single_or_multi_value);
+export const esql_types_named_value = z.record(z.string(), esql_types_single_or_multi_value).register(z.globalRegistry, { id: 'esql_types_named_value' });
 
 export const esql_types_esql_params = z.union([
     z.array(esql_types_single_or_multi_value),
     z.array(esql_types_named_value)
-]);
+]).register(z.globalRegistry, { id: 'esql_types_esql_params' });
 
 export const esql_types_esql_format = z.enum([
     'csv',
@@ -5906,7 +6014,7 @@ export const esql_types_esql_format = z.enum([
     'cbor',
     'smile',
     'arrow'
-]);
+]).register(z.globalRegistry, { id: 'esql_types_esql_format' });
 
 export const types_inline_get_dict_user_defined = z.object({
     fields: z.optional(z.record(z.string(), z.record(z.string(), z.unknown()))),
@@ -5915,7 +6023,7 @@ export const types_inline_get_dict_user_defined = z.object({
     _primary_term: z.optional(z.number()),
     _routing: z.optional(types_routing),
     _source: z.optional(z.record(z.string(), z.record(z.string(), z.unknown())))
-});
+}).register(z.globalRegistry, { id: 'types_inline_get_dict_user_defined' });
 
 export const global_bulk_response_item = z.object({
     _id: z.optional(z.union([
@@ -5941,7 +6049,7 @@ export const global_bulk_response_item = z.object({
     _version: z.optional(types_version_number),
     forced_refresh: z.optional(z.boolean()),
     get: z.optional(types_inline_get_dict_user_defined)
-});
+}).register(z.globalRegistry, { id: 'global_bulk_response_item' });
 
 export const global_bulk_operation_base = z.object({
     _id: z.optional(types_id),
@@ -5953,9 +6061,9 @@ export const global_bulk_operation_base = z.object({
     if_seq_no: z.optional(types_sequence_number),
     version: z.optional(types_version_number),
     version_type: z.optional(types_version_type)
-});
+}).register(z.globalRegistry, { id: 'global_bulk_operation_base' });
 
-export const global_bulk_delete_operation = global_bulk_operation_base.and(z.record(z.string(), z.unknown()));
+export const global_bulk_delete_operation = global_bulk_operation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'global_bulk_delete_operation' });
 
 export const global_bulk_update_operation = global_bulk_operation_base.and(z.object({
     require_alias: z.optional(z.boolean().register(z.globalRegistry, {
@@ -5964,7 +6072,7 @@ export const global_bulk_update_operation = global_bulk_operation_base.and(z.obj
     retry_on_conflict: z.optional(z.number().register(z.globalRegistry, {
         description: 'The number of times an update should be retried in the case of a version conflict.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'global_bulk_update_operation' });
 
 export const global_bulk_write_operation = global_bulk_operation_base.and(z.object({
     dynamic_templates: z.optional(z.record(z.string(), z.string()).register(z.globalRegistry, {
@@ -5976,25 +6084,25 @@ export const global_bulk_write_operation = global_bulk_operation_base.and(z.obje
     require_alias: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, the request\'s actions must target an index alias.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'global_bulk_write_operation' });
 
-export const global_bulk_create_operation = global_bulk_write_operation.and(z.record(z.string(), z.unknown()));
+export const global_bulk_create_operation = global_bulk_write_operation.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'global_bulk_create_operation' });
 
-export const global_bulk_index_operation = global_bulk_create_operation;
+export const global_bulk_index_operation = global_bulk_write_operation.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'global_bulk_index_operation' });
 
 export const global_bulk_operation_container = z.object({
     index: z.optional(global_bulk_index_operation),
     create: z.optional(global_bulk_create_operation),
     update: z.optional(global_bulk_update_operation),
     delete: z.optional(global_bulk_delete_operation)
-});
+}).register(z.globalRegistry, { id: 'global_bulk_operation_container' });
 
-export const types_wait_for_active_shard_options = z.enum(['all', 'index-setting']);
+export const types_wait_for_active_shard_options = z.enum(['all', 'index-setting']).register(z.globalRegistry, { id: 'types_wait_for_active_shard_options' });
 
 export const types_wait_for_active_shards = z.union([
     z.number(),
     types_wait_for_active_shard_options
-]);
+]).register(z.globalRegistry, { id: 'types_wait_for_active_shards' });
 
 /**
  * Defines how to fetch a source. Fetching can be disabled entirely, or the source can be filtered.
@@ -6003,13 +6111,13 @@ export const types_wait_for_active_shards = z.union([
 export const global_search_types_source_config_param = z.union([
     z.boolean(),
     types_fields
-]);
+]).register(z.globalRegistry, { id: 'global_search_types_source_config_param' });
 
 export const types_suggest_mode = z.enum([
     'missing',
     'popular',
     'always'
-]);
+]).register(z.globalRegistry, { id: 'types_suggest_mode' });
 
 export const types_query_dsl_terms_set_query = types_query_dsl_query_base.and(z.lazy(() => z.object({
     minimum_should_match: z.optional(types_minimum_should_match),
@@ -6020,7 +6128,7 @@ export const types_query_dsl_terms_set_query = types_query_dsl_query_base.and(z.
     terms: z.array(types_field_value).register(z.globalRegistry, {
         description: 'Array of terms you wish to find in the provided field.'
     })
-})));
+}))).register(z.globalRegistry, { id: 'types_query_dsl_terms_set_query' });
 
 export const types_mapping_runtime_field = z.object({
     fields: z.optional(z.record(z.string(), types_mapping_composite_sub_field).register(z.globalRegistry, {
@@ -6039,7 +6147,7 @@ export const types_mapping_runtime_field = z.object({
         return z.optional(z.lazy((): any => types_script));
     },
     type: types_mapping_runtime_field_type
-});
+}).register(z.globalRegistry, { id: 'types_mapping_runtime_field' });
 
 export const types_script = z.object({
     get source() {
@@ -6051,9 +6159,9 @@ export const types_script = z.object({
     })),
     lang: z.optional(types_script_language),
     options: z.optional(z.record(z.string(), z.string()))
-});
+}).register(z.globalRegistry, { id: 'types_script' });
 
-export const types_mapping_runtime_fields = z.record(z.string(), types_mapping_runtime_field);
+export const types_mapping_runtime_fields = z.record(z.string(), types_mapping_runtime_field).register(z.globalRegistry, { id: 'types_mapping_runtime_fields' });
 
 export const types_diversify_retriever = z.lazy((): any => types_retriever_base).and(z.lazy(() => z.object({
     type: types_diversify_retriever_types,
@@ -6074,7 +6182,7 @@ export const types_diversify_retriever = z.lazy((): any => types_retriever_base)
     lambda: z.optional(z.number().register(z.globalRegistry, {
         description: 'Controls the trade-off between relevance and diversity for MMR. A value of 0.0 focuses solely on diversity, while a value of 1.0 focuses solely on relevance. Required for MMR'
     }))
-})));
+}))).register(z.globalRegistry, { id: 'types_diversify_retriever' });
 
 export const types_retriever_container = z.object({
     get standard() {
@@ -6102,14 +6210,14 @@ export const types_retriever_container = z.object({
         return z.optional(z.lazy((): any => types_pinned_retriever));
     },
     diversify: z.optional(types_diversify_retriever)
-});
+}).register(z.globalRegistry, { id: 'types_retriever_container' });
 
 export const types_pinned_retriever = z.lazy((): any => types_retriever_base).and(z.object({
     retriever: types_retriever_container,
     ids: z.optional(z.array(z.string())),
     docs: z.optional(z.array(types_specified_document)),
     rank_window_size: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_pinned_retriever' });
 
 /**
  * An Elasticsearch Query DSL (Domain Specific Language) object that defines a query.
@@ -6253,6 +6361,7 @@ export const types_query_dsl_query_container = z.object({
     wrapper: z.optional(types_query_dsl_wrapper_query),
     type: z.optional(types_query_dsl_type_query)
 }).register(z.globalRegistry, {
+    id: 'types_query_dsl_query_container',
     description: 'An Elasticsearch Query DSL (Domain Specific Language) object that defines a query.'
 });
 
@@ -6263,7 +6372,7 @@ export const types_query_dsl_span_within_query = types_query_dsl_query_base.and(
     get little() {
         return z.lazy((): any => types_query_dsl_span_query);
     }
-})));
+}))).register(z.globalRegistry, { id: 'types_query_dsl_span_within_query' });
 
 export const types_query_dsl_span_query = z.object({
     get span_containing() {
@@ -6292,13 +6401,13 @@ export const types_query_dsl_span_query = z.object({
         description: 'The equivalent of the `term` query but for use with other span queries.'
     })),
     span_within: z.optional(types_query_dsl_span_within_query)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_span_query' });
 
 export const types_query_dsl_span_or_query = types_query_dsl_query_base.and(z.object({
     clauses: z.array(types_query_dsl_span_query).register(z.globalRegistry, {
         description: 'Array of one or more other span type queries.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_or_query' });
 
 export const types_query_dsl_span_not_query = types_query_dsl_query_base.and(z.object({
     dist: z.optional(z.number().register(z.globalRegistry, {
@@ -6312,7 +6421,7 @@ export const types_query_dsl_span_not_query = types_query_dsl_query_base.and(z.o
     pre: z.optional(z.number().register(z.globalRegistry, {
         description: 'The number of tokens before the include span that can’t have overlap with the exclude span.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_not_query' });
 
 export const types_query_dsl_span_near_query = types_query_dsl_query_base.and(z.object({
     clauses: z.array(types_query_dsl_span_query).register(z.globalRegistry, {
@@ -6324,28 +6433,28 @@ export const types_query_dsl_span_near_query = types_query_dsl_query_base.and(z.
     slop: z.optional(z.number().register(z.globalRegistry, {
         description: 'Controls the maximum number of intervening unmatched positions permitted.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_near_query' });
 
 export const types_query_dsl_span_multi_term_query = types_query_dsl_query_base.and(z.object({
     match: types_query_dsl_query_container
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_multi_term_query' });
 
 export const types_query_dsl_span_first_query = types_query_dsl_query_base.and(z.object({
     end: z.number().register(z.globalRegistry, {
         description: 'Controls the maximum end position permitted in a match.'
     }),
     match: types_query_dsl_span_query
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_first_query' });
 
 export const types_query_dsl_span_field_masking_query = types_query_dsl_query_base.and(z.object({
     field: types_field,
     query: types_query_dsl_span_query
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_field_masking_query' });
 
 export const types_query_dsl_span_containing_query = types_query_dsl_query_base.and(z.object({
     big: types_query_dsl_span_query,
     little: types_query_dsl_span_query
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_span_containing_query' });
 
 export const types_query_dsl_script_score_query = types_query_dsl_query_base.and(z.object({
     min_score: z.optional(z.number().register(z.globalRegistry, {
@@ -6353,13 +6462,13 @@ export const types_query_dsl_script_score_query = types_query_dsl_query_base.and
     })),
     query: types_query_dsl_query_container,
     script: types_script
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_script_score_query' });
 
 export const types_inner_retriever = z.object({
     retriever: types_retriever_container,
     weight: z.number(),
     normalizer: types_score_normalizer
-});
+}).register(z.globalRegistry, { id: 'types_inner_retriever' });
 
 export const types_linear_retriever = z.lazy((): any => types_retriever_base).and(z.object({
     retrievers: z.optional(z.array(types_inner_retriever).register(z.globalRegistry, {
@@ -6369,7 +6478,7 @@ export const types_linear_retriever = z.lazy((): any => types_retriever_base).an
     query: z.optional(z.string()),
     fields: z.optional(z.array(z.string())),
     normalizer: z.optional(types_score_normalizer)
-}));
+})).register(z.globalRegistry, { id: 'types_linear_retriever' });
 
 export const types_retriever_base = z.object({
     filter: z.optional(z.union([
@@ -6382,7 +6491,7 @@ export const types_retriever_base = z.object({
     _name: z.optional(z.string().register(z.globalRegistry, {
         description: 'Retriever name.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_retriever_base' });
 
 export const types_rescorer_retriever = types_retriever_base.and(z.object({
     retriever: types_retriever_container,
@@ -6390,11 +6499,11 @@ export const types_rescorer_retriever = types_retriever_base.and(z.object({
         z.lazy((): any => global_search_types_rescore),
         z.array(z.lazy((): any => global_search_types_rescore))
     ])
-}));
+})).register(z.globalRegistry, { id: 'types_rescorer_retriever' });
 
 export const global_search_types_script_rescore = z.object({
     script: types_script
-});
+}).register(z.globalRegistry, { id: 'global_search_types_script_rescore' });
 
 export const global_search_types_rescore_query = z.object({
     rescore_query: types_query_dsl_query_container,
@@ -6405,7 +6514,7 @@ export const global_search_types_rescore_query = z.object({
         description: 'Relative importance of the rescore query versus the original query.'
     })),
     score_mode: z.optional(global_search_types_score_mode)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_rescore_query' });
 
 export const global_search_types_rescore = z.object({
     window_size: z.optional(z.number())
@@ -6413,7 +6522,7 @@ export const global_search_types_rescore = z.object({
     query: z.optional(global_search_types_rescore_query),
     learning_to_rank: z.optional(global_search_types_learning_to_rank),
     script: z.optional(global_search_types_script_rescore)
-}));
+})).register(z.globalRegistry, { id: 'global_search_types_rescore' });
 
 export const types_rule_retriever = types_retriever_base.and(z.object({
     ruleset_ids: z.union([
@@ -6427,7 +6536,7 @@ export const types_rule_retriever = types_retriever_base.and(z.object({
     rank_window_size: z.optional(z.number().register(z.globalRegistry, {
         description: 'This value determines the size of the individual result set.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_rule_retriever' });
 
 export const types_text_similarity_reranker = types_retriever_base.and(z.object({
     retriever: types_retriever_container,
@@ -6444,7 +6553,7 @@ export const types_text_similarity_reranker = types_retriever_base.and(z.object(
         description: 'The document field to be used for text similarity comparisons. This field should contain the text that will be evaluated against the inference_text.'
     }),
     chunk_rescorer: z.optional(types_chunk_rescorer)
-}));
+})).register(z.globalRegistry, { id: 'types_text_similarity_reranker' });
 
 /**
  * Wraps a retriever with an optional weight for RRF scoring.
@@ -6455,6 +6564,7 @@ export const types_rrf_retriever_component = z.object({
         description: 'Weight multiplier for this retriever\'s contribution to the RRF score. Higher values increase influence. Defaults to 1.0 if not specified. Must be non-negative.'
     }))
 }).register(z.globalRegistry, {
+    id: 'types_rrf_retriever_component',
     description: 'Wraps a retriever with an optional weight for RRF scoring.'
 });
 
@@ -6464,7 +6574,7 @@ export const types_rrf_retriever_component = z.object({
 export const types_rrf_retriever_entry = z.union([
     types_retriever_container,
     types_rrf_retriever_component
-]);
+]).register(z.globalRegistry, { id: 'types_rrf_retriever_entry' });
 
 export const types_rrf_retriever = types_retriever_base.and(z.object({
     retrievers: z.array(types_rrf_retriever_entry).register(z.globalRegistry, {
@@ -6478,7 +6588,7 @@ export const types_rrf_retriever = types_retriever_base.and(z.object({
     })),
     query: z.optional(z.string()),
     fields: z.optional(z.array(z.string()))
-}));
+})).register(z.globalRegistry, { id: 'types_rrf_retriever' });
 
 export const types_knn_retriever = types_retriever_base.and(z.object({
     field: z.string().register(z.globalRegistry, {
@@ -6499,7 +6609,7 @@ export const types_knn_retriever = types_retriever_base.and(z.object({
         description: 'The minimum similarity required for a document to be considered a match.'
     })),
     rescore_vector: z.optional(types_rescore_vector)
-}));
+})).register(z.globalRegistry, { id: 'types_knn_retriever' });
 
 export const types_standard_retriever = types_retriever_base.and(z.lazy(() => z.object({
     query: z.optional(types_query_dsl_query_container),
@@ -6513,17 +6623,17 @@ export const types_standard_retriever = types_retriever_base.and(z.lazy(() => z.
     get collapse() {
         return z.optional(z.lazy((): any => global_search_types_field_collapse));
     }
-})));
+}))).register(z.globalRegistry, { id: 'types_standard_retriever' });
 
 export const types_script_field = z.object({
     script: types_script,
     ignore_failure: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'types_script_field' });
 
 export const global_search_types_highlight_field = z.lazy((): any => global_search_types_highlight_base).and(z.object({
     fragment_offset: z.optional(z.number()),
     matched_fields: z.optional(types_fields)
-}));
+})).register(z.globalRegistry, { id: 'global_search_types_highlight_field' });
 
 export const global_search_types_highlight_base = z.object({
     type: z.optional(global_search_types_highlighter_type),
@@ -6569,7 +6679,7 @@ export const global_search_types_highlight_base = z.object({
         description: 'By default, only fields that contains a query match are highlighted.\nSet to `false` to highlight all fields.'
     })),
     tags_schema: z.optional(global_search_types_highlighter_tags_schema)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_highlight_base' });
 
 export const global_search_types_highlight = global_search_types_highlight_base.and(z.object({
     encoder: z.optional(global_search_types_highlighter_encoder),
@@ -6577,7 +6687,7 @@ export const global_search_types_highlight = global_search_types_highlight_base.
         z.record(z.string(), global_search_types_highlight_field),
         z.array(z.record(z.string(), global_search_types_highlight_field))
     ])
-}));
+})).register(z.globalRegistry, { id: 'global_search_types_highlight' });
 
 export const global_search_types_inner_hits = z.object({
     name: z.optional(types_name),
@@ -6604,7 +6714,7 @@ export const global_search_types_inner_hits = z.object({
     stored_fields: z.optional(types_fields),
     track_scores: z.optional(z.boolean()),
     version: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'global_search_types_inner_hits' });
 
 export const types_script_sort = z.object({
     order: z.optional(types_sort_order),
@@ -6614,7 +6724,7 @@ export const types_script_sort = z.object({
     get nested() {
         return z.optional(z.lazy((): any => types_nested_sort_value));
     }
-});
+}).register(z.globalRegistry, { id: 'types_script_sort' });
 
 export const types_nested_sort_value = z.object({
     filter: z.optional(types_query_dsl_query_container),
@@ -6623,7 +6733,7 @@ export const types_nested_sort_value = z.object({
         return z.optional(z.lazy((): any => types_nested_sort_value));
     },
     path: types_field
-});
+}).register(z.globalRegistry, { id: 'types_nested_sort_value' });
 
 export const types_geo_distance_sort = z.object({
     mode: z.optional(types_sort_mode),
@@ -6632,24 +6742,24 @@ export const types_geo_distance_sort = z.object({
     order: z.optional(types_sort_order),
     unit: z.optional(types_distance_unit),
     nested: z.optional(types_nested_sort_value)
-});
+}).register(z.globalRegistry, { id: 'types_geo_distance_sort' });
 
 export const types_sort_options = z.object({
     _score: z.optional(types_score_sort),
     _doc: z.optional(types_score_sort),
     _geo_distance: z.optional(types_geo_distance_sort),
     _script: z.optional(types_script_sort)
-});
+}).register(z.globalRegistry, { id: 'types_sort_options' });
 
 export const types_sort_combinations = z.union([
     types_field,
     types_sort_options
-]);
+]).register(z.globalRegistry, { id: 'types_sort_combinations' });
 
 export const types_sort = z.union([
     types_sort_combinations,
     z.array(types_sort_combinations)
-]);
+]).register(z.globalRegistry, { id: 'types_sort' });
 
 export const global_search_types_field_collapse = z.object({
     field: types_field,
@@ -6663,7 +6773,7 @@ export const global_search_types_field_collapse = z.object({
     get collapse() {
         return z.optional(z.lazy((): any => global_search_types_field_collapse));
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_field_collapse' });
 
 export const types_knn_search = z.object({
     field: types_field,
@@ -6691,7 +6801,7 @@ export const types_knn_search = z.object({
     inner_hits: z.optional(global_search_types_inner_hits),
     rescore_vector: z.optional(types_rescore_vector),
     _name: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'types_knn_search' });
 
 export const types_aggregations_aggregation_container = z.object({
     get aggregations() {
@@ -6862,7 +6972,7 @@ export const types_aggregations_aggregation_container = z.object({
     get variable_width_histogram() {
         return z.optional(z.lazy((): any => types_aggregations_variable_width_histogram_aggregation));
     }
-})));
+}))).register(z.globalRegistry, { id: 'types_aggregations_aggregation_container' });
 
 export const types_aggregations_variable_width_histogram_aggregation = z.object({
     field: z.optional(types_field),
@@ -6876,7 +6986,7 @@ export const types_aggregations_variable_width_histogram_aggregation = z.object(
         description: 'Specifies the number of individual documents that will be stored in memory on a shard before the initial bucketing algorithm is run.\nDefaults to `min(10 * shard_size, 50000)`.'
     })),
     script: z.optional(types_script)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_variable_width_histogram_aggregation' });
 
 export const global_search_types_search_request_body = z.object({
     aggregations: z.optional(z.record(z.string(), types_aggregations_aggregation_container).register(z.globalRegistry, {
@@ -6953,12 +7063,12 @@ export const global_search_types_search_request_body = z.object({
     stats: z.optional(z.array(z.string()).register(z.globalRegistry, {
         description: 'The stats groups to associate with the search.\nEach group maintains a statistics aggregation for its associated searches.\nYou can retrieve these stats using the indices stats API.'
     }))
-});
+}).register(z.globalRegistry, { id: 'global_search_types_search_request_body' });
 
 export const types_script_source = z.union([
     z.string(),
     global_search_types_search_request_body
-]);
+]).register(z.globalRegistry, { id: 'types_script_source' });
 
 export const types_aggregations_weighted_average_value = z.object({
     field: z.optional(types_field),
@@ -6966,7 +7076,7 @@ export const types_aggregations_weighted_average_value = z.object({
         description: 'A value or weight to use if the field is missing.'
     })),
     script: z.optional(types_script)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_weighted_average_value' });
 
 export const types_aggregations_weighted_average_aggregation = types_aggregations_aggregation.and(z.object({
     format: z.optional(z.string().register(z.globalRegistry, {
@@ -6975,19 +7085,19 @@ export const types_aggregations_weighted_average_aggregation = types_aggregation
     value: z.optional(types_aggregations_weighted_average_value),
     value_type: z.optional(types_aggregations_value_type),
     weight: z.optional(types_aggregations_weighted_average_value)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_weighted_average_aggregation' });
 
 export const types_aggregations_formattable_metric_aggregation = z.lazy((): any => types_aggregations_metric_aggregation_base).and(z.object({
     format: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_formattable_metric_aggregation' });
 
 export const types_aggregations_metric_aggregation_base = z.object({
     field: z.optional(types_field),
     missing: z.optional(types_aggregations_missing),
     script: z.optional(types_script)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_metric_aggregation_base' });
 
-export const types_aggregations_value_count_aggregation = types_aggregations_formattable_metric_aggregation.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_value_count_aggregation = types_aggregations_formattable_metric_aggregation.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_value_count_aggregation' });
 
 export const types_aggregations_top_metrics_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     metrics: z.optional(z.union([
@@ -6998,17 +7108,17 @@ export const types_aggregations_top_metrics_aggregation = types_aggregations_met
         description: 'The number of top documents from which to return metrics.'
     })),
     sort: z.optional(types_sort)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_top_metrics_aggregation' });
 
 export const types_aggregations_test_population = z.object({
     field: types_field,
     script: z.optional(types_script),
     filter: z.optional(types_query_dsl_query_container)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_test_population' });
 
 export const types_query_dsl_script_query = types_query_dsl_query_base.and(z.object({
     script: types_script
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_script_query' });
 
 export const types_query_dsl_rule_query = types_query_dsl_query_base.and(z.object({
     organic: types_query_dsl_query_container,
@@ -7018,7 +7128,7 @@ export const types_query_dsl_rule_query = types_query_dsl_query_base.and(z.objec
     ])),
     ruleset_id: z.optional(z.string()),
     match_criteria: z.record(z.string(), z.unknown())
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_rule_query' });
 
 export const types_query_dsl_pinned_query = types_query_dsl_query_base.and(z.object({
     organic: types_query_dsl_query_container
@@ -7029,7 +7139,7 @@ export const types_query_dsl_pinned_query = types_query_dsl_query_base.and(z.obj
     docs: z.optional(z.array(types_query_dsl_pinned_doc).register(z.globalRegistry, {
         description: 'Documents listed in the order they are to appear in results.\nRequired if `ids` is not specified.'
     }))
-})));
+}))).register(z.globalRegistry, { id: 'types_query_dsl_pinned_query' });
 
 export const types_query_dsl_nested_query = types_query_dsl_query_base.and(z.object({
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
@@ -7039,7 +7149,7 @@ export const types_query_dsl_nested_query = types_query_dsl_query_base.and(z.obj
     path: types_field,
     query: types_query_dsl_query_container,
     score_mode: z.optional(types_query_dsl_child_score_mode)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_nested_query' });
 
 export const types_knn_query = types_query_dsl_query_base.and(z.object({
     field: types_field,
@@ -7062,7 +7172,7 @@ export const types_knn_query = types_query_dsl_query_base.and(z.object({
         description: 'The minimum similarity for a vector to be considered a match'
     })),
     rescore_vector: z.optional(types_rescore_vector)
-}));
+})).register(z.globalRegistry, { id: 'types_knn_query' });
 
 export const types_query_dsl_intervals_match = z.object({
     analyzer: z.optional(z.string().register(z.globalRegistry, {
@@ -7081,7 +7191,7 @@ export const types_query_dsl_intervals_match = z.object({
     get filter() {
         return z.optional(z.lazy((): any => types_query_dsl_intervals_filter));
     }
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_match' });
 
 export const types_query_dsl_intervals_container = z.object({
     get all_of() {
@@ -7096,7 +7206,7 @@ export const types_query_dsl_intervals_container = z.object({
     range: z.optional(types_query_dsl_intervals_range),
     regexp: z.optional(types_query_dsl_intervals_regexp),
     wildcard: z.optional(types_query_dsl_intervals_wildcard)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_container' });
 
 export const types_query_dsl_intervals_filter = z.object({
     after: z.optional(types_query_dsl_intervals_container),
@@ -7108,14 +7218,14 @@ export const types_query_dsl_intervals_filter = z.object({
     not_overlapping: z.optional(types_query_dsl_intervals_container),
     overlapping: z.optional(types_query_dsl_intervals_container),
     script: z.optional(types_script)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_filter' });
 
 export const types_query_dsl_intervals_any_of = z.object({
     intervals: z.array(types_query_dsl_intervals_container).register(z.globalRegistry, {
         description: 'An array of rules to match.'
     }),
     filter: z.optional(types_query_dsl_intervals_filter)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_any_of' });
 
 export const types_query_dsl_intervals_all_of = z.object({
     intervals: z.array(types_query_dsl_intervals_container).register(z.globalRegistry, {
@@ -7128,7 +7238,7 @@ export const types_query_dsl_intervals_all_of = z.object({
         description: 'If `true`, intervals produced by the rules should appear in the order in which they are specified.'
     })),
     filter: z.optional(types_query_dsl_intervals_filter)
-});
+}).register(z.globalRegistry, { id: 'types_query_dsl_intervals_all_of' });
 
 export const types_query_dsl_intervals_query = types_query_dsl_query_base.and(z.object({
     all_of: z.optional(types_query_dsl_intervals_all_of),
@@ -7139,7 +7249,7 @@ export const types_query_dsl_intervals_query = types_query_dsl_query_base.and(z.
     range: z.optional(types_query_dsl_intervals_range),
     regexp: z.optional(types_query_dsl_intervals_regexp),
     wildcard: z.optional(types_query_dsl_intervals_wildcard)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_intervals_query' });
 
 export const types_query_dsl_has_parent_query = types_query_dsl_query_base.and(z.object({
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
@@ -7151,7 +7261,7 @@ export const types_query_dsl_has_parent_query = types_query_dsl_query_base.and(z
     score: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Indicates whether the relevance score of a matching parent document is aggregated into its child documents.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_has_parent_query' });
 
 export const types_query_dsl_has_child_query = types_query_dsl_query_base.and(z.object({
     ignore_unmapped: z.optional(z.boolean().register(z.globalRegistry, {
@@ -7167,9 +7277,11 @@ export const types_query_dsl_has_child_query = types_query_dsl_query_base.and(z.
     query: types_query_dsl_query_container,
     score_mode: z.optional(types_query_dsl_child_score_mode),
     type: types_relation_name
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_has_child_query' });
 
-export const types_query_dsl_script_score_function = global_search_types_script_rescore;
+export const types_query_dsl_script_score_function = z.object({
+    script: types_script
+}).register(z.globalRegistry, { id: 'types_query_dsl_script_score_function' });
 
 export const types_query_dsl_function_score_container = z.object({
     filter: z.optional(types_query_dsl_query_container),
@@ -7184,7 +7296,7 @@ export const types_query_dsl_function_score_container = z.object({
     field_value_factor: z.optional(types_query_dsl_field_value_factor_score_function),
     random_score: z.optional(types_query_dsl_random_score_function),
     script_score: z.optional(types_query_dsl_script_score_function)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_function_score_container' });
 
 export const types_query_dsl_function_score_query = types_query_dsl_query_base.and(z.object({
     boost_mode: z.optional(types_query_dsl_function_boost_mode),
@@ -7199,7 +7311,7 @@ export const types_query_dsl_function_score_query = types_query_dsl_query_base.a
     })),
     query: z.optional(types_query_dsl_query_container),
     score_mode: z.optional(types_query_dsl_function_score_mode)
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_function_score_query' });
 
 export const types_query_dsl_dis_max_query = types_query_dsl_query_base.and(z.object({
     queries: z.array(types_query_dsl_query_container).register(z.globalRegistry, {
@@ -7208,11 +7320,11 @@ export const types_query_dsl_dis_max_query = types_query_dsl_query_base.and(z.ob
     tie_breaker: z.optional(z.number().register(z.globalRegistry, {
         description: 'Floating point number between 0 and 1.0 used to increase the relevance scores of documents matching multiple query clauses.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_dis_max_query' });
 
 export const types_query_dsl_constant_score_query = types_query_dsl_query_base.and(z.object({
     filter: types_query_dsl_query_container
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_constant_score_query' });
 
 export const types_query_dsl_boosting_query = types_query_dsl_query_base.and(z.object({
     negative_boost: z.number().register(z.globalRegistry, {
@@ -7220,7 +7332,7 @@ export const types_query_dsl_boosting_query = types_query_dsl_query_base.and(z.o
     }),
     negative: types_query_dsl_query_container,
     positive: types_query_dsl_query_container
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_boosting_query' });
 
 export const types_query_dsl_bool_query = types_query_dsl_query_base.and(z.object({
     filter: z.optional(z.union([
@@ -7240,13 +7352,13 @@ export const types_query_dsl_bool_query = types_query_dsl_query_base.and(z.objec
         types_query_dsl_query_container,
         z.array(types_query_dsl_query_container)
     ]))
-}));
+})).register(z.globalRegistry, { id: 'types_query_dsl_bool_query' });
 
 export const types_aggregations_t_test_aggregation = types_aggregations_aggregation.and(z.object({
     a: z.optional(types_aggregations_test_population),
     b: z.optional(types_aggregations_test_population),
     type: z.optional(types_aggregations_t_test_type)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_t_test_aggregation' });
 
 export const types_aggregations_top_hits_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     docvalue_fields: z.optional(z.array(types_query_dsl_field_and_format).register(z.globalRegistry, {
@@ -7280,7 +7392,7 @@ export const types_aggregations_top_hits_aggregation = types_aggregations_metric
     seq_no_primary_term: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, returns sequence number and primary term of the last modification of each hit.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_top_hits_aggregation' });
 
 export const types_aggregations_terms_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     collect_mode: z.optional(types_aggregations_terms_aggregation_collect_mode),
@@ -7312,21 +7424,21 @@ export const types_aggregations_terms_aggregation = types_aggregations_bucket_ag
         description: 'The number of buckets returned out of the overall terms list.'
     })),
     format: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_terms_aggregation' });
 
-export const types_aggregations_sum_aggregation = z.lazy((): any => types_aggregations_format_metric_aggregation_base).and(z.record(z.string(), z.unknown()));
+export const types_aggregations_sum_aggregation = z.lazy((): any => types_aggregations_format_metric_aggregation_base).and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_sum_aggregation' });
 
 export const types_aggregations_format_metric_aggregation_base = types_aggregations_metric_aggregation_base.and(z.object({
     format: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_format_metric_aggregation_base' });
 
 export const types_aggregations_string_stats_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     show_distribution: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Shows the probability distribution for all characters.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_string_stats_aggregation' });
 
-export const types_aggregations_stats_aggregation = types_aggregations_format_metric_aggregation_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_stats_aggregation = types_aggregations_format_metric_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_stats_aggregation' });
 
 export const types_aggregations_significant_text_aggregation = types_aggregations_bucket_aggregation_base.and(z.lazy(() => z.object({
     background_filter: z.optional(types_query_dsl_query_container),
@@ -7358,9 +7470,11 @@ export const types_aggregations_significant_text_aggregation = types_aggregation
         description: 'The number of buckets returned out of the overall terms list.'
     })),
     source_fields: z.optional(types_fields)
-})));
+}))).register(z.globalRegistry, { id: 'types_aggregations_significant_text_aggregation' });
 
-export const types_aggregations_scripted_heuristic = global_search_types_script_rescore;
+export const types_aggregations_scripted_heuristic = z.object({
+    script: types_script
+}).register(z.globalRegistry, { id: 'types_aggregations_scripted_heuristic' });
 
 export const types_aggregations_significant_terms_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     background_filter: z.optional(types_query_dsl_query_container),
@@ -7387,7 +7501,7 @@ export const types_aggregations_significant_terms_aggregation = types_aggregatio
     size: z.optional(z.number().register(z.globalRegistry, {
         description: 'The number of buckets returned out of the overall terms list.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_significant_terms_aggregation' });
 
 export const types_aggregations_scripted_metric_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     combine_script: z.optional(types_script),
@@ -7397,12 +7511,12 @@ export const types_aggregations_scripted_metric_aggregation = types_aggregations
         description: 'A global object with script parameters for `init`, `map` and `combine` scripts.\nIt is shared between the scripts.'
     })),
     reduce_script: z.optional(types_script)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_scripted_metric_aggregation' });
 
 export const types_aggregations_rate_aggregation = types_aggregations_format_metric_aggregation_base.and(z.object({
     unit: z.optional(types_aggregations_calendar_interval),
     mode: z.optional(types_aggregations_rate_mode)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_rate_aggregation' });
 
 export const types_aggregations_range_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     field: z.optional(types_field),
@@ -7417,7 +7531,7 @@ export const types_aggregations_range_aggregation = types_aggregations_bucket_ag
         description: 'Set to `true` to associate a unique string key with each bucket and return the ranges as a hash rather than an array.'
     })),
     format: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_range_aggregation' });
 
 export const types_aggregations_percentiles_aggregation = types_aggregations_format_metric_aggregation_base.and(z.object({
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
@@ -7429,7 +7543,7 @@ export const types_aggregations_percentiles_aggregation = types_aggregations_for
     ])),
     hdr: z.optional(types_aggregations_hdr_method),
     tdigest: z.optional(types_aggregations_t_digest)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_percentiles_aggregation' });
 
 export const types_aggregations_percentile_ranks_aggregation = types_aggregations_format_metric_aggregation_base.and(z.object({
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
@@ -7442,14 +7556,14 @@ export const types_aggregations_percentile_ranks_aggregation = types_aggregation
     ])),
     hdr: z.optional(types_aggregations_hdr_method),
     tdigest: z.optional(types_aggregations_t_digest)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_percentile_ranks_aggregation' });
 
 export const types_aggregations_multi_term_lookup = z.object({
     missing: z.optional(types_aggregations_missing)
 }).and(z.object({
     field: z.optional(types_field),
     script: z.optional(types_script)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_term_lookup' });
 
 export const types_aggregations_multi_terms_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     collect_mode: z.optional(types_aggregations_terms_aggregation_collect_mode),
@@ -7472,18 +7586,18 @@ export const types_aggregations_multi_terms_aggregation = types_aggregations_buc
     terms: z.array(types_aggregations_multi_term_lookup).register(z.globalRegistry, {
         description: 'The field from which to generate sets of terms.'
     })
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_multi_terms_aggregation' });
 
-export const types_aggregations_min_aggregation = types_aggregations_stats_aggregation;
+export const types_aggregations_min_aggregation = types_aggregations_format_metric_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_min_aggregation' });
 
 export const types_aggregations_median_absolute_deviation_aggregation = types_aggregations_format_metric_aggregation_base.and(z.object({
     compression: z.optional(z.number().register(z.globalRegistry, {
         description: 'Limits the maximum number of nodes used by the underlying TDigest algorithm to `20 * compression`, enabling control of memory usage and approximation error.'
     })),
     execution_hint: z.optional(types_aggregations_t_digest_execution_hint)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_median_absolute_deviation_aggregation' });
 
-export const types_aggregations_max_aggregation = types_aggregations_stats_aggregation;
+export const types_aggregations_max_aggregation = types_aggregations_format_metric_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_max_aggregation' });
 
 export const types_aggregations_histogram_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     extended_bounds: z.optional(types_aggregations_extended_boundsdouble),
@@ -7507,18 +7621,18 @@ export const types_aggregations_histogram_aggregation = types_aggregations_bucke
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'If `true`, returns buckets as a hash instead of an array, keyed by the bucket keys.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_histogram_aggregation' });
 
 export const types_aggregations_geo_centroid_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     count: z.optional(z.number()),
     location: z.optional(types_geo_location)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_centroid_aggregation' });
 
 export const types_aggregations_geo_bounds_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     wrap_longitude: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Specifies whether the bounding box should be allowed to overlap the international date line.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_geo_bounds_aggregation' });
 
 /**
  * Aggregation buckets. By default they are returned as an array, but if the aggregation has keys configured for
@@ -7527,7 +7641,7 @@ export const types_aggregations_geo_bounds_aggregation = types_aggregations_metr
 export const types_aggregations_buckets_query_container = z.union([
     z.record(z.string(), types_query_dsl_query_container),
     z.array(types_query_dsl_query_container)
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_buckets_query_container' });
 
 export const types_aggregations_filters_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     filters: z.optional(types_aggregations_buckets_query_container),
@@ -7540,7 +7654,7 @@ export const types_aggregations_filters_aggregation = types_aggregations_bucket_
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'By default, the named filters aggregation returns the buckets as an object.\nSet to `false` to return the buckets as an array of objects.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_filters_aggregation' });
 
 export const types_aggregations_frequent_item_sets_aggregation = z.object({
     fields: z.array(types_aggregations_frequent_item_sets_field).register(z.globalRegistry, {
@@ -7556,13 +7670,13 @@ export const types_aggregations_frequent_item_sets_aggregation = z.object({
         description: 'The number of top item sets to return.'
     })),
     filter: z.optional(types_query_dsl_query_container)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_frequent_item_sets_aggregation' });
 
 export const types_aggregations_extended_stats_aggregation = types_aggregations_format_metric_aggregation_base.and(z.object({
     sigma: z.optional(z.number().register(z.globalRegistry, {
         description: 'The number of standard deviations above/below the mean to display.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_extended_stats_aggregation' });
 
 export const types_aggregations_diversified_sampler_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     execution_hint: z.optional(types_aggregations_sampler_aggregation_execution_hint),
@@ -7574,7 +7688,7 @@ export const types_aggregations_diversified_sampler_aggregation = types_aggregat
         description: 'Limits how many top-scoring documents are collected in the sample processed on each shard.'
     })),
     field: z.optional(types_field)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_diversified_sampler_aggregation' });
 
 export const types_aggregations_date_histogram_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     calendar_interval: z.optional(types_aggregations_calendar_interval),
@@ -7598,12 +7712,12 @@ export const types_aggregations_date_histogram_aggregation = types_aggregations_
     keyed: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'Set to `true` to associate a unique string key with each bucket and return the ranges as a hash rather than an array.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_date_histogram_aggregation' });
 
 export const types_aggregations_composite_geo_tile_grid_aggregation = z.lazy((): any => types_aggregations_composite_aggregation_base).and(z.object({
     precision: z.optional(z.number()),
     bounds: z.optional(types_geo_bounds)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_composite_geo_tile_grid_aggregation' });
 
 export const types_aggregations_composite_aggregation_base = z.object({
     field: z.optional(types_field),
@@ -7612,7 +7726,7 @@ export const types_aggregations_composite_aggregation_base = z.object({
     script: z.optional(types_script),
     value_type: z.optional(types_aggregations_value_type),
     order: z.optional(types_sort_order)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_composite_aggregation_base' });
 
 export const types_aggregations_composite_date_histogram_aggregation = types_aggregations_composite_aggregation_base.and(z.object({
     format: z.optional(z.string()),
@@ -7620,20 +7734,20 @@ export const types_aggregations_composite_date_histogram_aggregation = types_agg
     fixed_interval: z.optional(types_duration_large),
     offset: z.optional(types_duration),
     time_zone: z.optional(types_time_zone)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_composite_date_histogram_aggregation' });
 
 export const types_aggregations_composite_histogram_aggregation = types_aggregations_composite_aggregation_base.and(z.object({
     interval: z.number()
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_composite_histogram_aggregation' });
 
-export const types_aggregations_composite_terms_aggregation = types_aggregations_composite_aggregation_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_composite_terms_aggregation = types_aggregations_composite_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_composite_terms_aggregation' });
 
 export const types_aggregations_composite_aggregation_source = z.object({
     terms: z.optional(types_aggregations_composite_terms_aggregation),
     histogram: z.optional(types_aggregations_composite_histogram_aggregation),
     date_histogram: z.optional(types_aggregations_composite_date_histogram_aggregation),
     geotile_grid: z.optional(types_aggregations_composite_geo_tile_grid_aggregation)
-});
+}).register(z.globalRegistry, { id: 'types_aggregations_composite_aggregation_source' });
 
 export const types_aggregations_composite_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     after: z.optional(types_aggregations_composite_aggregate_key),
@@ -7643,11 +7757,11 @@ export const types_aggregations_composite_aggregation = types_aggregations_bucke
     sources: z.optional(z.array(z.record(z.string(), types_aggregations_composite_aggregation_source)).register(z.globalRegistry, {
         description: 'The value sources used to build composite buckets.\nKeys are returned in the order of the `sources` definition.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_composite_aggregation' });
 
-export const types_aggregations_cartesian_centroid_aggregation = types_aggregations_metric_aggregation_base.and(z.record(z.string(), z.unknown()));
+export const types_aggregations_cartesian_centroid_aggregation = types_aggregations_metric_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_cartesian_centroid_aggregation' });
 
-export const types_aggregations_cartesian_bounds_aggregation = types_aggregations_cartesian_centroid_aggregation;
+export const types_aggregations_cartesian_bounds_aggregation = types_aggregations_metric_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_cartesian_bounds_aggregation' });
 
 export const types_aggregations_cardinality_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     precision_threshold: z.optional(z.number().register(z.globalRegistry, {
@@ -7655,7 +7769,7 @@ export const types_aggregations_cardinality_aggregation = types_aggregations_met
     })),
     rehash: z.optional(z.boolean()),
     execution_hint: z.optional(types_aggregations_cardinality_execution_mode)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_cardinality_aggregation' });
 
 export const types_aggregations_bucket_sort_aggregation = types_aggregations_aggregation.and(z.object({
     from: z.optional(z.number().register(z.globalRegistry, {
@@ -7666,22 +7780,24 @@ export const types_aggregations_bucket_sort_aggregation = types_aggregations_agg
         description: 'The number of buckets to return.\nDefaults to all buckets of the parent aggregation.'
     })),
     sort: z.optional(types_sort)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_sort_aggregation' });
 
 export const types_aggregations_bucket_selector_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
     script: z.optional(types_script)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_selector_aggregation' });
 
-export const types_aggregations_bucket_script_aggregation = types_aggregations_bucket_selector_aggregation;
+export const types_aggregations_bucket_script_aggregation = types_aggregations_pipeline_aggregation_base.and(z.object({
+    script: z.optional(types_script)
+})).register(z.globalRegistry, { id: 'types_aggregations_bucket_script_aggregation' });
 
 export const types_aggregations_boxplot_aggregation = types_aggregations_metric_aggregation_base.and(z.object({
     compression: z.optional(z.number().register(z.globalRegistry, {
         description: 'Limits the maximum number of nodes used by the underlying TDigest algorithm to `20 * compression`, enabling control of memory usage and approximation error.'
     })),
     execution_hint: z.optional(types_aggregations_t_digest_execution_hint)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_boxplot_aggregation' });
 
-export const types_aggregations_average_aggregation = types_aggregations_stats_aggregation;
+export const types_aggregations_average_aggregation = types_aggregations_format_metric_aggregation_base.and(z.record(z.string(), z.unknown())).register(z.globalRegistry, { id: 'types_aggregations_average_aggregation' });
 
 export const types_aggregations_auto_date_histogram_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     buckets: z.optional(z.number().register(z.globalRegistry, {
@@ -7699,7 +7815,7 @@ export const types_aggregations_auto_date_histogram_aggregation = types_aggregat
     params: z.optional(z.record(z.string(), z.record(z.string(), z.unknown()))),
     script: z.optional(types_script),
     time_zone: z.optional(types_time_zone)
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_auto_date_histogram_aggregation' });
 
 export const types_aggregations_adjacency_matrix_aggregation = types_aggregations_bucket_aggregation_base.and(z.object({
     filters: z.optional(z.record(z.string(), types_query_dsl_query_container).register(z.globalRegistry, {
@@ -7708,7 +7824,7 @@ export const types_aggregations_adjacency_matrix_aggregation = types_aggregation
     separator: z.optional(z.string().register(z.globalRegistry, {
         description: 'Separator used to concatenate filter names. Defaults to &.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_aggregations_adjacency_matrix_aggregation' });
 
 export const types_mapping_icu_collation_property = z.lazy((): any => types_mapping_doc_values_property_base).and(z.object({
     type: z.enum(['icu_collation_keyword']),
@@ -7732,7 +7848,7 @@ export const types_mapping_icu_collation_property = z.lazy((): any => types_mapp
     numeric: z.optional(z.boolean()),
     variable_top: z.optional(z.string()),
     hiragana_quaternary_mode: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_icu_collation_property' });
 
 export const types_mapping_property = z.union([
     z.object({
@@ -7894,11 +8010,11 @@ export const types_mapping_property = z.union([
     z.object({
         type: z.literal('icu_collation_keyword')
     }).and(types_mapping_icu_collation_property)
-]);
+]).register(z.globalRegistry, { id: 'types_mapping_property' });
 
 export const types_mapping_long_range_property = z.lazy((): any => types_mapping_range_property_base).and(z.object({
     type: z.enum(['long_range'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_long_range_property' });
 
 export const types_mapping_property_base = z.object({
     meta: z.optional(z.record(z.string(), z.string()).register(z.globalRegistry, {
@@ -7909,48 +8025,48 @@ export const types_mapping_property_base = z.object({
     dynamic: z.optional(types_mapping_dynamic_mapping),
     fields: z.optional(z.record(z.string(), types_mapping_property)),
     synthetic_source_keep: z.optional(types_mapping_synthetic_source_keep_enum)
-});
+}).register(z.globalRegistry, { id: 'types_mapping_property_base' });
 
 export const types_mapping_core_property_base = types_mapping_property_base.and(z.object({
     copy_to: z.optional(types_fields),
     store: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_core_property_base' });
 
 export const types_mapping_doc_values_property_base = types_mapping_core_property_base.and(z.object({
     doc_values: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_doc_values_property_base' });
 
 export const types_mapping_range_property_base = types_mapping_doc_values_property_base.and(z.object({
     boost: z.optional(z.number()),
     coerce: z.optional(z.boolean()),
     index: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_range_property_base' });
 
 export const types_mapping_ip_range_property = types_mapping_range_property_base.and(z.object({
     type: z.enum(['ip_range'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_ip_range_property' });
 
 export const types_mapping_integer_range_property = types_mapping_range_property_base.and(z.object({
     type: z.enum(['integer_range'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_integer_range_property' });
 
 export const types_mapping_float_range_property = types_mapping_range_property_base.and(z.object({
     type: z.enum(['float_range'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_float_range_property' });
 
 export const types_mapping_double_range_property = types_mapping_range_property_base.and(z.object({
     type: z.enum(['double_range'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_double_range_property' });
 
 export const types_mapping_date_range_property = types_mapping_range_property_base.and(z.object({
     format: z.optional(z.string()),
     type: z.enum(['date_range'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_date_range_property' });
 
 export const types_mapping_unsigned_long_number_property = z.lazy((): any => types_mapping_number_property_base).and(z.object({
     type: z.enum(['unsigned_long']),
     null_value: z.optional(types_ulong)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_unsigned_long_number_property' });
 
 export const types_mapping_number_property_base = types_mapping_doc_values_property_base.and(z.object({
     boost: z.optional(z.number()),
@@ -7963,48 +8079,48 @@ export const types_mapping_number_property_base = types_mapping_doc_values_prope
     time_series_dimension: z.optional(z.boolean().register(z.globalRegistry, {
         description: 'For internal use by Elastic only. Marks the field as a time series dimension. Defaults to false.'
     }))
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_number_property_base' });
 
 export const types_mapping_short_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['short']),
     null_value: z.optional(types_short)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_short_number_property' });
 
 export const types_mapping_scaled_float_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['scaled_float']),
     null_value: z.optional(z.number()),
     scaling_factor: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_scaled_float_number_property' });
 
 export const types_mapping_long_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['long']),
     null_value: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_long_number_property' });
 
 export const types_mapping_integer_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['integer']),
     null_value: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_integer_number_property' });
 
 export const types_mapping_half_float_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['half_float']),
     null_value: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_half_float_number_property' });
 
 export const types_mapping_float_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['float']),
     null_value: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_float_number_property' });
 
 export const types_mapping_double_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['double']),
     null_value: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_double_number_property' });
 
 export const types_mapping_byte_number_property = types_mapping_number_property_base.and(z.object({
     type: z.enum(['byte']),
     null_value: z.optional(types_byte)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_byte_number_property' });
 
 /**
  * The `shape` data type facilitates the indexing of and searching with arbitrary `x, y` cartesian shapes such as
@@ -8016,14 +8132,14 @@ export const types_mapping_shape_property = types_mapping_doc_values_property_ba
     ignore_z_value: z.optional(z.boolean()),
     orientation: z.optional(types_mapping_geo_orientation),
     type: z.enum(['shape'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_shape_property' });
 
 export const types_mapping_point_property = types_mapping_doc_values_property_base.and(z.object({
     ignore_malformed: z.optional(z.boolean()),
     ignore_z_value: z.optional(z.boolean()),
     null_value: z.optional(z.string()),
     type: z.enum(['point'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_point_property' });
 
 /**
  * The `geo_shape` data type facilitates the indexing of and searching with arbitrary geo shapes such as rectangles
@@ -8037,7 +8153,7 @@ export const types_mapping_geo_shape_property = types_mapping_doc_values_propert
     orientation: z.optional(types_mapping_geo_orientation),
     strategy: z.optional(types_mapping_geo_strategy),
     type: z.enum(['geo_shape'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_geo_shape_property' });
 
 export const types_mapping_geo_point_property = types_mapping_doc_values_property_base.and(z.object({
     ignore_malformed: z.optional(z.boolean()),
@@ -8048,7 +8164,7 @@ export const types_mapping_geo_point_property = types_mapping_doc_values_propert
     script: z.optional(types_script),
     type: z.enum(['geo_point']),
     time_series_metric: z.optional(types_mapping_geo_point_metric_type)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_geo_point_property' });
 
 export const types_mapping_token_count_property = types_mapping_doc_values_property_base.and(z.object({
     analyzer: z.optional(z.string()),
@@ -8057,11 +8173,11 @@ export const types_mapping_token_count_property = types_mapping_doc_values_prope
     null_value: z.optional(z.number()),
     enable_position_increments: z.optional(z.boolean()),
     type: z.enum(['token_count'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_token_count_property' });
 
 export const types_mapping_murmur3_hash_property = types_mapping_doc_values_property_base.and(z.object({
     type: z.enum(['murmur3'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_murmur3_hash_property' });
 
 export const types_mapping_ip_property = types_mapping_doc_values_property_base.and(z.object({
     boost: z.optional(z.number()),
@@ -8074,33 +8190,33 @@ export const types_mapping_ip_property = types_mapping_doc_values_property_base.
         description: 'For internal use by Elastic only. Marks the field as a time series dimension. Defaults to false.'
     })),
     type: z.enum(['ip'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_ip_property' });
 
 export const types_mapping_exponential_histogram_property = types_mapping_property_base.and(z.object({
     time_series_metric: z.optional(types_mapping_time_series_metric_type),
     type: z.enum(['exponential_histogram'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_exponential_histogram_property' });
 
 export const types_mapping_histogram_property = types_mapping_property_base.and(z.object({
     ignore_malformed: z.optional(z.boolean()),
     time_series_metric: z.optional(types_mapping_time_series_metric_type),
     type: z.enum(['histogram'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_histogram_property' });
 
 export const types_mapping_field_alias_property = types_mapping_property_base.and(z.object({
     path: z.optional(types_field),
     type: z.enum(['alias'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_field_alias_property' });
 
 export const types_mapping_counted_keyword_property = types_mapping_property_base.and(z.object({
     type: z.enum(['counted_keyword']),
     index: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_counted_keyword_property' });
 
 export const types_mapping_constant_keyword_property = types_mapping_property_base.and(z.object({
     value: z.optional(z.record(z.string(), z.unknown())),
     type: z.enum(['constant_keyword'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_constant_keyword_property' });
 
 export const types_mapping_completion_property = types_mapping_doc_values_property_base.and(z.object({
     analyzer: z.optional(z.string()),
@@ -8110,13 +8226,13 @@ export const types_mapping_completion_property = types_mapping_doc_values_proper
     preserve_separators: z.optional(z.boolean()),
     search_analyzer: z.optional(z.string()),
     type: z.enum(['completion'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_completion_property' });
 
 export const types_mapping_sparse_vector_property = types_mapping_property_base.and(z.object({
     store: z.optional(z.boolean()),
     type: z.enum(['sparse_vector']),
     index_options: z.optional(types_mapping_sparse_vector_index_options)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_sparse_vector_property' });
 
 export const types_mapping_semantic_text_property = z.object({
     type: z.enum(['semantic_text']),
@@ -8132,7 +8248,7 @@ export const types_mapping_semantic_text_property = z.object({
     fields: z.optional(z.record(z.string(), types_mapping_property).register(z.globalRegistry, {
         description: 'Multi-fields allow the same string value to be indexed in multiple ways for different purposes, such as one\nfield for search and a multi-field for sorting and aggregations, or the same string value analyzed by different analyzers.'
     }))
-});
+}).register(z.globalRegistry, { id: 'types_mapping_semantic_text_property' });
 
 /**
  * Technical preview
@@ -8141,27 +8257,27 @@ export const types_mapping_rank_vector_property = types_mapping_property_base.an
     type: z.enum(['rank_vectors']),
     element_type: z.optional(types_mapping_rank_vector_element_type),
     dims: z.optional(z.number())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_rank_vector_property' });
 
 export const types_mapping_passthrough_object_property = types_mapping_core_property_base.and(z.object({
     type: z.optional(z.enum(['passthrough'])),
     enabled: z.optional(z.boolean()),
     priority: z.optional(z.number()),
     time_series_dimension: z.optional(z.boolean())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_passthrough_object_property' });
 
 export const types_mapping_object_property = types_mapping_core_property_base.and(z.object({
     enabled: z.optional(z.boolean()),
     subobjects: z.optional(types_mapping_subobjects),
     type: z.optional(z.enum(['object']))
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_object_property' });
 
 export const types_mapping_nested_property = types_mapping_core_property_base.and(z.object({
     enabled: z.optional(z.boolean()),
     include_in_parent: z.optional(z.boolean()),
     include_in_root: z.optional(z.boolean()),
     type: z.enum(['nested'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_nested_property' });
 
 export const types_mapping_flattened_property = types_mapping_property_base.and(z.object({
     boost: z.optional(z.number()),
@@ -8175,7 +8291,7 @@ export const types_mapping_flattened_property = types_mapping_property_base.and(
     split_queries_on_whitespace: z.optional(z.boolean()),
     time_series_dimensions: z.optional(z.array(z.string())),
     type: z.enum(['flattened'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_flattened_property' });
 
 export const types_mapping_dense_vector_property = types_mapping_property_base.and(z.object({
     type: z.enum(['dense_vector']),
@@ -8188,7 +8304,7 @@ export const types_mapping_dense_vector_property = types_mapping_property_base.a
     })),
     index_options: z.optional(types_mapping_dense_vector_index_options),
     similarity: z.optional(types_mapping_dense_vector_similarity)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_dense_vector_property' });
 
 export const types_mapping_aggregate_metric_double_property = types_mapping_property_base.and(z.object({
     type: z.enum(['aggregate_metric_double']),
@@ -8196,7 +8312,7 @@ export const types_mapping_aggregate_metric_double_property = types_mapping_prop
     ignore_malformed: z.optional(z.boolean()),
     metrics: z.array(z.string()),
     time_series_metric: z.optional(types_mapping_time_series_metric_type)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_aggregate_metric_double_property' });
 
 export const types_mapping_date_property = types_mapping_doc_values_property_base.and(z.object({
     boost: z.optional(z.number()),
@@ -8210,7 +8326,7 @@ export const types_mapping_date_property = types_mapping_doc_values_property_bas
     precision_step: z.optional(z.number()),
     locale: z.optional(z.string()),
     type: z.enum(['date'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_date_property' });
 
 export const types_mapping_date_nanos_property = types_mapping_doc_values_property_base.and(z.object({
     boost: z.optional(z.number()),
@@ -8222,16 +8338,16 @@ export const types_mapping_date_nanos_property = types_mapping_doc_values_proper
     null_value: z.optional(types_date_time),
     precision_step: z.optional(z.number()),
     type: z.enum(['date_nanos'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_date_nanos_property' });
 
 export const types_mapping_wildcard_property = types_mapping_doc_values_property_base.and(z.object({
     type: z.enum(['wildcard']),
     null_value: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_wildcard_property' });
 
 export const types_mapping_version_property = types_mapping_doc_values_property_base.and(z.object({
     type: z.enum(['version'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_version_property' });
 
 export const types_mapping_text_property = types_mapping_core_property_base.and(z.object({
     analyzer: z.optional(z.string()),
@@ -8257,7 +8373,7 @@ export const types_mapping_text_property = types_mapping_core_property_base.and(
     ])),
     term_vector: z.optional(types_mapping_term_vector_option),
     type: z.enum(['text'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_text_property' });
 
 export const types_mapping_search_as_you_type_property = types_mapping_core_property_base.and(z.object({
     analyzer: z.optional(z.string()),
@@ -8273,21 +8389,21 @@ export const types_mapping_search_as_you_type_property = types_mapping_core_prop
     ])),
     term_vector: z.optional(types_mapping_term_vector_option),
     type: z.enum(['search_as_you_type'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_search_as_you_type_property' });
 
 export const types_mapping_rank_features_property = types_mapping_property_base.and(z.object({
     positive_score_impact: z.optional(z.boolean()),
     type: z.enum(['rank_features'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_rank_features_property' });
 
 export const types_mapping_rank_feature_property = types_mapping_property_base.and(z.object({
     positive_score_impact: z.optional(z.boolean()),
     type: z.enum(['rank_feature'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_rank_feature_property' });
 
 export const types_mapping_percolator_property = types_mapping_property_base.and(z.object({
     type: z.enum(['percolator'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_percolator_property' });
 
 /**
  * A variant of text that trades scoring and efficiency of positional queries for space efficiency. This field
@@ -8306,6 +8422,7 @@ export const types_mapping_match_only_text_property = z.object({
     })),
     copy_to: z.optional(types_fields)
 }).register(z.globalRegistry, {
+    id: 'types_mapping_match_only_text_property',
     description: 'A variant of text that trades scoring and efficiency of positional queries for space efficiency. This field\neffectively stores data the same way as a text field that only indexes documents (index_options: docs) and\ndisables norms (norms: false). Term queries perform as fast if not faster as on text fields, however queries\nthat need positions such as the match_phrase query perform slower as they need to look at the _source document\nto verify whether a phrase matches. All queries return constant scores that are equal to 1.0.'
 });
 
@@ -8328,7 +8445,7 @@ export const types_mapping_keyword_property = types_mapping_doc_values_property_
         description: 'For internal use by Elastic only. Marks the field as a time series dimension. Defaults to false.'
     })),
     type: z.enum(['keyword'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_keyword_property' });
 
 export const types_mapping_join_property = types_mapping_property_base.and(z.object({
     relations: z.optional(z.record(z.string(), z.union([
@@ -8337,7 +8454,7 @@ export const types_mapping_join_property = types_mapping_property_base.and(z.obj
     ]))),
     eager_global_ordinals: z.optional(z.boolean()),
     type: z.enum(['join'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_join_property' });
 
 export const types_mapping_dynamic_property = types_mapping_doc_values_property_base.and(z.object({
     type: z.enum(['{dynamic_type}']),
@@ -8367,7 +8484,7 @@ export const types_mapping_dynamic_property = types_mapping_doc_values_property_
     format: z.optional(z.string()),
     precision_step: z.optional(z.number()),
     locale: z.optional(z.string())
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_dynamic_property' });
 
 export const types_mapping_boolean_property = types_mapping_doc_values_property_base.and(z.object({
     boost: z.optional(z.number()),
@@ -8381,11 +8498,11 @@ export const types_mapping_boolean_property = types_mapping_doc_values_property_
         description: 'For internal use by Elastic only. Marks the field as a time series dimension. Defaults to false.'
     })),
     type: z.enum(['boolean'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_boolean_property' });
 
 export const types_mapping_binary_property = types_mapping_doc_values_property_base.and(z.object({
     type: z.enum(['binary'])
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_binary_property' });
 
 export const types_mapping_dynamic_template = z.object({
     match: z.optional(z.union([
@@ -8416,7 +8533,7 @@ export const types_mapping_dynamic_template = z.object({
 }).and(z.object({
     mapping: z.optional(types_mapping_property),
     runtime: z.optional(types_mapping_runtime_field)
-}));
+})).register(z.globalRegistry, { id: 'types_mapping_dynamic_template' });
 
 export const types_mapping_type_mapping = z.object({
     all_field: z.optional(types_mapping_all_field),
@@ -8436,13 +8553,13 @@ export const types_mapping_type_mapping = z.object({
     enabled: z.optional(z.boolean()),
     subobjects: z.optional(types_mapping_subobjects),
     _data_stream_timestamp: z.optional(types_mapping_data_stream_timestamp)
-});
+}).register(z.globalRegistry, { id: 'types_mapping_type_mapping' });
 
 export const indices_types_settings_similarity_scripted = z.object({
     type: z.enum(['scripted']),
     script: types_script,
     weight_script: z.optional(types_script)
-});
+}).register(z.globalRegistry, { id: 'indices_types_settings_similarity_scripted' });
 
 export const indices_types_settings_similarity = z.union([
     z.object({
@@ -8469,12 +8586,12 @@ export const indices_types_settings_similarity = z.union([
     z.object({
         type: z.literal('scripted')
     }).and(indices_types_settings_similarity_scripted)
-]);
+]).register(z.globalRegistry, { id: 'indices_types_settings_similarity' });
 
 export const types_analysis_predicate_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['predicate_token_filter']),
     script: types_script
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_predicate_token_filter' });
 
 export const types_analysis_condition_token_filter = types_analysis_token_filter_base.and(z.object({
     type: z.enum(['condition']),
@@ -8482,7 +8599,7 @@ export const types_analysis_condition_token_filter = types_analysis_token_filter
         description: 'Array of token filters. If a token matches the predicate script in the `script` parameter, these filters are applied to the token in the order provided.'
     }),
     script: types_script
-}));
+})).register(z.globalRegistry, { id: 'types_analysis_condition_token_filter' });
 
 export const types_analysis_token_filter_definition = z.union([
     z.object({
@@ -8707,12 +8824,12 @@ export const types_analysis_token_filter_definition = z.union([
     z.object({
         type: z.literal('dictionary_decompounder')
     }).and(types_analysis_dictionary_decompounder_token_filter)
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_token_filter_definition' });
 
 export const types_analysis_token_filter = z.union([
     z.string(),
     types_analysis_token_filter_definition
-]);
+]).register(z.globalRegistry, { id: 'types_analysis_token_filter' });
 
 export const indices_types_index_settings_analysis = z.object({
     analyzer: z.optional(z.record(z.string(), types_analysis_analyzer)),
@@ -8720,7 +8837,7 @@ export const indices_types_index_settings_analysis = z.object({
     filter: z.optional(z.record(z.string(), types_analysis_token_filter)),
     normalizer: z.optional(z.record(z.string(), types_analysis_normalizer)),
     tokenizer: z.optional(z.record(z.string(), types_analysis_tokenizer))
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_settings_analysis' });
 
 export const indices_types_index_settings = z.object({
     get index() {
@@ -8809,19 +8926,19 @@ export const indices_types_index_settings = z.object({
     'indexing.slowlog': z.optional(indices_types_indexing_slowlog_settings),
     indexing_pressure: z.optional(indices_types_indexing_pressure),
     store: z.optional(indices_types_storage)
-});
+}).register(z.globalRegistry, { id: 'indices_types_index_settings' });
 
 export const types_aggregations_top_hits_aggregate = types_aggregations_aggregate_base.and(z.lazy(() => z.object({
     get hits() {
         return z.lazy((): any => global_search_types_hits_metadata);
     }
-})));
+}))).register(z.globalRegistry, { id: 'types_aggregations_top_hits_aggregate' });
 
 export const global_search_types_inner_hits_result = z.object({
     get hits() {
         return z.lazy((): any => global_search_types_hits_metadata);
     }
-});
+}).register(z.globalRegistry, { id: 'global_search_types_inner_hits_result' });
 
 export const global_search_types_hits_metadata = z.object({
     total: z.optional(z.union([
@@ -8836,7 +8953,7 @@ export const global_search_types_hits_metadata = z.object({
         z.string(),
         z.null()
     ]))
-});
+}).register(z.globalRegistry, { id: 'global_search_types_hits_metadata' });
 
 export const global_search_types_hit = z.object({
     _index: types_index_name,
@@ -8866,7 +8983,7 @@ export const global_search_types_hit = z.object({
     _primary_term: z.optional(z.number()),
     _version: z.optional(types_version_number),
     sort: z.optional(types_sort_results)
-});
+}).register(z.globalRegistry, { id: 'global_search_types_hit' });
 
 export const types_aggregations_aggregate = z.union([
     types_aggregations_cardinality_aggregate,
@@ -8942,7 +9059,7 @@ export const types_aggregations_aggregate = z.union([
     types_aggregations_cumulative_cardinality_aggregate,
     types_aggregations_matrix_stats_aggregate,
     types_aggregations_geo_line_aggregate
-]);
+]).register(z.globalRegistry, { id: 'types_aggregations_aggregate' });
 
 export const global_search_response_body = z.object({
     took: z.number().register(z.globalRegistry, {
@@ -8963,7 +9080,7 @@ export const global_search_response_body = z.object({
     _scroll_id: z.optional(types_scroll_id),
     suggest: z.optional(z.record(z.string(), z.array(global_search_types_suggest))),
     terminated_early: z.optional(z.boolean())
-});
+}).register(z.globalRegistry, { id: 'global_search_response_body' });
 
 export const indices_types_alias = z.object({
     filter: z.optional(types_query_dsl_query_container),
@@ -8982,7 +9099,7 @@ export const indices_types_alias = z.object({
     search_routing: z.optional(z.string().register(z.globalRegistry, {
         description: 'Value used to route search operations to a specific shard.\nIf specified, this overwrites the `routing` value for search operations.'
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_types_alias' });
 
 export const global_bulk_update_action = z.object({
     detect_noop: z.optional(z.boolean().register(z.globalRegistry, {
@@ -9002,9 +9119,15 @@ export const global_bulk_update_action = z.object({
     upsert: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
         description: 'If the document does not already exist, the contents of `upsert` are inserted as a new document.\nIf the document exists, the `script` is run.'
     }))
-});
+}).register(z.globalRegistry, { id: 'global_bulk_update_action' });
 
-export const search_sort = types_routing;
+/**
+ * A comma-separated list of `<field>:<direction>` pairs.
+ */
+export const search_sort = z.union([
+    z.string(),
+    z.array(z.string())
+]).register(z.globalRegistry, { id: 'search_sort' });
 
 /**
  * The starting document offset, which must be non-negative.
@@ -9012,6 +9135,7 @@ export const search_sort = types_routing;
  * To page through more hits, use the `search_after` parameter.
  */
 export const search_from = z.number().register(z.globalRegistry, {
+    id: 'search_from',
     description: 'The starting document offset, which must be non-negative.\nBy default, you cannot page through more than 10,000 hits using the `from` and `size` parameters.\nTo page through more hits, use the `search_after` parameter.'
 });
 
@@ -9021,6 +9145,7 @@ export const search_from = z.number().register(z.globalRegistry, {
  * To page through more hits, use the `search_after` parameter.
  */
 export const search_size = z.number().register(z.globalRegistry, {
+    id: 'search_size',
     description: 'The number of hits to return.\nBy default, you cannot page through more than 10,000 hits using the `from` and `size` parameters.\nTo page through more hits, use the `search_after` parameter.'
 });
 
@@ -9032,6 +9157,7 @@ export const search_size = z.number().register(z.globalRegistry, {
  * If both parameters are specified, documents matching the query request body parameter are not returned.
  */
 export const search_q = z.string().register(z.globalRegistry, {
+    id: 'search_q',
     description: 'A query in the Lucene query string syntax.\nQuery parameter searches do not support the full Elasticsearch Query DSL but are handy for testing.\n\nIMPORTANT: This parameter overrides the query parameter in the request body.\nIf both parameters are specified, documents matching the query request body parameter are not returned.'
 });
 
@@ -9039,6 +9165,7 @@ export const search_q = z.string().register(z.globalRegistry, {
  * If `true`, the request returns the sequence number and primary term of the last modification of each hit.
  */
 export const search_seq_no_primary_term = z.boolean().register(z.globalRegistry, {
+    id: 'search_seq_no_primary_term',
     description: 'If `true`, the request returns the sequence number and primary term of the last modification of each hit.'
 });
 
@@ -9054,10 +9181,16 @@ export const search_source_includes = types_fields;
  * Whether vectors should be excluded from _source
  */
 export const search_source_exclude_vectors = z.boolean().register(z.globalRegistry, {
+    id: 'search_source_exclude_vectors',
     description: 'Whether vectors should be excluded from _source'
 });
 
-export const search_source_excludes = search_source_includes;
+/**
+ * A comma-separated list of source fields to exclude from the response.
+ * You can also use this parameter to exclude fields from the subset specified in `_source_includes` query parameter.
+ * If the `_source` parameter is `false`, this parameter is ignored.
+ */
+export const search_source_excludes = types_fields;
 
 /**
  * The source fields that are returned for matching documents.
@@ -9074,6 +9207,7 @@ export const search_source = global_search_types_source_config_param;
  * If `true`, the request returns the document version as part of a hit.
  */
 export const search_version = z.boolean().register(z.globalRegistry, {
+    id: 'search_version',
     description: 'If `true`, the request returns the document version as part of a hit.'
 });
 
@@ -9081,6 +9215,7 @@ export const search_version = z.boolean().register(z.globalRegistry, {
  * Indicates whether `hits.total` should be rendered as an integer or an object in the rest search response.
  */
 export const search_rest_total_hits_as_int = z.boolean().register(z.globalRegistry, {
+    id: 'search_rest_total_hits_as_int',
     description: 'Indicates whether `hits.total` should be rendered as an integer or an object in the rest search response.'
 });
 
@@ -9088,6 +9223,7 @@ export const search_rest_total_hits_as_int = z.boolean().register(z.globalRegist
  * If `true`, aggregation and suggester names are be prefixed by their respective types in the response.
  */
 export const search_typed_keys = z.boolean().register(z.globalRegistry, {
+    id: 'search_typed_keys',
     description: 'If `true`, aggregation and suggester names are be prefixed by their respective types in the response.'
 });
 
@@ -9095,6 +9231,7 @@ export const search_typed_keys = z.boolean().register(z.globalRegistry, {
  * If `true`, the request calculates and returns document scores, even if the scores are not used for sorting.
  */
 export const search_track_scores = z.boolean().register(z.globalRegistry, {
+    id: 'search_track_scores',
     description: 'If `true`, the request calculates and returns document scores, even if the scores are not used for sorting.'
 });
 
@@ -9124,6 +9261,7 @@ export const search_timeout = types_duration;
  * If set to `0` (default), the query does not terminate early.
  */
 export const search_terminate_after = z.number().register(z.globalRegistry, {
+    id: 'search_terminate_after',
     description: 'The maximum number of documents to collect for each shard.\nIf a query reaches this limit, Elasticsearch terminates the query early.\nElasticsearch collects documents before sorting.\n\nIMPORTANT: Use with caution.\nElasticsearch applies this parameter to each shard handling the request.\nWhen possible, let Elasticsearch perform early termination automatically.\nAvoid specifying this parameter for requests that target data streams with backing indices across multiple data tiers.\nIf set to `0` (default), the query does not terminate early.'
 });
 
@@ -9132,6 +9270,7 @@ export const search_terminate_after = z.number().register(z.globalRegistry, {
  * This parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.
  */
 export const search_suggest_text = z.string().register(z.globalRegistry, {
+    id: 'search_suggest_text',
     description: 'The source text for which the suggestions should be returned.\nThis parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.'
 });
 
@@ -9140,6 +9279,7 @@ export const search_suggest_text = z.string().register(z.globalRegistry, {
  * This parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.
  */
 export const search_suggest_size = z.number().register(z.globalRegistry, {
+    id: 'search_suggest_size',
     description: 'The number of suggestions to return.\nThis parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.'
 });
 
@@ -9154,12 +9294,19 @@ export const search_suggest_mode = types_suggest_mode;
  */
 export const search_suggest_field = types_field;
 
-export const search_stored_fields = search_source_includes;
+/**
+ * A comma-separated list of stored fields to return as part of a hit.
+ * If no fields are specified, no stored fields are included in the response.
+ * If this field is specified, the `_source` parameter defaults to `false`.
+ * You can pass `_source: true` to return both source fields and stored fields in the search response.
+ */
+export const search_stored_fields = types_fields;
 
 /**
  * Specific `tag` of the request for logging and statistical purposes.
  */
 export const search_stats = z.array(z.string()).register(z.globalRegistry, {
+    id: 'search_stats',
     description: 'Specific `tag` of the request for logging and statistical purposes.'
 });
 
@@ -9168,7 +9315,12 @@ export const search_stats = z.array(z.string()).register(z.globalRegistry, {
  */
 export const search_search_type = types_search_type;
 
-export const search_scroll = search_timeout;
+/**
+ * The period to retain the search context for scrolling.
+ * By default, this value cannot exceed `1d` (24 hours).
+ * You can change this limit by using the `search.max_keep_alive` cluster-level setting.
+ */
+export const search_scroll = types_duration;
 
 /**
  * A custom value that is used to route operations to a specific shard.
@@ -9180,6 +9332,7 @@ export const search_routing = types_routing;
  * It defaults to index level settings.
  */
 export const search_request_cache = z.boolean().register(z.globalRegistry, {
+    id: 'search_request_cache',
     description: 'If `true`, the caching of search results is enabled for requests where `size` is `0`.\nIt defaults to index level settings.'
 });
 
@@ -9193,6 +9346,7 @@ export const search_request_cache = z.boolean().register(z.globalRegistry, {
  * * The primary sort of the query targets an indexed field.
  */
 export const search_pre_filter_shard_size = z.number().register(z.globalRegistry, {
+    id: 'search_pre_filter_shard_size',
     description: 'A threshold that enforces a pre-filter roundtrip to prefilter search shards based on query rewriting if the number of shards the search request expands to exceeds the threshold.\nThis filter roundtrip can limit the number of shards significantly if for instance a shard can not match any documents based on its rewrite method (if date filters are mandatory to match but the shard bounds and the query are disjoint).\nWhen unspecified, the pre-filter phase is executed if any of these conditions is met:\n\n* The request targets more than 128 shards.\n* The request targets one or more read-only index.\n* The primary sort of the query targets an indexed field.'
 });
 
@@ -9209,6 +9363,7 @@ export const search_pre_filter_shard_size = z.number().register(z.globalRegistry
  * * `<custom-string>` (any string that does not start with `_`) to route searches with the same `<custom-string>` to the same shards in the same order.
  */
 export const search_preference = z.string().register(z.globalRegistry, {
+    id: 'search_preference',
     description: 'The nodes and shards used for the search.\nBy default, Elasticsearch selects from eligible nodes and shards using adaptive replica selection, accounting for allocation awareness.\nValid values are:\n\n* `_only_local` to run the search only on shards on the local node.\n* `_local` to, if possible, run the search on shards on the local node, or if not, select shards using the default method.\n* `_only_nodes:<node-id>,<node-id>` to run the search on only the specified nodes IDs. If suitable shards exist on more than one selected node, use shards on those nodes using the default method. If none of the specified nodes are available, select shards from any available node using the default method.\n* `_prefer_nodes:<node-id>,<node-id>` to if possible, run the search on the specified nodes IDs. If not, select shards using the default method.\n* `_shards:<shard>,<shard>` to run the search only on the specified shards. You can combine this value with other `preference` values. However, the `_shards` value must come first. For example: `_shards:2,3|_local`.\n* `<custom-string>` (any string that does not start with `_`) to route searches with the same `<custom-string>` to the same shards in the same order.'
 });
 
@@ -9217,6 +9372,7 @@ export const search_preference = z.string().register(z.globalRegistry, {
  * This value should be used to limit the impact of the search on the cluster in order to limit the number of concurrent shard requests.
  */
 export const search_max_concurrent_shard_requests = z.number().register(z.globalRegistry, {
+    id: 'search_max_concurrent_shard_requests',
     description: 'The number of concurrent shard requests per node that the search runs concurrently.\nThis value should be used to limit the impact of the search on the cluster in order to limit the number of concurrent shard requests.'
 });
 
@@ -9225,6 +9381,7 @@ export const search_max_concurrent_shard_requests = z.number().register(z.global
  * This parameter can be used only when the `q` query string parameter is specified.
  */
 export const search_lenient = z.boolean().register(z.globalRegistry, {
+    id: 'search_lenient',
     description: 'If `true`, format-based query failures (such as providing text to a numeric field) in the query string will be ignored.\nThis parameter can be used only when the `q` query string parameter is specified.'
 });
 
@@ -9236,6 +9393,7 @@ export const search_lenient = z.boolean().register(z.globalRegistry, {
  * However, using computationally expensive named queries on a large number of hits may add significant overhead.
  */
 export const search_include_named_queries_score = z.boolean().register(z.globalRegistry, {
+    id: 'search_include_named_queries_score',
     description: 'If `true`, the response includes the score contribution from any named queries.\n\nThis functionality reruns each named query on every hit in a search response.\nTypically, this adds a small overhead to a request.\nHowever, using computationally expensive named queries on a large number of hits may add significant overhead.'
 });
 
@@ -9245,6 +9403,7 @@ export const search_include_named_queries_score = z.boolean().register(z.globalR
  * If `true`, unavailable concrete targets are silently ignored.
  */
 export const search_ignore_unavailable = z.boolean().register(z.globalRegistry, {
+    id: 'search_ignore_unavailable',
     description: 'If `false`, the request returns an error if it targets a concrete (non-wildcarded)\nindex, alias, or data stream that is missing, closed, or otherwise unavailable.\nIf `true`, unavailable concrete targets are silently ignored.'
 });
 
@@ -9254,6 +9413,7 @@ export const search_ignore_unavailable = z.boolean().register(z.globalRegistry, 
  * @deprecated
  */
 export const search_ignore_throttled = z.boolean().register(z.globalRegistry, {
+    id: 'search_ignore_throttled',
     description: 'If `true`, concrete, expanded or aliased indices will be ignored when frozen.'
 });
 
@@ -9261,6 +9421,7 @@ export const search_ignore_throttled = z.boolean().register(z.globalRegistry, {
  * If `true`, the request returns detailed information about score computation as part of a hit.
  */
 export const search_explain = z.boolean().register(z.globalRegistry, {
+    id: 'search_explain',
     description: 'If `true`, the request returns detailed information about score computation as part of a hit.'
 });
 
@@ -9271,13 +9432,17 @@ export const search_explain = z.boolean().register(z.globalRegistry, {
  */
 export const search_expand_wildcards = types_expand_wildcards;
 
-export const search_docvalue_fields = search_source_includes;
+/**
+ * A comma-separated list of fields to return as the docvalue representation of a field for each hit.
+ */
+export const search_docvalue_fields = types_fields;
 
 /**
  * The field to use as a default when no field prefix is given in the query string.
  * This parameter can be used only when the `q` query string parameter is specified.
  */
 export const search_df = z.string().register(z.globalRegistry, {
+    id: 'search_df',
     description: 'The field to use as a default when no field prefix is given in the query string.\nThis parameter can be used only when the `q` query string parameter is specified.'
 });
 
@@ -9291,6 +9456,7 @@ export const search_default_operator = types_query_dsl_operator;
  * If `true`, network round-trips between the coordinating node and the remote clusters are minimized when running cross-cluster search (CCS) requests.
  */
 export const search_ccs_minimize_roundtrips = z.boolean().register(z.globalRegistry, {
+    id: 'search_ccs_minimize_roundtrips',
     description: 'If `true`, network round-trips between the coordinating node and the remote clusters are minimized when running cross-cluster search (CCS) requests.'
 });
 
@@ -9299,6 +9465,7 @@ export const search_ccs_minimize_roundtrips = z.boolean().register(z.globalRegis
  * If the potential number of shards in the request can be large, this value should be used as a protection mechanism to reduce the memory overhead per search request.
  */
 export const search_batched_reduce_size = z.number().register(z.globalRegistry, {
+    id: 'search_batched_reduce_size',
     description: 'The number of shard results that should be reduced at once on the coordinating node.\nIf the potential number of shards in the request can be large, this value should be used as a protection mechanism to reduce the memory overhead per search request.'
 });
 
@@ -9307,6 +9474,7 @@ export const search_batched_reduce_size = z.number().register(z.globalRegistry, 
  * This parameter can be used only when the `q` query string parameter is specified.
  */
 export const search_analyze_wildcard = z.boolean().register(z.globalRegistry, {
+    id: 'search_analyze_wildcard',
     description: 'If `true`, wildcard and prefix queries are analyzed.\nThis parameter can be used only when the `q` query string parameter is specified.'
 });
 
@@ -9315,6 +9483,7 @@ export const search_analyze_wildcard = z.boolean().register(z.globalRegistry, {
  * This parameter can be used only when the `q` query string parameter is specified.
  */
 export const search_analyzer = z.string().register(z.globalRegistry, {
+    id: 'search_analyzer',
     description: 'The analyzer to use for the query string.\nThis parameter can be used only when the `q` query string parameter is specified.'
 });
 
@@ -9325,6 +9494,7 @@ export const search_analyzer = z.string().register(z.globalRegistry, {
  * To override the default behavior, you can set the `search.default_allow_partial_results` cluster setting to `false`.
  */
 export const search_allow_partial_search_results = z.boolean().register(z.globalRegistry, {
+    id: 'search_allow_partial_search_results',
     description: 'If `true` and there are shard request timeouts or shard failures, the request returns partial results.\nIf `false`, it returns an error with no partial results.\n\nTo override the default behavior, you can set the `search.default_allow_partial_results` cluster setting to `false`.'
 });
 
@@ -9337,6 +9507,7 @@ export const search_allow_partial_search_results = z.boolean().register(z.global
  * indices are allowed and the request returns an empty result.
  */
 export const search_allow_no_indices = z.boolean().register(z.globalRegistry, {
+    id: 'search_allow_no_indices',
     description: 'A setting that does two separate checks on the index expression.\nIf `false`, the request returns an error (1) if any wildcard expression\n(including `_all` and `*`) resolves to zero matching indices or (2) if the\ncomplete set of resolved indices, aliases or data streams is empty after all\nexpressions are evaluated. If `true`, index expressions that resolve to no\nindices are allowed and the request returns an empty result.'
 });
 
@@ -9351,6 +9522,7 @@ export const search_index = types_indices;
  * If `true`, the request's actions must target a data stream (existing or to be created).
  */
 export const index_require_data_stream = z.boolean().register(z.globalRegistry, {
+    id: 'index_require_data_stream',
     description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
 });
 
@@ -9358,6 +9530,7 @@ export const index_require_data_stream = z.boolean().register(z.globalRegistry, 
  * If `true`, the destination must be an index alias.
  */
 export const index_require_alias = z.boolean().register(z.globalRegistry, {
+    id: 'index_require_alias',
     description: 'If `true`, the destination must be an index alias.'
 });
 
@@ -9379,9 +9552,20 @@ export const index_version_type = types_version_type;
  */
 export const index_version = types_version_number;
 
-export const index_timeout = search_timeout;
+/**
+ * The period the request waits for the following operations: automatic index creation, dynamic mapping updates, waiting for active shards.
+ *
+ * This parameter is useful for situations where the primary shard assigned to perform the operation might not be available when the operation runs.
+ * Some reasons for this might be that the primary shard is currently recovering from a gateway or undergoing relocation.
+ * By default, the operation will wait on the primary shard to become available for at least 1 minute before failing and responding with an error.
+ * The actual wait time could be longer, particularly when multiple waits occur.
+ */
+export const index_timeout = types_duration;
 
-export const index_routing = search_routing;
+/**
+ * A custom value that is used to route operations to a specific shard.
+ */
+export const index_routing = types_routing;
 
 /**
  * If `true`, Elasticsearch refreshes the affected shards to make this operation visible to search.
@@ -9396,6 +9580,7 @@ export const index_refresh = types_refresh;
  * If a final pipeline is configured it will always run, regardless of the value of this parameter.
  */
 export const index_pipeline = z.string().register(z.globalRegistry, {
+    id: 'index_pipeline',
     description: 'The ID of the pipeline to use to preprocess incoming documents.\nIf the index has a default ingest pipeline specified, then setting the value to `_none` disables the default ingest pipeline for this request.\nIf a final pipeline is configured it will always run, regardless of the value of this parameter.'
 });
 
@@ -9413,6 +9598,7 @@ export const index_op_type = types_op_type;
  * True or false if to include the document source in the error message in case of parsing errors.
  */
 export const index_include_source_on_error = z.boolean().register(z.globalRegistry, {
+    id: 'index_include_source_on_error',
     description: 'True or false if to include the document source in the error message in case of parsing errors.'
 });
 
@@ -9425,6 +9611,7 @@ export const index_if_seq_no = types_sequence_number;
  * Only perform the operation if the document has this primary term.
  */
 export const index_if_primary_term = z.number().register(z.globalRegistry, {
+    id: 'index_if_primary_term',
     description: 'Only perform the operation if the document has this primary term.'
 });
 
@@ -9442,28 +9629,68 @@ export const index_index = types_index_name;
  */
 export const index_id = types_id;
 
-export const bulk_require_data_stream = index_require_data_stream;
+/**
+ * If `true`, the request's actions must target a data stream (existing or to be created).
+ */
+export const bulk_require_data_stream = z.boolean().register(z.globalRegistry, {
+    id: 'bulk_require_data_stream',
+    description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
+});
 
 /**
  * If `true`, the request's actions must target an index alias.
  */
 export const bulk_require_alias = z.boolean().register(z.globalRegistry, {
+    id: 'bulk_require_alias',
     description: 'If `true`, the request\'s actions must target an index alias.'
 });
 
-export const bulk_wait_for_active_shards = index_wait_for_active_shards;
+/**
+ * The number of shard copies that must be active before proceeding with the operation.
+ * Set to `all` or any positive integer up to the total number of shards in the index (`number_of_replicas+1`).
+ * The default is `1`, which waits for each primary shard to be active.
+ */
+export const bulk_wait_for_active_shards = types_wait_for_active_shards;
 
-export const bulk_timeout = search_timeout;
+/**
+ * The period each action waits for the following operations: automatic index creation, dynamic mapping updates, and waiting for active shards.
+ * The default is `1m` (one minute), which guarantees Elasticsearch waits for at least the timeout before failing.
+ * The actual wait time could be longer, particularly when multiple waits occur.
+ */
+export const bulk_timeout = types_duration;
 
-export const bulk_source_includes = search_source_includes;
+/**
+ * A comma-separated list of source fields to include in the response.
+ * If this parameter is specified, only these source fields are returned.
+ * You can exclude fields from this subset using the `_source_excludes` query parameter.
+ * If the `_source` parameter is `false`, this parameter is ignored.
+ */
+export const bulk_source_includes = types_fields;
 
-export const bulk_source_excludes = search_source_includes;
+/**
+ * A comma-separated list of source fields to exclude from the response.
+ * You can also use this parameter to exclude fields from the subset specified in `_source_includes` query parameter.
+ * If the `_source` parameter is `false`, this parameter is ignored.
+ */
+export const bulk_source_excludes = types_fields;
 
-export const bulk_source = search_source;
+/**
+ * Indicates whether to return the `_source` field (`true` or `false`) or contains a list of fields to return.
+ */
+export const bulk_source = global_search_types_source_config_param;
 
-export const bulk_routing = search_routing;
+/**
+ * A custom value that is used to route operations to a specific shard.
+ */
+export const bulk_routing = types_routing;
 
-export const bulk_refresh = index_refresh;
+/**
+ * If `true`, Elasticsearch refreshes the affected shards to make this operation visible to search.
+ * If `wait_for`, wait for a refresh to make this operation visible to search.
+ * If `false`, do nothing with refreshes.
+ * Valid values: `true`, `false`, `wait_for`.
+ */
+export const bulk_refresh = types_refresh;
 
 /**
  * The pipeline identifier to use to preprocess incoming documents.
@@ -9471,6 +9698,7 @@ export const bulk_refresh = index_refresh;
  * If a final pipeline is configured, it will always run regardless of the value of this parameter.
  */
 export const bulk_pipeline = z.string().register(z.globalRegistry, {
+    id: 'bulk_pipeline',
     description: 'The pipeline identifier to use to preprocess incoming documents.\nIf the index has a default ingest pipeline specified, setting the value to `_none` turns off the default ingest pipeline for this request.\nIf a final pipeline is configured, it will always run regardless of the value of this parameter.'
 });
 
@@ -9478,14 +9706,24 @@ export const bulk_pipeline = z.string().register(z.globalRegistry, {
  * If `true`, the response will include the ingest pipelines that were run for each index or create.
  */
 export const bulk_list_executed_pipelines = z.boolean().register(z.globalRegistry, {
+    id: 'bulk_list_executed_pipelines',
     description: 'If `true`, the response will include the ingest pipelines that were run for each index or create.'
 });
 
-export const bulk_include_source_on_error = index_include_source_on_error;
+/**
+ * True or false if to include the document source in the error message in case of parsing errors.
+ */
+export const bulk_include_source_on_error = z.boolean().register(z.globalRegistry, {
+    id: 'bulk_include_source_on_error',
+    description: 'True or false if to include the document source in the error message in case of parsing errors.'
+});
 
-export const bulk_index = index_index;
+/**
+ * The name of the data stream, index, or index alias to perform bulk actions on.
+ */
+export const bulk_index = types_index_name;
 
-export const index = types_rank_base;
+export const index = z.record(z.string(), z.unknown()).register(z.globalRegistry, { id: 'index' });
 
 export const search = z.object({
     aggregations: z.optional(z.record(z.string(), types_aggregations_aggregation_container).register(z.globalRegistry, {
@@ -9562,13 +9800,13 @@ export const search = z.object({
     stats: z.optional(z.array(z.string()).register(z.globalRegistry, {
         description: 'The stats groups to associate with the search.\nEach group maintains a statistics aggregation for its associated searches.\nYou can retrieve these stats using the indices stats API.'
     }))
-});
+}).register(z.globalRegistry, { id: 'search' });
 
 export const bulk = z.array(z.union([
     global_bulk_operation_container,
     global_bulk_update_action,
     z.record(z.string(), z.unknown())
-]));
+])).register(z.globalRegistry, { id: 'bulk' });
 
 export const index1_request = z.object({
     body: index,
@@ -9601,13 +9839,44 @@ export const index1_request = z.object({
             description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
         }))
     }))
-});
+}).register(z.globalRegistry, { id: 'index1_request' });
 
 export const index1_response = types_write_response_base;
 
-export const index_request = index1_request;
+export const index_request = z.object({
+    body: index,
+    path: z.object({
+        index: types_index_name,
+        id: types_id
+    }),
+    query: z.optional(z.object({
+        if_primary_term: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Only perform the operation if the document has this primary term.'
+        })),
+        if_seq_no: z.optional(types_sequence_number),
+        include_source_on_error: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'True or false if to include the document source in the error message in case of parsing errors.'
+        })),
+        op_type: z.optional(types_op_type),
+        pipeline: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The ID of the pipeline to use to preprocess incoming documents.\nIf the index has a default ingest pipeline specified, then setting the value to `_none` disables the default ingest pipeline for this request.\nIf a final pipeline is configured it will always run, regardless of the value of this parameter.'
+        })),
+        refresh: z.optional(types_refresh),
+        routing: z.optional(types_routing),
+        timeout: z.optional(types_duration),
+        version: z.optional(types_version_number),
+        version_type: z.optional(types_version_type),
+        wait_for_active_shards: z.optional(types_wait_for_active_shards),
+        require_alias: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the destination must be an index alias.'
+        })),
+        require_data_stream: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
+        }))
+    }))
+}).register(z.globalRegistry, { id: 'index_request' });
 
-export const index_response = index1_response;
+export const index_response = types_write_response_base;
 
 export const index2_request = z.object({
     body: index,
@@ -9639,9 +9908,9 @@ export const index2_request = z.object({
             description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
         }))
     }))
-});
+}).register(z.globalRegistry, { id: 'index2_request' });
 
-export const index2_response = index1_response;
+export const index2_response = types_write_response_base;
 
 export const indices_delete_request = z.object({
     body: z.optional(z.never()),
@@ -9659,7 +9928,7 @@ export const indices_delete_request = z.object({
         master_timeout: z.optional(types_duration),
         timeout: z.optional(types_duration)
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_delete_request' });
 
 export const indices_delete_response = types_indices_response_base;
 
@@ -9686,7 +9955,7 @@ export const indices_exists_request = z.object({
             description: 'If `true`, the request retrieves information from the local node only.'
         }))
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_exists_request' });
 
 export const bulk_request = z.object({
     body: bulk,
@@ -9715,7 +9984,7 @@ export const bulk_request = z.object({
             description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
         }))
     }))
-});
+}).register(z.globalRegistry, { id: 'bulk_request' });
 
 export const bulk_response = z.object({
     errors: z.boolean().register(z.globalRegistry, {
@@ -9728,11 +9997,49 @@ export const bulk_response = z.object({
         description: 'The length of time, in milliseconds, it took to process the bulk request.'
     }),
     ingest_took: z.optional(z.number())
-});
+}).register(z.globalRegistry, { id: 'bulk_response' });
 
-export const bulk1_request = bulk_request;
+export const bulk1_request = z.object({
+    body: bulk,
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        include_source_on_error: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'True or false if to include the document source in the error message in case of parsing errors.'
+        })),
+        list_executed_pipelines: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the response will include the ingest pipelines that were run for each index or create.'
+        })),
+        pipeline: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The pipeline identifier to use to preprocess incoming documents.\nIf the index has a default ingest pipeline specified, setting the value to `_none` turns off the default ingest pipeline for this request.\nIf a final pipeline is configured, it will always run regardless of the value of this parameter.'
+        })),
+        refresh: z.optional(types_refresh),
+        routing: z.optional(types_routing),
+        _source: z.optional(global_search_types_source_config_param),
+        _source_excludes: z.optional(types_fields),
+        _source_includes: z.optional(types_fields),
+        timeout: z.optional(types_duration),
+        wait_for_active_shards: z.optional(types_wait_for_active_shards),
+        require_alias: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request\'s actions must target an index alias.'
+        })),
+        require_data_stream: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
+        }))
+    }))
+}).register(z.globalRegistry, { id: 'bulk1_request' });
 
-export const bulk1_response = bulk_response;
+export const bulk1_response = z.object({
+    errors: z.boolean().register(z.globalRegistry, {
+        description: 'If `true`, one or more of the operations in the bulk request did not complete successfully.'
+    }),
+    items: z.array(z.record(z.string(), global_bulk_response_item)).register(z.globalRegistry, {
+        description: 'The result of each operation in the bulk request, in the order they were submitted.'
+    }),
+    took: z.number().register(z.globalRegistry, {
+        description: 'The length of time, in milliseconds, it took to process the bulk request.'
+    }),
+    ingest_took: z.optional(z.number())
+}).register(z.globalRegistry, { id: 'bulk1_response' });
 
 export const bulk2_request = z.object({
     body: bulk,
@@ -9763,13 +10070,64 @@ export const bulk2_request = z.object({
             description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
         }))
     }))
-});
+}).register(z.globalRegistry, { id: 'bulk2_request' });
 
-export const bulk2_response = bulk_response;
+export const bulk2_response = z.object({
+    errors: z.boolean().register(z.globalRegistry, {
+        description: 'If `true`, one or more of the operations in the bulk request did not complete successfully.'
+    }),
+    items: z.array(z.record(z.string(), global_bulk_response_item)).register(z.globalRegistry, {
+        description: 'The result of each operation in the bulk request, in the order they were submitted.'
+    }),
+    took: z.number().register(z.globalRegistry, {
+        description: 'The length of time, in milliseconds, it took to process the bulk request.'
+    }),
+    ingest_took: z.optional(z.number())
+}).register(z.globalRegistry, { id: 'bulk2_response' });
 
-export const bulk3_request = bulk2_request;
+export const bulk3_request = z.object({
+    body: bulk,
+    path: z.object({
+        index: types_index_name
+    }),
+    query: z.optional(z.object({
+        include_source_on_error: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'True or false if to include the document source in the error message in case of parsing errors.'
+        })),
+        list_executed_pipelines: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the response will include the ingest pipelines that were run for each index or create.'
+        })),
+        pipeline: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The pipeline identifier to use to preprocess incoming documents.\nIf the index has a default ingest pipeline specified, setting the value to `_none` turns off the default ingest pipeline for this request.\nIf a final pipeline is configured, it will always run regardless of the value of this parameter.'
+        })),
+        refresh: z.optional(types_refresh),
+        routing: z.optional(types_routing),
+        _source: z.optional(global_search_types_source_config_param),
+        _source_excludes: z.optional(types_fields),
+        _source_includes: z.optional(types_fields),
+        timeout: z.optional(types_duration),
+        wait_for_active_shards: z.optional(types_wait_for_active_shards),
+        require_alias: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request\'s actions must target an index alias.'
+        })),
+        require_data_stream: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request\'s actions must target a data stream (existing or to be created).'
+        }))
+    }))
+}).register(z.globalRegistry, { id: 'bulk3_request' });
 
-export const bulk3_response = bulk_response;
+export const bulk3_response = z.object({
+    errors: z.boolean().register(z.globalRegistry, {
+        description: 'If `true`, one or more of the operations in the bulk request did not complete successfully.'
+    }),
+    items: z.array(z.record(z.string(), global_bulk_response_item)).register(z.globalRegistry, {
+        description: 'The result of each operation in the bulk request, in the order they were submitted.'
+    }),
+    took: z.number().register(z.globalRegistry, {
+        description: 'The length of time, in milliseconds, it took to process the bulk request.'
+    }),
+    ingest_took: z.optional(z.number())
+}).register(z.globalRegistry, { id: 'bulk3_response' });
 
 export const esql_query_request = z.object({
     body: z.object({
@@ -9813,7 +10171,7 @@ export const esql_query_request = z.object({
             description: 'If `true`, partial results will be returned if there are shard failures, but the query can continue to execute on other clusters and shards.\nIf `false`, the query will fail if there are any failures.\n\nTo override the default behavior, you can set the `esql.query.allow_partial_results` cluster setting to `false`.'
         }))
     }))
-});
+}).register(z.globalRegistry, { id: 'esql_query_request' });
 
 export const esql_query_response = esql_types_esql_result;
 
@@ -9833,13 +10191,13 @@ export const indices_create_request = z.object({
         timeout: z.optional(types_duration),
         wait_for_active_shards: z.optional(types_wait_for_active_shards)
     }))
-});
+}).register(z.globalRegistry, { id: 'indices_create_request' });
 
 export const indices_create_response = z.object({
     index: types_index_name,
     shards_acknowledged: z.boolean(),
     acknowledged: z.boolean()
-});
+}).register(z.globalRegistry, { id: 'indices_create_response' });
 
 export const search_request = z.object({
     body: z.optional(search),
@@ -9951,13 +10309,123 @@ export const search_request = z.object({
             z.array(z.string())
         ]))
     }))
-});
+}).register(z.globalRegistry, { id: 'search_request' });
 
 export const search_response = global_search_response_body;
 
-export const search1_request = search_request;
+export const search1_request = z.object({
+    body: z.optional(search),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        allow_no_indices: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'A setting that does two separate checks on the index expression.\nIf `false`, the request returns an error (1) if any wildcard expression\n(including `_all` and `*`) resolves to zero matching indices or (2) if the\ncomplete set of resolved indices, aliases or data streams is empty after all\nexpressions are evaluated. If `true`, index expressions that resolve to no\nindices are allowed and the request returns an empty result.'
+        })),
+        allow_partial_search_results: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true` and there are shard request timeouts or shard failures, the request returns partial results.\nIf `false`, it returns an error with no partial results.\n\nTo override the default behavior, you can set the `search.default_allow_partial_results` cluster setting to `false`.'
+        })),
+        analyzer: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The analyzer to use for the query string.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        analyze_wildcard: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, wildcard and prefix queries are analyzed.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        batched_reduce_size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of shard results that should be reduced at once on the coordinating node.\nIf the potential number of shards in the request can be large, this value should be used as a protection mechanism to reduce the memory overhead per search request.'
+        })),
+        ccs_minimize_roundtrips: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, network round-trips between the coordinating node and the remote clusters are minimized when running cross-cluster search (CCS) requests.'
+        })),
+        default_operator: z.optional(types_query_dsl_operator),
+        df: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The field to use as a default when no field prefix is given in the query string.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        docvalue_fields: z.optional(types_fields),
+        expand_wildcards: z.optional(types_expand_wildcards),
+        explain: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request returns detailed information about score computation as part of a hit.'
+        })),
+        ignore_throttled: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, concrete, expanded or aliased indices will be ignored when frozen.'
+        })),
+        ignore_unavailable: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `false`, the request returns an error if it targets a concrete (non-wildcarded)\nindex, alias, or data stream that is missing, closed, or otherwise unavailable.\nIf `true`, unavailable concrete targets are silently ignored.'
+        })),
+        include_named_queries_score: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the response includes the score contribution from any named queries.\n\nThis functionality reruns each named query on every hit in a search response.\nTypically, this adds a small overhead to a request.\nHowever, using computationally expensive named queries on a large number of hits may add significant overhead.'
+        })),
+        lenient: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, format-based query failures (such as providing text to a numeric field) in the query string will be ignored.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        max_concurrent_shard_requests: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of concurrent shard requests per node that the search runs concurrently.\nThis value should be used to limit the impact of the search on the cluster in order to limit the number of concurrent shard requests.'
+        })),
+        preference: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The nodes and shards used for the search.\nBy default, Elasticsearch selects from eligible nodes and shards using adaptive replica selection, accounting for allocation awareness.\nValid values are:\n\n* `_only_local` to run the search only on shards on the local node.\n* `_local` to, if possible, run the search on shards on the local node, or if not, select shards using the default method.\n* `_only_nodes:<node-id>,<node-id>` to run the search on only the specified nodes IDs. If suitable shards exist on more than one selected node, use shards on those nodes using the default method. If none of the specified nodes are available, select shards from any available node using the default method.\n* `_prefer_nodes:<node-id>,<node-id>` to if possible, run the search on the specified nodes IDs. If not, select shards using the default method.\n* `_shards:<shard>,<shard>` to run the search only on the specified shards. You can combine this value with other `preference` values. However, the `_shards` value must come first. For example: `_shards:2,3|_local`.\n* `<custom-string>` (any string that does not start with `_`) to route searches with the same `<custom-string>` to the same shards in the same order.'
+        })),
+        pre_filter_shard_size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'A threshold that enforces a pre-filter roundtrip to prefilter search shards based on query rewriting if the number of shards the search request expands to exceeds the threshold.\nThis filter roundtrip can limit the number of shards significantly if for instance a shard can not match any documents based on its rewrite method (if date filters are mandatory to match but the shard bounds and the query are disjoint).\nWhen unspecified, the pre-filter phase is executed if any of these conditions is met:\n\n* The request targets more than 128 shards.\n* The request targets one or more read-only index.\n* The primary sort of the query targets an indexed field.'
+        })),
+        request_cache: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the caching of search results is enabled for requests where `size` is `0`.\nIt defaults to index level settings.'
+        })),
+        routing: z.optional(types_routing),
+        scroll: z.optional(types_duration),
+        search_type: z.optional(types_search_type),
+        stats: z.optional(z.array(z.string()).register(z.globalRegistry, {
+            description: 'Specific `tag` of the request for logging and statistical purposes.'
+        })),
+        stored_fields: z.optional(types_fields),
+        suggest_field: z.optional(types_field),
+        suggest_mode: z.optional(types_suggest_mode),
+        suggest_size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of suggestions to return.\nThis parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.'
+        })),
+        suggest_text: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The source text for which the suggestions should be returned.\nThis parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.'
+        })),
+        terminate_after: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The maximum number of documents to collect for each shard.\nIf a query reaches this limit, Elasticsearch terminates the query early.\nElasticsearch collects documents before sorting.\n\nIMPORTANT: Use with caution.\nElasticsearch applies this parameter to each shard handling the request.\nWhen possible, let Elasticsearch perform early termination automatically.\nAvoid specifying this parameter for requests that target data streams with backing indices across multiple data tiers.\nIf set to `0` (default), the query does not terminate early.'
+        })),
+        timeout: z.optional(types_duration),
+        track_total_hits: z.optional(global_search_types_track_hits),
+        track_scores: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request calculates and returns document scores, even if the scores are not used for sorting.'
+        })),
+        typed_keys: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, aggregation and suggester names are be prefixed by their respective types in the response.'
+        })),
+        rest_total_hits_as_int: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether `hits.total` should be rendered as an integer or an object in the rest search response.'
+        })),
+        version: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request returns the document version as part of a hit.'
+        })),
+        _source: z.optional(global_search_types_source_config_param),
+        _source_excludes: z.optional(types_fields),
+        _source_exclude_vectors: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Whether vectors should be excluded from _source'
+        })),
+        _source_includes: z.optional(types_fields),
+        seq_no_primary_term: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request returns the sequence number and primary term of the last modification of each hit.'
+        })),
+        q: z.optional(z.string().register(z.globalRegistry, {
+            description: 'A query in the Lucene query string syntax.\nQuery parameter searches do not support the full Elasticsearch Query DSL but are handy for testing.\n\nIMPORTANT: This parameter overrides the query parameter in the request body.\nIf both parameters are specified, documents matching the query request body parameter are not returned.'
+        })),
+        size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of hits to return.\nBy default, you cannot page through more than 10,000 hits using the `from` and `size` parameters.\nTo page through more hits, use the `search_after` parameter.'
+        })),
+        from: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The starting document offset, which must be non-negative.\nBy default, you cannot page through more than 10,000 hits using the `from` and `size` parameters.\nTo page through more hits, use the `search_after` parameter.'
+        })),
+        sort: z.optional(z.union([
+            z.string(),
+            z.array(z.string())
+        ]))
+    }))
+}).register(z.globalRegistry, { id: 'search1_request' });
 
-export const search1_response = search_response;
+export const search1_response = global_search_response_body;
 
 export const search2_request = z.object({
     body: z.optional(search),
@@ -10071,13 +10539,125 @@ export const search2_request = z.object({
             z.array(z.string())
         ]))
     }))
-});
+}).register(z.globalRegistry, { id: 'search2_request' });
 
-export const search2_response = search_response;
+export const search2_response = global_search_response_body;
 
-export const search3_request = search2_request;
+export const search3_request = z.object({
+    body: z.optional(search),
+    path: z.object({
+        index: types_indices
+    }),
+    query: z.optional(z.object({
+        allow_no_indices: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'A setting that does two separate checks on the index expression.\nIf `false`, the request returns an error (1) if any wildcard expression\n(including `_all` and `*`) resolves to zero matching indices or (2) if the\ncomplete set of resolved indices, aliases or data streams is empty after all\nexpressions are evaluated. If `true`, index expressions that resolve to no\nindices are allowed and the request returns an empty result.'
+        })),
+        allow_partial_search_results: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true` and there are shard request timeouts or shard failures, the request returns partial results.\nIf `false`, it returns an error with no partial results.\n\nTo override the default behavior, you can set the `search.default_allow_partial_results` cluster setting to `false`.'
+        })),
+        analyzer: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The analyzer to use for the query string.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        analyze_wildcard: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, wildcard and prefix queries are analyzed.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        batched_reduce_size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of shard results that should be reduced at once on the coordinating node.\nIf the potential number of shards in the request can be large, this value should be used as a protection mechanism to reduce the memory overhead per search request.'
+        })),
+        ccs_minimize_roundtrips: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, network round-trips between the coordinating node and the remote clusters are minimized when running cross-cluster search (CCS) requests.'
+        })),
+        default_operator: z.optional(types_query_dsl_operator),
+        df: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The field to use as a default when no field prefix is given in the query string.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        docvalue_fields: z.optional(types_fields),
+        expand_wildcards: z.optional(types_expand_wildcards),
+        explain: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request returns detailed information about score computation as part of a hit.'
+        })),
+        ignore_throttled: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, concrete, expanded or aliased indices will be ignored when frozen.'
+        })),
+        ignore_unavailable: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `false`, the request returns an error if it targets a concrete (non-wildcarded)\nindex, alias, or data stream that is missing, closed, or otherwise unavailable.\nIf `true`, unavailable concrete targets are silently ignored.'
+        })),
+        include_named_queries_score: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the response includes the score contribution from any named queries.\n\nThis functionality reruns each named query on every hit in a search response.\nTypically, this adds a small overhead to a request.\nHowever, using computationally expensive named queries on a large number of hits may add significant overhead.'
+        })),
+        lenient: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, format-based query failures (such as providing text to a numeric field) in the query string will be ignored.\nThis parameter can be used only when the `q` query string parameter is specified.'
+        })),
+        max_concurrent_shard_requests: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of concurrent shard requests per node that the search runs concurrently.\nThis value should be used to limit the impact of the search on the cluster in order to limit the number of concurrent shard requests.'
+        })),
+        preference: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The nodes and shards used for the search.\nBy default, Elasticsearch selects from eligible nodes and shards using adaptive replica selection, accounting for allocation awareness.\nValid values are:\n\n* `_only_local` to run the search only on shards on the local node.\n* `_local` to, if possible, run the search on shards on the local node, or if not, select shards using the default method.\n* `_only_nodes:<node-id>,<node-id>` to run the search on only the specified nodes IDs. If suitable shards exist on more than one selected node, use shards on those nodes using the default method. If none of the specified nodes are available, select shards from any available node using the default method.\n* `_prefer_nodes:<node-id>,<node-id>` to if possible, run the search on the specified nodes IDs. If not, select shards using the default method.\n* `_shards:<shard>,<shard>` to run the search only on the specified shards. You can combine this value with other `preference` values. However, the `_shards` value must come first. For example: `_shards:2,3|_local`.\n* `<custom-string>` (any string that does not start with `_`) to route searches with the same `<custom-string>` to the same shards in the same order.'
+        })),
+        pre_filter_shard_size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'A threshold that enforces a pre-filter roundtrip to prefilter search shards based on query rewriting if the number of shards the search request expands to exceeds the threshold.\nThis filter roundtrip can limit the number of shards significantly if for instance a shard can not match any documents based on its rewrite method (if date filters are mandatory to match but the shard bounds and the query are disjoint).\nWhen unspecified, the pre-filter phase is executed if any of these conditions is met:\n\n* The request targets more than 128 shards.\n* The request targets one or more read-only index.\n* The primary sort of the query targets an indexed field.'
+        })),
+        request_cache: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the caching of search results is enabled for requests where `size` is `0`.\nIt defaults to index level settings.'
+        })),
+        routing: z.optional(types_routing),
+        scroll: z.optional(types_duration),
+        search_type: z.optional(types_search_type),
+        stats: z.optional(z.array(z.string()).register(z.globalRegistry, {
+            description: 'Specific `tag` of the request for logging and statistical purposes.'
+        })),
+        stored_fields: z.optional(types_fields),
+        suggest_field: z.optional(types_field),
+        suggest_mode: z.optional(types_suggest_mode),
+        suggest_size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of suggestions to return.\nThis parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.'
+        })),
+        suggest_text: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The source text for which the suggestions should be returned.\nThis parameter can be used only when the `suggest_field` and `suggest_text` query string parameters are specified.'
+        })),
+        terminate_after: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The maximum number of documents to collect for each shard.\nIf a query reaches this limit, Elasticsearch terminates the query early.\nElasticsearch collects documents before sorting.\n\nIMPORTANT: Use with caution.\nElasticsearch applies this parameter to each shard handling the request.\nWhen possible, let Elasticsearch perform early termination automatically.\nAvoid specifying this parameter for requests that target data streams with backing indices across multiple data tiers.\nIf set to `0` (default), the query does not terminate early.'
+        })),
+        timeout: z.optional(types_duration),
+        track_total_hits: z.optional(global_search_types_track_hits),
+        track_scores: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request calculates and returns document scores, even if the scores are not used for sorting.'
+        })),
+        typed_keys: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, aggregation and suggester names are be prefixed by their respective types in the response.'
+        })),
+        rest_total_hits_as_int: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether `hits.total` should be rendered as an integer or an object in the rest search response.'
+        })),
+        version: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request returns the document version as part of a hit.'
+        })),
+        _source: z.optional(global_search_types_source_config_param),
+        _source_excludes: z.optional(types_fields),
+        _source_exclude_vectors: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Whether vectors should be excluded from _source'
+        })),
+        _source_includes: z.optional(types_fields),
+        seq_no_primary_term: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, the request returns the sequence number and primary term of the last modification of each hit.'
+        })),
+        q: z.optional(z.string().register(z.globalRegistry, {
+            description: 'A query in the Lucene query string syntax.\nQuery parameter searches do not support the full Elasticsearch Query DSL but are handy for testing.\n\nIMPORTANT: This parameter overrides the query parameter in the request body.\nIf both parameters are specified, documents matching the query request body parameter are not returned.'
+        })),
+        size: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The number of hits to return.\nBy default, you cannot page through more than 10,000 hits using the `from` and `size` parameters.\nTo page through more hits, use the `search_after` parameter.'
+        })),
+        from: z.optional(z.number().register(z.globalRegistry, {
+            description: 'The starting document offset, which must be non-negative.\nBy default, you cannot page through more than 10,000 hits using the `from` and `size` parameters.\nTo page through more hits, use the `search_after` parameter.'
+        })),
+        sort: z.optional(z.union([
+            z.string(),
+            z.array(z.string())
+        ]))
+    }))
+}).register(z.globalRegistry, { id: 'search3_request' });
 
-export const search3_response = search_response;
+export const search3_response = global_search_response_body;
 
 export const update_request = z.object({
     body: z.object({
@@ -10128,6 +10708,6 @@ export const update_request = z.object({
         _source_excludes: z.optional(types_fields),
         _source_includes: z.optional(types_fields)
     }))
-});
+}).register(z.globalRegistry, { id: 'update_request' });
 
 export const update_response = global_update_update_write_response_base;

@@ -11,7 +11,7 @@
  * AUTO-GENERATED FILE - DO NOT EDIT
  *
  * This file contains Elasticsearch connector definitions generated from elasticsearch-specification repository (https://github.com/elastic/elasticsearch-specification/commit/5efce63).
- * Generated at: 2026-03-30T07:59:55.496Z
+ * Generated at: 2026-03-30T09:21:55.647Z
  * Source: elasticsearch-specification repository (8 APIs)
  *
  * To regenerate: node scripts/generate_workflow_es_contracts.js

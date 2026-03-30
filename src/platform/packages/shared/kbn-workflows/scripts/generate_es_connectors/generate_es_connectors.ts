@@ -40,7 +40,7 @@ import {
   getSchemaNamePrefix,
   StaticImports,
 } from '../shared';
-import { deduplicateGeneratedSchemas } from '../shared/deduplicate_generated_schemas';
+import { addSchemaIds } from '../shared/add_schema_ids';
 
 export async function run() {
   cleanGeneratedFolder();
@@ -222,13 +222,13 @@ async function generateZodSchemas(contracts: ContractMeta[]) {
       `- Zod imports replaced in ${formatDuration(replaceZodImportsStartedAt, performance.now())}`
     );
 
-    const deduplicateStartedAt = performance.now();
-    console.log('- Deduplicating structurally identical schemas...');
-    const dedupStats = deduplicateGeneratedSchemas(zodPath);
+    const addIdsStartedAt = performance.now();
+    console.log('- Adding schema ids for $ref reuse...');
+    const idStats = addSchemaIds(zodPath);
     console.log(
-      `- Deduplicated ${dedupStats.aliasCount} schemas (${
-        dedupStats.linesSaved
-      } lines saved) in ${formatDuration(deduplicateStartedAt, performance.now())}`
+      `- Added ids to ${idStats.injectedCount} schemas (${
+        idStats.skippedAliases
+      } aliases skipped) in ${formatDuration(addIdsStartedAt, performance.now())}`
     );
 
     console.log(

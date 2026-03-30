@@ -5,12 +5,13 @@ import { z } from '@kbn/zod/v4';
 export const security_detections_api_siem_error_response = z.object({
     message: z.string(),
     status_code: z.int()
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_siem_error_response' });
 
 /**
  * Use alert tags to organize related alerts into categories that you can filter and group.
  */
 export const security_detections_api_alert_tag = z.string().min(1).register(z.globalRegistry, {
+    id: 'security_detections_api_alert_tag',
     description: 'Use alert tags to organize related alerts into categories that you can filter and group.'
 });
 
@@ -18,6 +19,7 @@ export const security_detections_api_alert_tag = z.string().min(1).register(z.gl
  * List of keywords to organize related alerts into categories that you can filter and group.
  */
 export const security_detections_api_alert_tags = z.array(security_detections_api_alert_tag).register(z.globalRegistry, {
+    id: 'security_detections_api_alert_tags',
     description: 'List of keywords to organize related alerts into categories that you can filter and group.'
 });
 
@@ -28,6 +30,7 @@ export const security_detections_api_set_alert_tags = z.object({
     tags_to_add: security_detections_api_alert_tags,
     tags_to_remove: security_detections_api_alert_tags
 }).register(z.globalRegistry, {
+    id: 'security_detections_api_set_alert_tags',
     description: 'Object with list of tags to add and remove.'
 });
 
@@ -35,13 +38,14 @@ export const security_detections_api_set_alert_tags = z.object({
  * A list of alerts `id`s.
  */
 export const security_detections_api_alert_ids = z.array(z.string().min(1)).min(1).register(z.globalRegistry, {
+    id: 'security_detections_api_alert_ids',
     description: 'A list of alerts `id`s.'
 });
 
 export const security_detections_api_set_alert_tags_body = z.object({
     ids: security_detections_api_alert_ids,
     tags: security_detections_api_set_alert_tags
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_set_alert_tags_body' });
 
 /**
  * The status of an alert, which can be `open`, `acknowledged`, `in-progress`, or `closed`.
@@ -51,6 +55,7 @@ export const security_detections_api_alert_status_except_closed = z.enum([
     'acknowledged',
     'in-progress'
 ]).register(z.globalRegistry, {
+    id: 'security_detections_api_alert_status_except_closed',
     description: 'The status of an alert, which can be `open`, `acknowledged`, `in-progress`, or `closed`.'
 });
 
@@ -58,7 +63,7 @@ export const security_detections_api_set_alerts_status_by_query_base = z.object(
     conflicts: z.optional(z.enum(['abort', 'proceed'])),
     query: z.record(z.string(), z.unknown()),
     status: security_detections_api_alert_status_except_closed
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_set_alerts_status_by_query_base' });
 
 export const security_detections_api_reason_enum = z.enum([
     'false_positive',
@@ -67,7 +72,7 @@ export const security_detections_api_reason_enum = z.enum([
     'benign_positive',
     'automated_closure',
     'other'
-]);
+]).register(z.globalRegistry, { id: 'security_detections_api_reason_enum' });
 
 /**
  * The reason for closing the alerts. Can be one of following predefined reasons: [false_positive, duplicate, true_positive, benign_positive, automated_closure, other] or a custom reason provided by the user through the advanced settings.
@@ -75,26 +80,26 @@ export const security_detections_api_reason_enum = z.enum([
 export const security_detections_api_reason = z.union([
     security_detections_api_reason_enum,
     z.string()
-]);
+]).register(z.globalRegistry, { id: 'security_detections_api_reason' });
 
 export const security_detections_api_close_alerts_by_query = z.object({
     conflicts: z.optional(z.enum(['abort', 'proceed'])),
     query: z.record(z.string(), z.unknown()),
     reason: z.optional(security_detections_api_reason),
     status: z.enum(['closed'])
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_close_alerts_by_query' });
 
 export const security_detections_api_set_alerts_status_by_query = z.union([
     security_detections_api_close_alerts_by_query,
     security_detections_api_set_alerts_status_by_query_base
-]);
+]).register(z.globalRegistry, { id: 'security_detections_api_set_alerts_status_by_query' });
 
 export const security_detections_api_set_alerts_status_by_ids_base = z.object({
     signal_ids: z.array(z.string().min(1)).min(1).register(z.globalRegistry, {
         description: 'List of alert ids. Use field `_id` on alert document or `kibana.alert.uuid`. Note: signals are a deprecated term for alerts.'
     }),
     status: security_detections_api_alert_status_except_closed
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_set_alerts_status_by_ids_base' });
 
 export const security_detections_api_close_alerts_by_ids = z.object({
     reason: z.optional(security_detections_api_reason),
@@ -102,18 +107,18 @@ export const security_detections_api_close_alerts_by_ids = z.object({
         description: 'List of alert ids. Use field `_id` on alert document or `kibana.alert.uuid`. Note: signals are a deprecated term for alerts.'
     }),
     status: z.enum(['closed'])
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_close_alerts_by_ids' });
 
 export const security_detections_api_set_alerts_status_by_ids = z.union([
     security_detections_api_close_alerts_by_ids,
     security_detections_api_set_alerts_status_by_ids_base
-]);
+]).register(z.globalRegistry, { id: 'security_detections_api_set_alerts_status_by_ids' });
 
 export const security_detections_api_platform_error_response = z.object({
     error: z.string(),
     message: z.string(),
     statusCode: z.int()
-});
+}).register(z.globalRegistry, { id: 'security_detections_api_platform_error_response' });
 
 /**
  * Case response properties for updated_by
@@ -135,9 +140,29 @@ export const cases_case_response_updated_by_properties = z.union([
         ])
     }),
     z.null()
-]);
+]).register(z.globalRegistry, { id: 'cases_case_response_updated_by_properties' });
 
-export const cases_case_response_pushed_by_properties = cases_case_response_updated_by_properties;
+/**
+ * Case response properties for pushed_by
+ */
+export const cases_case_response_pushed_by_properties = z.union([
+    z.object({
+        email: z.union([
+            z.string(),
+            z.null()
+        ]),
+        full_name: z.union([
+            z.string(),
+            z.null()
+        ]),
+        profile_uid: z.optional(z.string()),
+        username: z.union([
+            z.string(),
+            z.null()
+        ])
+    }),
+    z.null()
+]).register(z.globalRegistry, { id: 'cases_case_response_pushed_by_properties' });
 
 /**
  * The application that owns the cases: Stack Management, Observability, or Elastic Security.
@@ -148,6 +173,7 @@ export const cases_owner = z.enum([
     'observability',
     'securitySolution'
 ]).register(z.globalRegistry, {
+    id: 'cases_owner',
     description: 'The application that owns the cases: Stack Management, Observability, or Elastic Security.\n'
 });
 
@@ -168,7 +194,7 @@ export const cases_case_response_created_by_properties = z.object({
         z.string(),
         z.null()
     ])
-});
+}).register(z.globalRegistry, { id: 'cases_case_response_created_by_properties' });
 
 /**
  * Case response properties for user comments
@@ -191,7 +217,7 @@ export const cases_user_comment_response_properties = z.object({
     ])),
     updated_by: z.optional(cases_case_response_updated_by_properties),
     version: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'cases_user_comment_response_properties' });
 
 /**
  * The status of the case.
@@ -201,6 +227,7 @@ export const cases_case_status = z.enum([
     'in-progress',
     'open'
 ]).register(z.globalRegistry, {
+    id: 'cases_case_status',
     description: 'The status of the case.'
 });
 
@@ -213,6 +240,7 @@ export const cases_case_severity = z.enum([
     'low',
     'medium'
 ]).register(z.globalRegistry, {
+    id: 'cases_case_severity',
     description: 'The severity of the case.'
 });
 
@@ -227,6 +255,7 @@ export const cases_settings = z.object({
         description: 'Turns alert syncing on or off.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_settings',
     description: 'An object that contains the case settings.'
 });
 
@@ -258,7 +287,7 @@ export const cases_external_service = z.union([
         ]))
     }),
     z.null()
-]);
+]).register(z.globalRegistry, { id: 'cases_external_service' });
 
 /**
  * An array containing users that are assigned to the case.
@@ -270,12 +299,13 @@ export const cases_assignees = z.union([
         })
     })).max(10),
     z.null()
-]);
+]).register(z.globalRegistry, { id: 'cases_assignees' });
 
 /**
  * A title for the case.
  */
 export const cases_case_title = z.string().max(160).register(z.globalRegistry, {
+    id: 'cases_case_title',
     description: 'A title for the case.'
 });
 
@@ -284,6 +314,7 @@ export const cases_case_title = z.string().max(160).register(z.globalRegistry, {
  *
  */
 export const cases_case_tags = z.array(z.string().max(256)).max(200).register(z.globalRegistry, {
+    id: 'cases_case_tags',
     description: 'The words and phrases that help categorize cases. It can be an empty array.\n'
 });
 
@@ -291,6 +322,7 @@ export const cases_case_tags = z.array(z.string().max(256)).max(200).register(z.
  * The description for the case.
  */
 export const cases_case_description = z.string().max(30000).register(z.globalRegistry, {
+    id: 'cases_case_description',
     description: 'The description for the case.'
 });
 
@@ -318,6 +350,7 @@ export const cases_connector_properties_swimlane = z.object({
         description: 'The type of connector.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_swimlane',
     description: 'Defines properties for connectors when type is `.swimlane`.'
 });
 
@@ -369,6 +402,7 @@ export const cases_connector_properties_servicenow_sir = z.object({
         description: 'The type of connector.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_servicenow_sir',
     description: 'Defines properties for connectors when type is `.servicenow-sir`.'
 });
 
@@ -412,6 +446,7 @@ export const cases_connector_properties_servicenow = z.object({
         description: 'The type of connector.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_servicenow',
     description: 'Defines properties for connectors when type is `.servicenow`.'
 });
 
@@ -442,6 +477,7 @@ export const cases_connector_properties_resilient = z.object({
         description: 'The type of connector.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_resilient',
     description: 'Defines properties for connectors when type is `.resilient`.'
 });
 
@@ -477,6 +513,7 @@ export const cases_connector_properties_jira = z.object({
         description: 'The type of connector.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_jira',
     description: 'Defines properties for connectors when type is `.jira`.'
 });
 
@@ -500,6 +537,7 @@ export const cases_connector_properties_cases_webhook = z.object({
         description: 'The type of connector.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_cases_webhook',
     description: 'Defines properties for connectors when type is `.cases-webhook`.'
 });
 
@@ -523,6 +561,7 @@ export const cases_connector_properties_none = z.object({
         description: 'The type of connector. To create a case without a connector, use `.none`. To update a case to remove the connector, specify `.none`.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_connector_properties_none',
     description: 'Defines properties for connectors when type is `.none`.'
 });
 
@@ -530,6 +569,7 @@ export const cases_connector_properties_none = z.object({
  * A word or phrase that categorizes the case.
  */
 export const cases_case_category = z.string().max(50).register(z.globalRegistry, {
+    id: 'cases_case_category',
     description: 'A word or phrase that categorizes the case.'
 });
 
@@ -582,6 +622,7 @@ export const cases_update_case_request = z.object({
         description: 'An array containing one or more case objects.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_update_case_request',
     description: 'The update case API request body varies depending on the type of connector.'
 });
 
@@ -599,6 +640,7 @@ export const cases_rule = z.object({
         description: 'The rule name.'
     }))
 }).register(z.globalRegistry, {
+    id: 'cases_rule',
     description: 'The rule that is associated with the alerts. It is required only when `type` is `alert`. This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.\n'
 });
 
@@ -611,9 +653,18 @@ export const cases_rule = z.object({
 export const cases_alert_indices = z.union([
     z.string(),
     z.array(z.string()).max(1000)
-]);
+]).register(z.globalRegistry, { id: 'cases_alert_indices' });
 
-export const cases_alert_identifiers = cases_alert_indices;
+/**
+ * Alert identifiers
+ *
+ * The alert identifiers. It is required only when `type` is `alert`. You can use an array of strings to add multiple alerts to a case, provided that they all relate to the same rule; `index` must also be an array with the same length or number of elements. Adding multiple alerts in this manner is recommended rather than calling the API multiple times. This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
+ *
+ */
+export const cases_alert_identifiers = z.union([
+    z.string(),
+    z.array(z.string()).max(1000)
+]).register(z.globalRegistry, { id: 'cases_alert_identifiers' });
 
 /**
  * Unsuccessful cases API response
@@ -622,7 +673,7 @@ export const cases_response_4xx = z.object({
     error: z.optional(z.string()),
     message: z.optional(z.string()),
     statusCode: z.optional(z.int())
-});
+}).register(z.globalRegistry, { id: 'cases_response_4xx' });
 
 /**
  * Create case request
@@ -663,6 +714,7 @@ export const cases_create_case_request = z.object({
     tags: cases_case_tags,
     title: cases_case_title
 }).register(z.globalRegistry, {
+    id: 'cases_create_case_request',
     description: 'The create case API request body varies depending on the type of connector.'
 });
 
@@ -744,9 +796,29 @@ export const cases_alert_comment_response_properties = z.object({
         z.null()
     ])),
     version: z.optional(z.string())
-});
+}).register(z.globalRegistry, { id: 'cases_alert_comment_response_properties' });
 
-export const cases_case_response_closed_by_properties = cases_case_response_updated_by_properties;
+/**
+ * Case response properties for closed_by
+ */
+export const cases_case_response_closed_by_properties = z.union([
+    z.object({
+        email: z.union([
+            z.string(),
+            z.null()
+        ]),
+        full_name: z.union([
+            z.string(),
+            z.null()
+        ]),
+        profile_uid: z.optional(z.string()),
+        username: z.union([
+            z.string(),
+            z.null()
+        ])
+    }),
+    z.null()
+]).register(z.globalRegistry, { id: 'cases_case_response_closed_by_properties' });
 
 /**
  * Case response properties
@@ -830,7 +902,7 @@ export const cases_case_response_properties = z.object({
     ]),
     updated_by: cases_case_response_updated_by_properties,
     version: z.string()
-});
+}).register(z.globalRegistry, { id: 'cases_case_response_properties' });
 
 /**
  * Get case response
@@ -913,6 +985,7 @@ export const cases_case_response_get_case = z.object({
     updated_by: cases_case_response_updated_by_properties,
     version: z.string()
 }).register(z.globalRegistry, {
+    id: 'cases_case_response_get_case',
     description: 'Case details returned by the get case API. The comments property is not included in the response. Use the find case comments API to retrieve comments. totalComment reflects the actual number of user comments.\n'
 });
 
@@ -930,6 +1003,7 @@ export const cases_add_user_comment_request_properties = z.object({
         description: 'The type of comment.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_add_user_comment_request_properties',
     description: 'Defines properties for case comment requests when type is user.'
 });
 
@@ -947,6 +1021,7 @@ export const cases_add_alert_comment_request_properties = z.object({
         description: 'The type of comment.'
     })
 }).register(z.globalRegistry, {
+    id: 'cases_add_alert_comment_request_properties',
     description: 'Defines properties for case comment requests when type is alert.'
 });
 
@@ -962,12 +1037,13 @@ export const cases_add_case_comment_request = z.union([
     z.object({
         type: z.literal('user')
     }).and(cases_add_user_comment_request_properties)
-]);
+]).register(z.globalRegistry, { id: 'cases_add_case_comment_request' });
 
 /**
  * Cross-site request forgery protection
  */
 export const cases_kbn_xsrf = z.string().register(z.globalRegistry, {
+    id: 'cases_kbn_xsrf',
     description: 'Cross-site request forgery protection'
 });
 
@@ -975,6 +1051,7 @@ export const cases_kbn_xsrf = z.string().register(z.globalRegistry, {
  * The identifier for the case. To retrieve case IDs, use the search cases (`_find)` API. All non-ASCII characters must be URL encoded.
  */
 export const cases_case_id = z.string().register(z.globalRegistry, {
+    id: 'cases_case_id',
     description: 'The identifier for the case. To retrieve case IDs, use the search cases (`_find)` API. All non-ASCII characters must be URL encoded.'
 });
 
@@ -987,12 +1064,13 @@ export const update_case_default_space_request = z.object({
             description: 'Cross-site request forgery protection'
         })
     })
-});
+}).register(z.globalRegistry, { id: 'update_case_default_space_request' });
 
 /**
  * Indicates a successful call.
  */
 export const update_case_default_space_response = z.array(cases_case_response_properties).register(z.globalRegistry, {
+    id: 'update_case_default_space_response',
     description: 'Indicates a successful call.'
 });
 
@@ -1005,7 +1083,7 @@ export const create_case_default_space_request = z.object({
             description: 'Cross-site request forgery protection'
         })
     })
-});
+}).register(z.globalRegistry, { id: 'create_case_default_space_request' });
 
 /**
  * Indicates a successful call.
@@ -1020,7 +1098,7 @@ export const get_case_default_space_request = z.object({
         })
     }),
     query: z.optional(z.never())
-});
+}).register(z.globalRegistry, { id: 'get_case_default_space_request' });
 
 /**
  * Indicates a successful call.
@@ -1040,9 +1118,12 @@ export const add_case_comment_default_space_request = z.object({
             description: 'Cross-site request forgery protection'
         })
     })
-});
+}).register(z.globalRegistry, { id: 'add_case_comment_default_space_request' });
 
-export const add_case_comment_default_space_response = create_case_default_space_response;
+/**
+ * Indicates a successful call.
+ */
+export const add_case_comment_default_space_response = cases_case_response_properties;
 
 export const set_alerts_status_request = z.object({
     body: z.union([
@@ -1051,12 +1132,13 @@ export const set_alerts_status_request = z.object({
     ]),
     path: z.optional(z.never()),
     query: z.optional(z.never())
-});
+}).register(z.globalRegistry, { id: 'set_alerts_status_request' });
 
 /**
  * Elasticsearch update by query response
  */
 export const set_alerts_status_response = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+    id: 'set_alerts_status_response',
     description: 'Elasticsearch update by query response'
 });
 
@@ -1064,9 +1146,15 @@ export const set_alert_tags_request = z.object({
     body: security_detections_api_set_alert_tags_body,
     path: z.optional(z.never()),
     query: z.optional(z.never())
-});
+}).register(z.globalRegistry, { id: 'set_alert_tags_request' });
 
-export const set_alert_tags_response = set_alerts_status_response;
+/**
+ * Elasticsearch update by query response
+ */
+export const set_alert_tags_response = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+    id: 'set_alert_tags_response',
+    description: 'Elasticsearch update by query response'
+});
 
 export const get_streams_request = z.object({
     body: z.optional(z.union([
@@ -1075,7 +1163,7 @@ export const get_streams_request = z.object({
     ])),
     path: z.optional(z.never()),
     query: z.optional(z.never())
-});
+}).register(z.globalRegistry, { id: 'get_streams_request' });
 
 export const get_streams_name_request = z.object({
     body: z.optional(z.union([
@@ -1086,7 +1174,7 @@ export const get_streams_name_request = z.object({
         name: z.string()
     }),
     query: z.optional(z.never())
-});
+}).register(z.globalRegistry, { id: 'get_streams_name_request' });
 
 export const get_streams_name_significant_events_request = z.object({
     body: z.optional(z.union([
@@ -1104,4 +1192,4 @@ export const get_streams_name_significant_events_request = z.object({
             description: 'Query string to filter significant events on metadata fields'
         }))
     })
-});
+}).register(z.globalRegistry, { id: 'get_streams_name_significant_events_request' });
