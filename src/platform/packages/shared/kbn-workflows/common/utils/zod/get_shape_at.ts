@@ -11,14 +11,30 @@ import { z } from '@kbn/zod/v4';
 import { getSchemaAtPath } from './get_schema_at_path';
 import { getShape } from './get_shape';
 
+const shapeCache = new WeakMap<z.ZodType, Map<string, Record<string, z.ZodType>>>();
+
 export function getShapeAt(schema: z.ZodType, property: string): Record<string, z.ZodType> {
+  let propertyCache = shapeCache.get(schema);
+  const cached = propertyCache?.get(property);
+  if (cached) {
+    return cached;
+  }
+
   const { schema: schemaAtProperty } = getSchemaAtPath(schema, property);
+  let result: Record<string, z.ZodType>;
   if (schemaAtProperty === null) {
-    return {};
+    result = {};
+  } else if (property === 'body' && schemaAtProperty instanceof z.ZodArray) {
+    // SPECIAL handling for bulk request body. It is an array of objects, in workflows we wrap it in "operations" property.
+    result = { operations: schemaAtProperty.describe('Bulk request body') };
+  } else {
+    result = getShape(schemaAtProperty);
   }
-  // SPECIAL handling for bulk request body. It is an array of objects, in workflows we wrap it in "operations" property.
-  if (property === 'body' && schemaAtProperty instanceof z.ZodArray) {
-    return { operations: schemaAtProperty.describe('Bulk request body') };
+
+  if (!propertyCache) {
+    propertyCache = new Map();
+    shapeCache.set(schema, propertyCache);
   }
-  return getShape(schemaAtProperty);
+  propertyCache.set(property, result);
+  return result;
 }

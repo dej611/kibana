@@ -10,26 +10,27 @@
 import { z } from '@kbn/zod/v4';
 
 export function getShape(schema: z.ZodType): Record<string, z.ZodType> {
-  let current: unknown = schema;
-  if (current instanceof z.ZodOptional) {
-    current = current.unwrap();
+  // Use a queue (FIFO) to preserve left-to-right property insertion order
+  // when flattening intersections and unions.
+  const queue: unknown[] = [schema];
+  const merged: Record<string, z.ZodType> = {};
+
+  while (queue.length > 0) {
+    let current: unknown = queue.shift();
+    if (current instanceof z.ZodOptional) {
+      current = current.unwrap();
+    }
+    if (current instanceof z.ZodIntersection) {
+      queue.push(current.def.left, current.def.right);
+    } else if (current instanceof z.ZodUnion) {
+      for (const option of current.options) {
+        queue.push(option);
+      }
+    } else if (current instanceof z.ZodObject) {
+      Object.assign(merged, current.shape);
+    }
+    // ZodNever, unknown types: skip (contribute nothing)
   }
-  if (current instanceof z.ZodIntersection) {
-    return {
-      ...getShape(current.def.left as z.ZodType),
-      ...getShape(current.def.right as z.ZodType),
-    };
-  }
-  if (current instanceof z.ZodUnion) {
-    return current.options.reduce((acc, option) => {
-      return { ...acc, ...getShape(option as z.ZodType) };
-    }, {});
-  }
-  if (current instanceof z.ZodNever) {
-    return {};
-  }
-  if (current instanceof z.ZodObject) {
-    return current.shape;
-  }
-  return {};
+
+  return merged;
 }

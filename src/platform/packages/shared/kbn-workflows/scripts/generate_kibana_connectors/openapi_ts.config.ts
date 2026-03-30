@@ -26,8 +26,9 @@ const preprocessedOpenApiSpec = [
 
 function buildConfig({ include }: { include: string[] }): UserConfig {
   return {
-    // @ts-expect-error - for some reason openapi-ts doesn't accept OpenAPIV3.Document
-    input: preprocessedOpenApiSpec,
+    // openapi-ts input accepts Record<string, unknown>; OpenAPIV3.Document is structurally
+    // compatible but has a narrower index signature, so we widen through unknown
+    input: preprocessedOpenApiSpec as unknown as Record<string, unknown>,
     output: {
       path: OPENAPI_TS_OUTPUT_FOLDER_PATH,
       fileName: OPENAPI_TS_OUTPUT_FILENAME,

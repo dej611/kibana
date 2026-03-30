@@ -60,9 +60,6 @@ export const security_detections_api_set_alerts_status_by_query_base = z.object(
     status: security_detections_api_alert_status_except_closed
 });
 
-/**
- * The reason for closing the alerts
- */
 export const security_detections_api_reason_enum = z.enum([
     'false_positive',
     'duplicate',
@@ -70,14 +67,20 @@ export const security_detections_api_reason_enum = z.enum([
     'benign_positive',
     'automated_closure',
     'other'
-]).register(z.globalRegistry, {
-    description: 'The reason for closing the alerts'
-});
+]);
+
+/**
+ * The reason for closing the alerts. Can be one of following predefined reasons: [false_positive, duplicate, true_positive, benign_positive, automated_closure, other] or a custom reason provided by the user through the advanced settings.
+ */
+export const security_detections_api_reason = z.union([
+    security_detections_api_reason_enum,
+    z.string()
+]);
 
 export const security_detections_api_close_alerts_by_query = z.object({
     conflicts: z.optional(z.enum(['abort', 'proceed'])),
     query: z.record(z.string(), z.unknown()),
-    reason: z.optional(security_detections_api_reason_enum),
+    reason: z.optional(security_detections_api_reason),
     status: z.enum(['closed'])
 });
 
@@ -94,7 +97,7 @@ export const security_detections_api_set_alerts_status_by_ids_base = z.object({
 });
 
 export const security_detections_api_close_alerts_by_ids = z.object({
-    reason: z.optional(security_detections_api_reason_enum),
+    reason: z.optional(security_detections_api_reason),
     signal_ids: z.array(z.string().min(1)).min(1).register(z.globalRegistry, {
         description: 'List of alert ids. Use field `_id` on alert document or `kibana.alert.uuid`. Note: signals are a deprecated term for alerts.'
     }),
@@ -134,27 +137,7 @@ export const cases_case_response_updated_by_properties = z.union([
     z.null()
 ]);
 
-/**
- * Case response properties for pushed_by
- */
-export const cases_case_response_pushed_by_properties = z.union([
-    z.object({
-        email: z.union([
-            z.string(),
-            z.null()
-        ]),
-        full_name: z.union([
-            z.string(),
-            z.null()
-        ]),
-        profile_uid: z.optional(z.string()),
-        username: z.union([
-            z.string(),
-            z.null()
-        ])
-    }),
-    z.null()
-]);
+export const cases_case_response_pushed_by_properties = cases_case_response_updated_by_properties;
 
 /**
  * The application that owns the cases: Stack Management, Observability, or Elastic Security.
@@ -237,6 +220,9 @@ export const cases_case_severity = z.enum([
  * An object that contains the case settings.
  */
 export const cases_settings = z.object({
+    extractObservables: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'When true, observables (e.g. IPs, hashes, URLs) are automatically extracted from case comments. Optional; defaults to false when omitted.\n'
+    })),
     syncAlerts: z.boolean().register(z.globalRegistry, {
         description: 'Turns alert syncing on or off.'
     })
@@ -627,16 +613,7 @@ export const cases_alert_indices = z.union([
     z.array(z.string()).max(1000)
 ]);
 
-/**
- * Alert identifiers
- *
- * The alert identifiers. It is required only when `type` is `alert`. You can use an array of strings to add multiple alerts to a case, provided that they all relate to the same rule; `index` must also be an array with the same length or number of elements. Adding multiple alerts in this manner is recommended rather than calling the API multiple times. This functionality is in technical preview and may be changed or removed in a future release. Elastic will work to fix any issues, but features in technical preview are not subject to the support SLA of official GA features.
- *
- */
-export const cases_alert_identifiers = z.union([
-    z.string(),
-    z.array(z.string()).max(1000)
-]);
+export const cases_alert_identifiers = cases_alert_indices;
 
 /**
  * Unsuccessful cases API response
@@ -769,27 +746,7 @@ export const cases_alert_comment_response_properties = z.object({
     version: z.optional(z.string())
 });
 
-/**
- * Case response properties for closed_by
- */
-export const cases_case_response_closed_by_properties = z.union([
-    z.object({
-        email: z.union([
-            z.string(),
-            z.null()
-        ]),
-        full_name: z.union([
-            z.string(),
-            z.null()
-        ]),
-        profile_uid: z.optional(z.string()),
-        username: z.union([
-            z.string(),
-            z.null()
-        ])
-    }),
-    z.null()
-]);
+export const cases_case_response_closed_by_properties = cases_case_response_updated_by_properties;
 
 /**
  * Case response properties
@@ -876,6 +833,90 @@ export const cases_case_response_properties = z.object({
 });
 
 /**
+ * Get case response
+ *
+ * Case details returned by the get case API. The comments property is not included in the response. Use the find case comments API to retrieve comments. totalComment reflects the actual number of user comments.
+ *
+ */
+export const cases_case_response_get_case = z.object({
+    assignees: z.optional(cases_assignees),
+    category: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    closed_at: z.union([
+        z.iso.datetime(),
+        z.null()
+    ]),
+    closed_by: cases_case_response_closed_by_properties,
+    connector: z.union([
+        z.object({
+            type: z.literal('.none')
+        }).and(cases_connector_properties_none),
+        z.object({
+            type: z.literal('.cases-webhook')
+        }).and(cases_connector_properties_cases_webhook),
+        z.object({
+            type: z.literal('.jira')
+        }).and(cases_connector_properties_jira),
+        z.object({
+            type: z.literal('.resilient')
+        }).and(cases_connector_properties_resilient),
+        z.object({
+            type: z.literal('.servicenow')
+        }).and(cases_connector_properties_servicenow),
+        z.object({
+            type: z.literal('.servicenow-sir')
+        }).and(cases_connector_properties_servicenow_sir),
+        z.object({
+            type: z.literal('.swimlane')
+        }).and(cases_connector_properties_swimlane)
+    ]),
+    created_at: z.iso.datetime(),
+    created_by: cases_case_response_created_by_properties,
+    customFields: z.optional(z.array(z.object({
+        key: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The unique identifier for the custom field. The key value must exist in the case configuration settings.\n'
+        })),
+        type: z.optional(z.enum(['text', 'toggle']).register(z.globalRegistry, {
+            description: 'The custom field type. It must match the type specified in the case configuration settings.\n'
+        })),
+        value: z.optional(z.union([
+            z.string().min(1).max(160),
+            z.null(),
+            z.boolean()
+        ]))
+    })).register(z.globalRegistry, {
+        description: 'Custom field values for the case.'
+    })),
+    description: z.string(),
+    duration: z.union([
+        z.int(),
+        z.null()
+    ]),
+    external_service: cases_external_service,
+    id: z.string(),
+    owner: cases_owner,
+    settings: cases_settings,
+    severity: cases_case_severity,
+    status: cases_case_status,
+    tags: z.array(z.string()),
+    title: z.string(),
+    totalAlerts: z.int(),
+    totalComment: z.int().register(z.globalRegistry, {
+        description: 'The number of user comments on the case. Use the find case comments API to retrieve comment content.'
+    }),
+    updated_at: z.union([
+        z.iso.datetime(),
+        z.null()
+    ]),
+    updated_by: cases_case_response_updated_by_properties,
+    version: z.string()
+}).register(z.globalRegistry, {
+    description: 'Case details returned by the get case API. The comments property is not included in the response. Use the find case comments API to retrieve comments. totalComment reflects the actual number of user comments.\n'
+});
+
+/**
  * Add case comment request properties for user comments
  *
  * Defines properties for case comment requests when type is user.
@@ -931,15 +972,6 @@ export const cases_kbn_xsrf = z.string().register(z.globalRegistry, {
 });
 
 /**
- * Deprecated in 8.1.0. This parameter is deprecated and will be removed in a future release. It determines whether case comments are returned.
- *
- * @deprecated
- */
-export const cases_include_comments = z.boolean().register(z.globalRegistry, {
-    description: 'Deprecated in 8.1.0. This parameter is deprecated and will be removed in a future release. It determines whether case comments are returned.'
-}).default(true);
-
-/**
  * The identifier for the case. To retrieve case IDs, use the search cases (`_find)` API. All non-ASCII characters must be URL encoded.
  */
 export const cases_case_id = z.string().register(z.globalRegistry, {
@@ -987,13 +1019,13 @@ export const get_case_default_space_request = z.object({
             description: 'The identifier for the case. To retrieve case IDs, use the search cases (`_find)` API. All non-ASCII characters must be URL encoded.'
         })
     }),
-    query: z.optional((z.never())),
+    query: z.optional(z.never())
 });
 
 /**
  * Indicates a successful call.
  */
-export const get_case_default_space_response = cases_case_response_properties;
+export const get_case_default_space_response = cases_case_response_get_case;
 
 export const add_case_comment_default_space_request = z.object({
     body: cases_add_case_comment_request,
@@ -1010,10 +1042,7 @@ export const add_case_comment_default_space_request = z.object({
     })
 });
 
-/**
- * Indicates a successful call.
- */
-export const add_case_comment_default_space_response = cases_case_response_properties;
+export const add_case_comment_default_space_response = create_case_default_space_response;
 
 export const set_alerts_status_request = z.object({
     body: z.union([
@@ -1037,17 +1066,11 @@ export const set_alert_tags_request = z.object({
     query: z.optional(z.never())
 });
 
-/**
- * Elasticsearch update by query response
- */
-export const set_alert_tags_response = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
-    description: 'Elasticsearch update by query response'
-});
+export const set_alert_tags_response = set_alerts_status_response;
 
 export const get_streams_request = z.object({
     body: z.optional(z.union([
         z.record(z.string(), z.never()),
-        z.enum(['null']),
         z.unknown()
     ])),
     path: z.optional(z.never()),
@@ -1057,7 +1080,6 @@ export const get_streams_request = z.object({
 export const get_streams_name_request = z.object({
     body: z.optional(z.union([
         z.record(z.string(), z.never()),
-        z.enum(['null']),
         z.unknown()
     ])),
     path: z.object({
@@ -1069,7 +1091,6 @@ export const get_streams_name_request = z.object({
 export const get_streams_name_significant_events_request = z.object({
     body: z.optional(z.union([
         z.record(z.string(), z.never()),
-        z.enum(['null']),
         z.unknown()
     ])),
     path: z.object({

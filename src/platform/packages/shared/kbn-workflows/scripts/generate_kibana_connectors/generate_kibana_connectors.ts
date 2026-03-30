@@ -41,6 +41,7 @@ import {
   StaticImports,
   toSnakeCase,
 } from '../shared';
+import { deduplicateGeneratedSchemas } from '../shared/deduplicate_generated_schemas';
 import type { OperationObjectWithOperationId } from '../shared/types';
 
 export async function run() {
@@ -225,6 +226,15 @@ async function generateZodSchemas(contracts: ContractMeta[]) {
     );
     console.log(
       `- Zod imports replaced in ${formatDuration(replaceZodImportsStartedAt, performance.now())}`
+    );
+
+    const deduplicateStartedAt = performance.now();
+    console.log('- Deduplicating structurally identical schemas...');
+    const dedupStats = deduplicateGeneratedSchemas(zodPath);
+    console.log(
+      `- Deduplicated ${dedupStats.aliasCount} schemas (${
+        dedupStats.linesSaved
+      } lines saved) in ${formatDuration(deduplicateStartedAt, performance.now())}`
     );
 
     console.log(
