@@ -61,4 +61,35 @@ describe('getShapeAt', () => {
     expectZodSchemaEqual(atBody.c, z.boolean());
     expectZodSchemaEqual(atBody.d, z.string());
   });
+
+  describe('caching', () => {
+    it('should return the same reference on repeated calls', () => {
+      const schema = z.object({
+        body: z.object({ x: z.string() }),
+      });
+      const first = getShapeAt(schema, 'body');
+      const second = getShapeAt(schema, 'body');
+      expect(first).toBe(second);
+    });
+
+    it('should cache empty results for missing properties', () => {
+      const schema = z.object({
+        body: z.object({ x: z.string() }),
+      });
+      const first = getShapeAt(schema, 'missing');
+      const second = getShapeAt(schema, 'missing');
+      expect(first).toBe(second);
+      expect(first).toEqual({});
+    });
+  });
+
+  describe('special body handling', () => {
+    it('should wrap array body in operations property', () => {
+      const schema = z.object({
+        body: z.array(z.object({ action: z.string() })),
+      });
+      const shape = getShapeAt(schema, 'body');
+      expect(Object.keys(shape)).toEqual(['operations']);
+    });
+  });
 });

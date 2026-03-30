@@ -12,11 +12,13 @@ import { z } from '@kbn/zod/v4';
 export function getShape(schema: z.ZodType): Record<string, z.ZodType> {
   // Use a queue (FIFO) to preserve left-to-right property insertion order
   // when flattening intersections and unions.
+  // Index-based iteration avoids Array.shift() which is O(n) per call.
   const queue: unknown[] = [schema];
   const merged: Record<string, z.ZodType> = {};
 
-  while (queue.length > 0) {
-    let current: unknown = queue.shift();
+  let head = 0;
+  while (head < queue.length) {
+    let current: unknown = queue[head++];
     if (current instanceof z.ZodOptional) {
       current = current.unwrap();
     }

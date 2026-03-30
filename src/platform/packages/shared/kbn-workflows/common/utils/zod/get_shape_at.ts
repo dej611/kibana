@@ -16,7 +16,7 @@ const shapeCache = new WeakMap<z.ZodType, Map<string, Record<string, z.ZodType>>
 export function getShapeAt(schema: z.ZodType, property: string): Record<string, z.ZodType> {
   let propertyCache = shapeCache.get(schema);
   const cached = propertyCache?.get(property);
-  if (cached) {
+  if (cached !== undefined) {
     return cached;
   }
 

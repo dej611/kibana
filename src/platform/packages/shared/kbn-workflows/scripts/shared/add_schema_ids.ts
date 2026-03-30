@@ -9,14 +9,26 @@
 
 import fs from 'fs';
 
-interface AddSchemaIdsResult {
+export interface InjectSchemaIdsResult {
+  output: string;
   injectedCount: number;
   skippedAliases: number;
 }
 
 /**
- * Post-processes a generated Zod schema file to inject `id` into every
- * top-level exported schema's `.register(z.globalRegistry, ...)` metadata.
+ * Reads a generated Zod schema file, injects `id` metadata, and writes it back.
+ * Thin I/O wrapper around {@link injectSchemaIds}.
+ */
+export function addSchemaIds(filePath: string): Omit<InjectSchemaIdsResult, 'output'> {
+  const source = fs.readFileSync(filePath, 'utf8');
+  const { output, injectedCount, skippedAliases } = injectSchemaIds(source);
+  fs.writeFileSync(filePath, output, 'utf8');
+  return { injectedCount, skippedAliases };
+}
+
+/**
+ * Pure transformation: injects `id` into every top-level exported schema's
+ * `.register(z.globalRegistry, ...)` metadata.
  *
  * Zod v4's `z.toJSONSchema({ reused: 'ref' })` uses the `id` property to:
  * 1. Extract schemas into `$defs`/`definitions` with human-readable keys
@@ -27,8 +39,7 @@ interface AddSchemaIdsResult {
  * The constant name (derived from the OpenAPI component name by @hey-api/openapi-ts)
  * is used as the `id`, producing semantically meaningful `$ref` keys.
  */
-export function addSchemaIds(filePath: string): AddSchemaIdsResult {
-  const source = fs.readFileSync(filePath, 'utf8');
+export function injectSchemaIds(source: string): InjectSchemaIdsResult {
   const lines = source.split('\n');
   const result: string[] = [];
   let injectedCount = 0;
@@ -42,6 +53,7 @@ export function addSchemaIds(filePath: string): AddSchemaIdsResult {
   let bracketDepth = 0;
   let inString: string | null = null;
   let escaped = false;
+  let templateDepth = 0;
   let pendingLines: string[] = [];
 
   for (const line of lines) {
@@ -68,6 +80,7 @@ export function addSchemaIds(filePath: string): AddSchemaIdsResult {
       bracketDepth = 0;
       inString = null;
       escaped = false;
+      templateDepth = 0;
       pendingLines = [line];
 
       // Count depth for this line
@@ -107,38 +120,66 @@ export function addSchemaIds(filePath: string): AddSchemaIdsResult {
     result.push(...pendingLines);
   }
 
-  fs.writeFileSync(filePath, result.join('\n'), 'utf8');
-  return { injectedCount, skippedAliases };
+  return { output: result.join('\n'), injectedCount, skippedAliases };
 
   // --- Helper functions (closures over depth state) ---
 
+  function updateDepthForChar(char: string, nextChar: string | undefined): number {
+    if (escaped) {
+      escaped = false;
+      return 0;
+    }
+    if (char === '\\') {
+      escaped = true;
+      return 0;
+    }
+
+    if (inString === '`') {
+      if (char === '$' && nextChar === '{') {
+        templateDepth++;
+        return 1; // skip the `{`
+      }
+      if (char === '`') {
+        inString = null;
+      }
+      return 0;
+    }
+
+    if (inString) {
+      if (char === inString) {
+        inString = null;
+      }
+      return 0;
+    }
+
+    return updateDepthOutsideString(char);
+  }
+
+  function updateDepthOutsideString(char: string) {
+    if (char === "'" || char === '"' || char === '`') {
+      inString = char;
+    } else if (char === '}' && templateDepth > 0) {
+      templateDepth--;
+      inString = '`';
+    } else if (char === '(') {
+      parenDepth++;
+    } else if (char === ')') {
+      parenDepth--;
+    } else if (char === '{') {
+      braceDepth++;
+    } else if (char === '}') {
+      braceDepth--;
+    } else if (char === '[') {
+      bracketDepth++;
+    } else if (char === ']') {
+      bracketDepth--;
+    }
+    return 0;
+  }
+
   function updateDepth(text: string) {
     for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-
-      if (escaped) {
-        escaped = false;
-      } else if (char === '\\') {
-        escaped = true;
-      } else if (inString) {
-        if (char === inString) {
-          inString = null;
-        }
-      } else if (char === "'" || char === '"' || char === '`') {
-        inString = char;
-      } else if (char === '(') {
-        parenDepth++;
-      } else if (char === ')') {
-        parenDepth--;
-      } else if (char === '{') {
-        braceDepth++;
-      } else if (char === '}') {
-        braceDepth--;
-      } else if (char === '[') {
-        bracketDepth++;
-      } else if (char === ']') {
-        bracketDepth--;
-      }
+      i += updateDepthForChar(text[i], text[i + 1]);
     }
   }
 
@@ -207,9 +248,9 @@ function transformDeclaration(
       }
       pos++;
     }
-    // After the matching `}`, the remaining text should be just `);` (with optional whitespace)
+    // After the matching `}`, the remaining text should be just `);`
     const remainder = afterRegister.slice(pos).trim();
-    if (remainder === ');' || remainder === ');\n') {
+    if (remainder === ');') {
       const insertAt = lastRegisterPos + registerOpenNeedle.length;
       const modified = `${joined.slice(0, insertAt)}\n    id: '${name}',${joined.slice(insertAt)}`;
       return { lines: modified.split('\n'), modified: true };
