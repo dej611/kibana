@@ -43,6 +43,14 @@ export class WorkflowExecutionState {
    */
   private readonly outputSizes = new Map<string, number>();
 
+  /**
+   * Step execution IDs whose outputs were persisted in the previous flush and
+   * should be evaluated for eviction on the NEXT flush. This one-cycle deferral
+   * keeps outputs in memory long enough for the immediately-following step to
+   * read them without an ES round-trip.
+   */
+  private pendingOutputEvictionIds: string[] = [];
+
   constructor(
     initialWorkflowExecution: EsWorkflowExecution,
     private workflowExecutionRepository: WorkflowExecutionRepository,
@@ -303,6 +311,30 @@ export class WorkflowExecutionState {
     }
   }
 
+  /**
+   * Evicts input fields from terminal (COMPLETED/FAILED) steps to reduce memory footprint.
+   * Unlike output eviction, this has no size threshold and no deferral — no successor step
+   * references a predecessor's input. Input data remains in Elasticsearch.
+   * This is a memory-only operation — it does NOT modify `stepDocumentsChanges`.
+   */
+  private evictCompletedStepInputs(candidateIds: ReadonlyArray<string>): void {
+    let evictedCount = 0;
+    for (const id of candidateIds) {
+      const step = this.stepExecutions.get(id);
+      if (step) {
+        const isTerminal =
+          step.status === ExecutionStatus.COMPLETED || step.status === ExecutionStatus.FAILED;
+        if (isTerminal && step.input !== undefined) {
+          step.input = undefined;
+          evictedCount++;
+        }
+      }
+    }
+    if (evictedCount > 0) {
+      this.logger?.debug(`Evicted input from ${evictedCount} completed step(s)`);
+    }
+  }
+
   private isEvictionCandidate(stepExecutionId: string, step: EsWorkflowStepExecution): boolean {
     if (this.evictedOutputIdsAndBytes.has(stepExecutionId)) {
       return false;
@@ -331,6 +363,13 @@ export class WorkflowExecutionState {
 
   public async flushStepChanges(): Promise<void> {
     if (!this.stepDocumentsChanges.size) {
+      // No new changes, but still drain any pending output evictions
+      // from the previous flush cycle.
+      if (this.pendingOutputEvictionIds.length > 0) {
+        const toEvict = this.pendingOutputEvictionIds;
+        this.pendingOutputEvictionIds = [];
+        this.evictCompletedStepOutputs(toEvict);
+      }
       return;
     }
     const flushedIds = Array.from(this.stepDocumentsChanges.keys());
@@ -339,8 +378,17 @@ export class WorkflowExecutionState {
     this.stepDocumentsChanges.clear();
     await this.workflowStepExecutionRepository.bulkUpsert(stepDocumentsChanges);
 
-    // After successful persistence, evict large outputs from completed steps
-    this.evictCompletedStepOutputs(flushedIds);
+    // Deferred output eviction: evict the PREVIOUS flush's candidates,
+    // then queue THIS flush's candidates for the next cycle.
+    if (this.pendingOutputEvictionIds.length > 0) {
+      const toEvict = this.pendingOutputEvictionIds;
+      this.pendingOutputEvictionIds = [];
+      this.evictCompletedStepOutputs(toEvict);
+    }
+    this.pendingOutputEvictionIds = flushedIds;
+
+    // Input eviction: immediate (no deferral needed — no successor reads predecessor input)
+    this.evictCompletedStepInputs(flushedIds);
   }
 
   public async flush(): Promise<void> {
