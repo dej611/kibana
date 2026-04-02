@@ -866,26 +866,196 @@ describe('WorkflowExecutionState', () => {
       });
     });
 
-    describe('flushStepChanges triggers eviction', () => {
-      it('should evict large outputs from completed steps after flush', async () => {
+    describe('deferred output eviction via flushStepChanges', () => {
+      it('should NOT evict output on the flush that persists it', async () => {
         createCompletedStep('step-1', 'myStep', { data: 'x'.repeat(200) }, 'connector');
         evictableState.recordOutputSize('step-1', 250);
 
         await evictableState.flushStepChanges();
 
+        // Output should still be in memory after the first flush
+        expect(evictableState.getStepExecution('step-1')?.output).toBeDefined();
+        expect(evictableState.hasEvictedOutputs()).toBe(false);
+      });
+
+      it('should evict output on the second flush', async () => {
+        createCompletedStep('step-1', 'myStep', { data: 'x'.repeat(200) }, 'connector');
+        evictableState.recordOutputSize('step-1', 250);
+
+        await evictableState.flushStepChanges(); // persists + queues for eviction
+        await evictableState.flushStepChanges(); // drains pending eviction
+
         expect(evictableState.getStepExecution('step-1')?.output).toBeUndefined();
         expect(evictableState.hasEvictedOutputs()).toBe(true);
       });
 
-      it('should not evict small outputs after flush', async () => {
+      it('should not evict small outputs even after two flushes', async () => {
         const smallOutput = { key: 'val' };
         createCompletedStep('step-1', 'myStep', smallOutput, 'connector');
         evictableState.recordOutputSize('step-1', 10);
 
         await evictableState.flushStepChanges();
+        await evictableState.flushStepChanges();
 
         expect(evictableState.getStepExecution('step-1')?.output).toEqual(smallOutput);
         expect(evictableState.hasEvictedOutputs()).toBe(false);
+      });
+
+      it('should handle multiple steps completing between flushes', async () => {
+        createCompletedStep('step-1', 's1', { data: 'x'.repeat(200) }, 'connector');
+        createCompletedStep('step-2', 's2', { data: 'y'.repeat(200) }, 'connector');
+        evictableState.recordOutputSize('step-1', 250);
+        evictableState.recordOutputSize('step-2', 300);
+
+        await evictableState.flushStepChanges(); // persists both, queues both
+        expect(evictableState.getStepExecution('step-1')?.output).toBeDefined();
+        expect(evictableState.getStepExecution('step-2')?.output).toBeDefined();
+
+        await evictableState.flushStepChanges(); // drains both
+        expect(evictableState.getStepExecution('step-1')?.output).toBeUndefined();
+        expect(evictableState.getStepExecution('step-2')?.output).toBeUndefined();
+        expect(evictableState.hasEvictedOutputs()).toBe(true);
+      });
+
+      it('should evict previous batch and queue new batch on successive flushes', async () => {
+        // Step A completes in cycle 1
+        createCompletedStep('step-a', 'sA', { data: 'a'.repeat(200) }, 'connector');
+        evictableState.recordOutputSize('step-a', 250);
+        await evictableState.flushStepChanges(); // persists A, queues A
+
+        // Step B completes in cycle 2
+        createCompletedStep('step-b', 'sB', { data: 'b'.repeat(200) }, 'connector');
+        evictableState.recordOutputSize('step-b', 300);
+        await evictableState.flushStepChanges(); // evicts A, persists B, queues B
+
+        expect(evictableState.getStepExecution('step-a')?.output).toBeUndefined();
+        expect(evictableState.getStepExecution('step-b')?.output).toBeDefined();
+
+        // Cycle 3: drain B
+        await evictableState.flushStepChanges();
+        expect(evictableState.getStepExecution('step-b')?.output).toBeUndefined();
+      });
+
+      it('should process pending eviction on empty flush (no new changes)', async () => {
+        createCompletedStep('step-1', 'myStep', { data: 'x'.repeat(200) }, 'connector');
+        evictableState.recordOutputSize('step-1', 250);
+
+        await evictableState.flushStepChanges(); // persists + queues
+        expect(evictableState.getStepExecution('step-1')?.output).toBeDefined();
+
+        // No new upserts — but empty flush should still drain pending
+        await evictableState.flushStepChanges();
+        expect(evictableState.getStepExecution('step-1')?.output).toBeUndefined();
+        expect(evictableState.hasEvictedOutputs()).toBe(true);
+      });
+
+      it('should not evict data.set outputs even after deferral', async () => {
+        createCompletedStep('step-1', 'myDataSet', { largeData: 'x'.repeat(200) }, 'data.set');
+        evictableState.recordOutputSize('step-1', 250);
+
+        await evictableState.flushStepChanges();
+        await evictableState.flushStepChanges();
+
+        expect(evictableState.getStepExecution('step-1')?.output).toBeDefined();
+        expect(evictableState.hasEvictedOutputs()).toBe(false);
+      });
+    });
+
+    describe('input eviction', () => {
+      it('should evict input from completed step after flush', async () => {
+        evictableState.upsertStep({
+          id: 'step-1',
+          stepId: 'myStep',
+          stepType: 'connector',
+          status: ExecutionStatus.COMPLETED,
+          input: { message: 'hello' },
+          output: { result: 'ok' },
+        } as Partial<EsWorkflowStepExecution>);
+
+        await evictableState.flushStepChanges();
+
+        expect(evictableState.getStepExecution('step-1')?.input).toBeUndefined();
+      });
+
+      it('should evict input from failed step after flush', async () => {
+        evictableState.upsertStep({
+          id: 'step-1',
+          stepId: 'myStep',
+          stepType: 'connector',
+          status: ExecutionStatus.FAILED,
+          input: { message: 'hello' },
+          output: null,
+        } as Partial<EsWorkflowStepExecution>);
+
+        await evictableState.flushStepChanges();
+
+        expect(evictableState.getStepExecution('step-1')?.input).toBeUndefined();
+      });
+
+      it('should NOT evict input from running step after flush', async () => {
+        const input = { foreach: '{{steps.data.output}}' };
+        evictableState.upsertStep({
+          id: 'step-1',
+          stepId: 'loopStep',
+          stepType: 'foreach',
+          status: ExecutionStatus.RUNNING,
+          input,
+        } as Partial<EsWorkflowStepExecution>);
+
+        await evictableState.flushStepChanges();
+
+        expect(evictableState.getStepExecution('step-1')?.input).toEqual(input);
+      });
+
+      it('should NOT evict input from waiting step after flush', async () => {
+        const input = { duration: '20m' };
+        evictableState.upsertStep({
+          id: 'step-1',
+          stepId: 'waitStep',
+          stepType: 'wait',
+          status: ExecutionStatus.WAITING,
+          input,
+        } as Partial<EsWorkflowStepExecution>);
+
+        await evictableState.flushStepChanges();
+
+        expect(evictableState.getStepExecution('step-1')?.input).toEqual(input);
+      });
+
+      it('should not cause stepDocumentsChanges on subsequent flush after input eviction', async () => {
+        evictableState.upsertStep({
+          id: 'step-1',
+          stepId: 'myStep',
+          stepType: 'connector',
+          status: ExecutionStatus.COMPLETED,
+          input: { message: 'hello' },
+        } as Partial<EsWorkflowStepExecution>);
+
+        await evictableState.flushStepChanges(); // persists + evicts input
+        jest.clearAllMocks();
+
+        await evictableState.flushStepChanges(); // should be a no-op for persistence
+        expect(stepExecutionRepository.bulkUpsert).not.toHaveBeenCalled();
+      });
+
+      it('should evict input immediately and output on the next flush', async () => {
+        evictableState.upsertStep({
+          id: 'step-1',
+          stepId: 'myStep',
+          stepType: 'connector',
+          status: ExecutionStatus.COMPLETED,
+          input: { message: 'hello' },
+          output: { data: 'x'.repeat(200) },
+        } as Partial<EsWorkflowStepExecution>);
+        evictableState.recordOutputSize('step-1', 250);
+
+        await evictableState.flushStepChanges(); // flush 1: input evicted, output queued
+        expect(evictableState.getStepExecution('step-1')?.input).toBeUndefined();
+        expect(evictableState.getStepExecution('step-1')?.output).toBeDefined();
+
+        await evictableState.flushStepChanges(); // flush 2: output evicted
+        expect(evictableState.getStepExecution('step-1')?.output).toBeUndefined();
+        expect(evictableState.hasEvictedOutputs()).toBe(true);
       });
     });
 
