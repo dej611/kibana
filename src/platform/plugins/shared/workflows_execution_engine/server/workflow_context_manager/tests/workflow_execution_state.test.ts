@@ -438,33 +438,178 @@ describe('WorkflowExecutionState', () => {
       );
     });
 
-    it('should load existing step executions', async () => {
+    it('should load existing step executions with output excluded', async () => {
       underTest.updateWorkflowExecution({ stepExecutionIds: ['11', '22'] });
       (stepExecutionRepository.getStepExecutionsByIds as jest.Mock).mockResolvedValue([
         {
           id: '11',
           stepId: 'testStep',
+          stepType: 'connector',
           status: ExecutionStatus.RUNNING,
         } as EsWorkflowStepExecution,
         {
           id: '22',
           stepId: 'testStep2',
+          stepType: 'connector',
           status: ExecutionStatus.COMPLETED,
         } as EsWorkflowStepExecution,
       ]);
       await underTest.load();
 
-      expect(stepExecutionRepository.getStepExecutionsByIds).toHaveBeenCalledWith(['11', '22']);
-      expect(underTest.getLatestStepExecution('testStep')).toEqual({
-        id: '11',
-        stepId: 'testStep',
-        status: ExecutionStatus.RUNNING,
-      } as EsWorkflowStepExecution);
-      expect(underTest.getLatestStepExecution('testStep2')).toEqual({
-        id: '22',
-        stepId: 'testStep2',
-        status: ExecutionStatus.COMPLETED,
-      } as EsWorkflowStepExecution);
+      expect(stepExecutionRepository.getStepExecutionsByIds).toHaveBeenCalledWith(
+        ['11', '22'],
+        undefined,
+        ['output']
+      );
+      expect(underTest.getLatestStepExecution('testStep')).toEqual(
+        expect.objectContaining({
+          id: '11',
+          stepId: 'testStep',
+          status: ExecutionStatus.RUNNING,
+        })
+      );
+      expect(underTest.getLatestStepExecution('testStep2')).toEqual(
+        expect.objectContaining({
+          id: '22',
+          stepId: 'testStep2',
+          status: ExecutionStatus.COMPLETED,
+        })
+      );
+    });
+
+    it('should mark non-data.set step outputs as deferred after load', async () => {
+      underTest.updateWorkflowExecution({ stepExecutionIds: ['11', '22'] });
+      (stepExecutionRepository.getStepExecutionsByIds as jest.Mock).mockResolvedValue([
+        {
+          id: '11',
+          stepId: 'connectorStep',
+          stepType: 'connector',
+          status: ExecutionStatus.COMPLETED,
+        } as EsWorkflowStepExecution,
+        {
+          id: '22',
+          stepId: 'ifStep',
+          stepType: 'if',
+          status: ExecutionStatus.COMPLETED,
+        } as EsWorkflowStepExecution,
+      ]);
+      await underTest.load();
+
+      expect(underTest.hasEvictedOutputs()).toBe(true);
+    });
+
+    it('should eagerly load data.set step outputs via secondary fetch', async () => {
+      underTest.updateWorkflowExecution({ stepExecutionIds: ['11', '22'] });
+      const dataSetOutput = { myVar: 'hello' };
+      (stepExecutionRepository.getStepExecutionsByIds as jest.Mock)
+        // First call: load without outputs
+        .mockResolvedValueOnce([
+          {
+            id: '11',
+            stepId: 'connectorStep',
+            stepType: 'connector',
+            status: ExecutionStatus.COMPLETED,
+          } as EsWorkflowStepExecution,
+          {
+            id: '22',
+            stepId: 'dataSetStep',
+            stepType: 'data.set',
+            status: ExecutionStatus.COMPLETED,
+          } as EsWorkflowStepExecution,
+        ])
+        // Second call: eager data.set output fetch
+        .mockResolvedValueOnce([
+          {
+            id: '22',
+            output: dataSetOutput,
+          } as unknown as EsWorkflowStepExecution,
+        ]);
+      await underTest.load();
+
+      // data.set output should be eagerly loaded
+      expect(underTest.getStepExecution('22')?.output).toEqual(dataSetOutput);
+      // data.set should NOT be in evicted set
+      expect(stepExecutionRepository.getStepExecutionsByIds).toHaveBeenCalledWith(
+        ['22'],
+        ['id', 'output']
+      );
+      // connector step should be deferred (evicted)
+      expect(underTest.hasEvictedOutputs()).toBe(true);
+    });
+
+    it('should allow rehydrateOutputs to restore deferred outputs from load', async () => {
+      underTest.updateWorkflowExecution({ stepExecutionIds: ['11'] });
+      const restoredOutput = { result: 'restored' };
+      (stepExecutionRepository.getStepExecutionsByIds as jest.Mock)
+        // First call: load without outputs
+        .mockResolvedValueOnce([
+          {
+            id: '11',
+            stepId: 'connectorStep',
+            stepType: 'connector',
+            status: ExecutionStatus.COMPLETED,
+          } as EsWorkflowStepExecution,
+        ]);
+      await underTest.load();
+
+      expect(underTest.hasEvictedOutputs()).toBe(true);
+
+      // Rehydrate
+      (stepExecutionRepository.getStepExecutionsByIds as jest.Mock).mockResolvedValueOnce([
+        {
+          id: '11',
+          output: restoredOutput,
+        } as unknown as EsWorkflowStepExecution,
+      ]);
+      await underTest.rehydrateOutputs(['11']);
+
+      expect(underTest.getStepExecution('11')?.output).toEqual(restoredOutput);
+      expect(underTest.hasEvictedOutputs()).toBe(false);
+    });
+
+    it('should not mark any outputs as evicted when all steps are data.set', async () => {
+      underTest.updateWorkflowExecution({ stepExecutionIds: ['11', '22'] });
+      const dataSetOutput1 = { var1: 'a' };
+      const dataSetOutput2 = { var2: 'b' };
+      (stepExecutionRepository.getStepExecutionsByIds as jest.Mock)
+        .mockResolvedValueOnce([
+          {
+            id: '11',
+            stepId: 'setVar1',
+            stepType: 'data.set',
+            status: ExecutionStatus.COMPLETED,
+          } as EsWorkflowStepExecution,
+          {
+            id: '22',
+            stepId: 'setVar2',
+            stepType: 'data.set',
+            status: ExecutionStatus.COMPLETED,
+          } as EsWorkflowStepExecution,
+        ])
+        .mockResolvedValueOnce([
+          { id: '11', output: dataSetOutput1 } as unknown as EsWorkflowStepExecution,
+          { id: '22', output: dataSetOutput2 } as unknown as EsWorkflowStepExecution,
+        ]);
+      await underTest.load();
+
+      expect(underTest.hasEvictedOutputs()).toBe(false);
+      expect(underTest.getStepExecution('11')?.output).toEqual(dataSetOutput1);
+      expect(underTest.getStepExecution('22')?.output).toEqual(dataSetOutput2);
+    });
+
+    it('should treat steps with undefined stepType as non-data.set (mark evicted)', async () => {
+      underTest.updateWorkflowExecution({ stepExecutionIds: ['11'] });
+      (stepExecutionRepository.getStepExecutionsByIds as jest.Mock).mockResolvedValueOnce([
+        {
+          id: '11',
+          stepId: 'legacyStep',
+          // stepType intentionally omitted
+          status: ExecutionStatus.COMPLETED,
+        } as EsWorkflowStepExecution,
+      ]);
+      await underTest.load();
+
+      expect(underTest.hasEvictedOutputs()).toBe(true);
     });
 
     it('should sort step executions by executionIndex when loaded from repository', async () => {
