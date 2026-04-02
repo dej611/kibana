@@ -54,6 +54,15 @@ export class WorkflowExecutionState {
     this.workflowExecution = initialWorkflowExecution;
   }
 
+  /**
+   * Loads step executions from Elasticsearch for a resumed workflow.
+   * To reduce memory footprint, outputs are excluded from the initial fetch and
+   * marked as deferred — the existing `ensureContextReady()` → `rehydrateOutputs()`
+   * path will fetch them on demand when a step actually needs them.
+   *
+   * `data.set` outputs are the exception: they are eagerly loaded because
+   * `getVariables()` reads ALL data.set outputs globally.
+   */
   public async load(): Promise<void> {
     if (!this.workflowExecution.stepExecutionIds) {
       throw new Error(
@@ -61,11 +70,43 @@ export class WorkflowExecutionState {
       );
     }
 
+    // Fetch step metadata without the (potentially large) output field
     const foundSteps = await this.workflowStepExecutionRepository.getStepExecutionsByIds(
-      this.workflowExecution.stepExecutionIds
+      this.workflowExecution.stepExecutionIds,
+      undefined,
+      ['output']
     );
     foundSteps.forEach((stepExecution) => this.stepExecutions.set(stepExecution.id, stepExecution));
     this.buildStepIdExecutionIdIndex();
+
+    // Mark non-data.set steps as deferred so rehydrateOutputs() will fetch them on demand.
+    // data.set outputs are pinned (needed globally by getVariables()) and eagerly loaded below.
+    const dataSetIds: string[] = [];
+    for (const step of foundSteps) {
+      if (step.stepType === 'data.set') {
+        dataSetIds.push(step.id);
+      } else {
+        this.evictedOutputIdsAndBytes.set(step.id, 0);
+      }
+    }
+
+    // Eagerly load data.set outputs so getVariables() works without rehydration
+    if (dataSetIds.length > 0) {
+      const dataSetOutputs = await this.workflowStepExecutionRepository.getStepExecutionsByIds(
+        dataSetIds,
+        ['id', 'output']
+      );
+      for (const doc of dataSetOutputs) {
+        const existing = this.stepExecutions.get(doc.id);
+        if (existing) {
+          existing.output = doc.output;
+        }
+      }
+    }
+
+    this.logger?.debug(
+      `Loaded ${foundSteps.length} step(s) with deferred outputs (${dataSetIds.length} data.set outputs eagerly loaded)`
+    );
   }
 
   public getWorkflowExecution(): EsWorkflowExecution {
