@@ -118,6 +118,11 @@ export {
   modifyStepProperty,
   modifyWorkflowProperty,
   deleteStep,
+  buildExtractedWorkflowYaml,
+  readSectionForExtraction,
+  replaceSectionWithWorkflowExecute,
+  unwrapSection,
+  wrapStepsInSection,
   WORKFLOW_PROPERTY_KEYS,
 } from './lib/yaml_edit';
-export type { StepDefinition } from './lib/yaml_edit';
+export type { SectionExtraction, StepDefinition, WrapResult } from './lib/yaml_edit';

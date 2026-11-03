@@ -621,6 +621,72 @@ steps:
 
       expect(result.diagnostics.map((diag) => diag.ruleId)).toContain('duplicateStepName');
     });
+
+    describe('sections', () => {
+      const yamlWith = (steps: string) => `name: sections
+enabled: true
+triggers:
+  - type: manual
+steps:
+${steps}`;
+
+      it('accepts sections, including empty ones and a skeleton made only of sections', async () => {
+        const result = await validateWorkflowYaml(
+          yamlWith(`  - name: ingest
+    type: section
+    title: Ingest
+    steps:
+      - name: fetch
+        type: console
+        with:
+          message: hi
+  - name: later
+    type: section
+    steps: []`),
+          schema
+        );
+
+        expect(result.diagnostics.map((diag) => diag.ruleId)).not.toContain('nestedSection');
+        expect(result.valid).toBe(true);
+      });
+
+      it('rejects a section inside a section, even through a branch', async () => {
+        const result = await validateWorkflowYaml(
+          yamlWith(`  - name: outer
+    type: section
+    steps:
+      - name: gate
+        type: if
+        condition: 'a : b'
+        steps:
+          - name: inner
+            type: section
+            steps: []`),
+          schema
+        );
+
+        expect(result.valid).toBe(false);
+        expect(result.diagnostics).toContainEqual(
+          expect.objectContaining({
+            severity: 'error',
+            ruleId: 'nestedSection',
+            message: 'Section "inner" is inside section "outer". Sections cannot be nested.',
+          })
+        );
+      });
+
+      it('rejects `if` on a section', async () => {
+        const result = await validateWorkflowYaml(
+          yamlWith(`  - name: guarded
+    type: section
+    if: 'a : b'
+    steps: []`),
+          schema
+        );
+
+        expect(result.valid).toBe(false);
+      });
+    });
   });
 
   describe('ignored kibana fetcher setting', () => {

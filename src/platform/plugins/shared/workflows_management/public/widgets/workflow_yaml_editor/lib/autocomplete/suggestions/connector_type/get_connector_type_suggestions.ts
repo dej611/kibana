@@ -17,6 +17,7 @@ import {
   LoopContinueStepSchema,
   MergeStepSchema,
   ParallelStepSchema,
+  SectionStepSchema,
   SwitchStepSchema,
   WaitForApprovalStepSchema,
   WaitForInputStepSchema,
@@ -267,6 +268,11 @@ function getBuiltInStepTypesFromSchema(): Array<{
       schema: MergeStepSchema,
       description: 'Merge results from multiple sources',
       icon: monaco.languages.CompletionItemKind.Interface,
+    },
+    {
+      schema: SectionStepSchema,
+      description: 'Group steps under a title for readability, without changing what runs',
+      icon: monaco.languages.CompletionItemKind.Module,
     },
     {
       schema: DataSetStepSchema,

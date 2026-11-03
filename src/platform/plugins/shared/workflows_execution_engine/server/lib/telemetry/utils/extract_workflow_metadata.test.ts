@@ -96,6 +96,47 @@ describe('extractWorkflowMetadata (execution engine)', () => {
     expect(meta.connectorTypes).toEqual(['slack']);
   });
 
+  it('does not count sections, so grouping steps does not change the metadata', () => {
+    const plain = baseWorkflow({
+      steps: [
+        { name: 'a', type: 'console' },
+        { name: 'b', type: 'console' },
+        {
+          name: 'loop',
+          type: 'foreach',
+          steps: [{ name: 'c', type: 'slack.webhook', 'connector-id': 'c1' }],
+        },
+      ] as unknown as WorkflowYaml['steps'],
+    });
+    const grouped = baseWorkflow({
+      steps: [
+        {
+          name: 'first',
+          type: 'section',
+          steps: [
+            { name: 'a', type: 'console' },
+            { name: 'b', type: 'console' },
+          ],
+        },
+        { name: 'later', type: 'section', steps: [] },
+        {
+          name: 'loop',
+          type: 'foreach',
+          steps: [
+            {
+              name: 'inner',
+              type: 'section',
+              steps: [{ name: 'c', type: 'slack.webhook', 'connector-id': 'c1' }],
+            },
+          ],
+        },
+      ] as unknown as WorkflowYaml['steps'],
+    });
+
+    expect(extractWorkflowMetadata(grouped)).toEqual(extractWorkflowMetadata(plain));
+    expect(extractWorkflowMetadata(grouped).stepCount).toBe(4);
+  });
+
   it('counts steps without type toward stepCount but not stepTypeCounts', () => {
     const wf = baseWorkflow({
       steps: [minimalConsoleStep, { name: 'untyped' } as unknown as WorkflowYaml['steps'][number]],

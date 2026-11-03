@@ -129,6 +129,17 @@ describe('getConnectorTypeSuggestions', () => {
   });
 
   describe('filtering by prefix', () => {
+    it('should suggest the section step, which only groups steps', () => {
+      const result = getConnectorTypeSuggestions('sec', mockRange);
+      const sectionSuggestion = result.find((s) => s.label === 'section');
+
+      expect(sectionSuggestion).toMatchObject({
+        label: 'section',
+        detail: 'Built-in workflow step',
+        documentation: 'Group steps under a title for readability, without changing what runs',
+      });
+    });
+
     it('should filter built-in steps by prefix', () => {
       const result = getConnectorTypeSuggestions('for', mockRange);
       const foreachSuggestion = result.find((s) => s.label === 'foreach');

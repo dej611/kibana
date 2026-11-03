@@ -298,6 +298,33 @@ describe('WorkflowsMeteringService', () => {
       expect(stepTypes).toEqual({ connector: 2, transform: 1, ai: 1 });
     });
 
+    it('should not count sections, which only group steps for reading', async () => {
+      const execution = createMockExecution({
+        workflowDefinition: {
+          steps: [
+            {
+              name: 'group',
+              type: 'section',
+              steps: [
+                { name: 's1', type: 'connector', with: {} },
+                { name: 's2', type: 'connector', with: {} },
+              ],
+            },
+            { name: 'later', type: 'section', steps: [] },
+            { name: 's3', type: 'transform', with: {} },
+          ],
+        } as unknown as EsWorkflowExecution['workflowDefinition'],
+      });
+
+      await meteringService.reportWorkflowExecution(execution, createMockCloudSetup());
+
+      const record: UsageRecord = mockUsageReportingService.reportUsage.mock.calls[0][0][0];
+      const { metadata } = record.usage;
+
+      expect(metadata!.step_count).toBe('3');
+      expect(JSON.parse(metadata!.step_types)).toEqual({ connector: 2, transform: 1 });
+    });
+
     it('should handle missing workflow definition gracefully', async () => {
       const execution = createMockExecution({
         workflowDefinition: undefined as unknown as EsWorkflowExecution['workflowDefinition'],

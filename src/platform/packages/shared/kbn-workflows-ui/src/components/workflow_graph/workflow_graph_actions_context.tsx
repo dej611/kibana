@@ -72,6 +72,12 @@ export interface WorkflowGraphEditActions {
   onInsert: (context: WorkflowGraphInsertionContext, anchor: WorkflowGraphAnchorRect) => void;
   onEditStep: (nodeId: string) => void;
   onDeleteNode: (nodeId: string) => void;
+  /** Removes a section and keeps its steps in its place. Receives the section's node id. */
+  onUngroupSection?: (nodeId: string) => void;
+  /** Moves a section's steps into a new workflow that runs in its place. Receives the section's node id. */
+  onExtractSection?: (nodeId: string) => void;
+  /** Wraps steps that sit next to each other in a new section. Receives their step names. */
+  onWrapInSection?: (stepNames: readonly string[]) => void;
 }
 
 /** Applied-state reason for the node warning badge tooltip. */
@@ -92,6 +98,12 @@ export interface WorkflowGraphActions {
   canRunSteps?: boolean;
   /** Called when the user keyboard-activates (Enter/Space) a node. */
   onStepSelect?: (nodeId: string) => void;
+  /**
+   * Called when the user collapses or expands a section. Not an edit, so it is offered
+   * read-only too. Receives the section's step name, which is what the caller keys its
+   * collapsed state on.
+   */
+  onToggleSection?: (stepName: string) => void;
   /**
    * Called when the user activates a settings node (info / constants /
    * outputs). `undefined` clears the settings selection (e.g. pane click).

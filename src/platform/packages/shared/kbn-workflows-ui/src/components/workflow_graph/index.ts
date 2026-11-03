@@ -34,6 +34,7 @@ export {
   type WorkflowVisualEditorFlyoutTarget,
 } from './workflow_visual_editor_flyout';
 export { resolveNodeChipStyle, type NodeChipStyle } from './resolve_node_chip_style';
+export { getSectionTitle } from './get_section_title';
 export { aiIconTileCss } from './ai_icon_tile';
 
 export { stepSupportsErrorHandling } from './step_supports_error_handling';

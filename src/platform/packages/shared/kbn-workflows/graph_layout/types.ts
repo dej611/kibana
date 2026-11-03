@@ -13,6 +13,15 @@ export type Step = WorkflowYaml['steps'][number];
 
 export const DEFAULT_NODE_STYLE = { width: 300, height: 52 } as const;
 
+/**
+ * A collapsed section is a little taller than a step so it reads as a heading, and taller
+ * again when it has a description to show: the 40px title block, a 4px gap and two 16px
+ * description lines, inside the card's border and 12px padding, plus a little to spare.
+ * Width stays the same: it sets how wide a lane is, so a wider node would widen every branch.
+ */
+export const COLLAPSED_SECTION_HEIGHT = 64;
+export const COLLAPSED_SECTION_WITH_DESCRIPTION_HEIGHT = 104;
+
 // Minimum height for a foreachGroup container when its body is empty.
 // dagLayout preserves caller-provided dimensions for groups with no inner nodes,
 // so this must be large enough to visually distinguish a container from a step.
@@ -28,7 +37,7 @@ export const FOREACH_GROUP_EMPTY_HEIGHT = 140 as const;
  * `atomic` is intentionally excluded: it is an internal implementation detail
  * never exposed in user-authored workflows.
  */
-export const CONTAINER_STEP_TYPES: ReadonlySet<string> = new Set(['foreach', 'while']);
+export const CONTAINER_STEP_TYPES: ReadonlySet<string> = new Set(['foreach', 'while', 'section']);
 
 export const TRIGGER_STEP_TYPES: ReadonlySet<string> = new Set([
   'manual',
@@ -63,10 +72,19 @@ export interface FallbackMember {
   fallbackOf?: string;
 }
 
+/**
+ * Present on the node of a collapsed `section`: the steps hidden behind it, every
+ * descendant included (loop bodies, branches, fallbacks), in declaration order.
+ */
+export interface CollapsedSectionData {
+  readonly memberStepNames: readonly string[];
+}
+
 export interface StepNodeData extends FallbackMember, Record<string, unknown> {
   label: string;
   stepType: string;
   step?: Step;
+  section?: CollapsedSectionData;
 }
 
 export interface TriggerNodeData extends Record<string, unknown> {

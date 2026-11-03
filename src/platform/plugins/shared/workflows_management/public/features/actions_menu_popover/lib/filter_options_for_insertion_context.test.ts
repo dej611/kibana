@@ -56,6 +56,36 @@ describe('filterOptionsForInsertionContext', () => {
     expect(result.map((o) => o.id)).toEqual(['elasticsearch', 'flowControl']);
   });
 
+  describe('the Section entry', () => {
+    const withSection: ActionOptionData[] = options.map((option) =>
+      option.id === 'flowControl' && isActionGroup(option)
+        ? {
+            ...option,
+            options: [...option.options, { id: 'section', label: 'Section', iconType: 'apps' }],
+          }
+        : option
+    );
+    const flowControlIds = (result: ActionOptionData[]) =>
+      result.flatMap((o) =>
+        o.id === 'flowControl' && isActionGroup(o) ? o.options.map((x) => x.id) : []
+      );
+
+    it('is offered for a step that is not inside a section', () => {
+      expect(
+        flowControlIds(filterOptionsForInsertionContext(withSection, { mode: 'step' }))
+      ).toEqual(['if', 'section']);
+    });
+
+    it('is hidden inside a section, because sections cannot be nested', () => {
+      const result = filterOptionsForInsertionContext(withSection, {
+        mode: 'step',
+        insideSection: true,
+      });
+
+      expect(flowControlIds(result)).toEqual(['if']);
+    });
+  });
+
   it('hides triggers and flow control for error mode', () => {
     const result = filterOptionsForInsertionContext(options, { mode: 'error' });
     expect(result.map((o) => o.id)).toEqual(['elasticsearch']);

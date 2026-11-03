@@ -27,6 +27,20 @@ describe('KeyboardShortcutsPopover', () => {
     expect(screen.getByText('Find')).toBeInTheDocument();
   });
 
+  it.each([
+    ['editable', false],
+    ['read-only', true],
+  ])('shows the section shortcuts when the editor is %s', (_label, isReadOnly) => {
+    render(<KeyboardShortcutsPopover isReadOnly={isReadOnly} />, { wrapper: TestProvider });
+
+    openPopover();
+
+    expect(screen.getByText('Collapse sections in graph')).toBeInTheDocument();
+    expect(screen.getByText('Expand sections in graph')).toBeInTheDocument();
+    expect(screen.getByText('[')).toBeInTheDocument();
+    expect(screen.getByText(']')).toBeInTheDocument();
+  });
+
   it('only shows available shortcuts when the editor is read-only', () => {
     render(<KeyboardShortcutsPopover isReadOnly />, { wrapper: TestProvider });
 

@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
+import { inlineSections } from '@kbn/workflows/graph';
 import { getInputsFromDefinition } from '@kbn/workflows/spec/lib/field_conversion';
 import type { WorkflowYaml } from '@kbn/workflows/spec/schema';
 
@@ -89,7 +90,8 @@ function countStepsRecursive(steps: WorkflowYaml['steps']): number {
   }
 
   let count = 0;
-  for (const step of steps) {
+  // Sections only group steps for reading, so they are not counted.
+  for (const step of inlineSections(steps)) {
     if (step && typeof step === 'object') {
       count++; // Count this step
 
@@ -149,7 +151,7 @@ export function extractWorkflowMetadata(
       return;
     }
 
-    for (const step of steps) {
+    for (const step of inlineSections(steps)) {
       if (step && typeof step === 'object' && 'type' in step && typeof step.type === 'string') {
         const stepType = step.type;
         // Count this step type

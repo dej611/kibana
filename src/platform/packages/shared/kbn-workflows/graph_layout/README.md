@@ -79,6 +79,22 @@ separate **execution-engine IR** (this graph is distinct from the logical graph 
 
 ---
 
+## Sections
+
+`section` (ADR-0014 in `workflows_management`) is a container step with no execution semantics. It
+touches the checklist above like this:
+
+- **1 · Schema:** `SectionStepSchema` (a pure grouping step: `if`, `on-failure`, `timeout`,
+  `foreach` and `max-step-size` are rejected).
+- **2 · Types:** `'section'` is in `CONTAINER_STEP_TYPES`, so the transform emits it as a
+  container, like `foreach`. A collapsed section (`TransformOptions.collapsedSections`) is emitted as
+  one plain `step` node with `data.section.memberStepNames` instead.
+- **5/6 · Icon and node registry:** the icon in `getStepIconType`; the expanded frame is the
+  `sectionGroup` React Flow node type, assigned in `use_workflow_layout.ts` (the transform still
+  says `foreachGroup`).
+- **7 · Execution engine:** none. The execution-graph builder inlines a section's steps
+  (`inlineSections`), so there are no `Enter*`/`Exit*` nodes for it.
+
 ## Notes for the future
 
 Steps **3 and 4** share child-slot logic across two files. A future **step-type registry** of

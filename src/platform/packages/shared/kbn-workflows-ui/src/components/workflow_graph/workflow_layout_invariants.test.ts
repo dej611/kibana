@@ -14,19 +14,36 @@
  * workflow with `generateWorkflow(seed)`.
  */
 
-import { transformWorkflowToGraph } from '@kbn/workflows';
-import type { LayoutDirection, StructureSequence, TransformResult } from '@kbn/workflows';
+import { transformWorkflowToGraph, walkStepTree } from '@kbn/workflows';
+import type { LayoutDirection, Step, StructureSequence, TransformResult } from '@kbn/workflows';
 import { computeWorkflowLayout, WORKFLOW_COMPOUND_PADDING } from './workflow_layout_pipeline';
 import { checkLayoutInvariants } from '../../test_utils/workflow_layout/check_layout_invariants';
-import { generateWorkflow } from '../../test_utils/workflow_layout/generate_workflow';
+import {
+  generateSectionedWorkflow,
+  generateWorkflow,
+} from '../../test_utils/workflow_layout/generate_workflow';
 
 const SEEDS = Array.from({ length: 400 }, (_, index) => index + 1);
 const DIRECTIONS: readonly LayoutDirection[] = ['TB', 'LR'];
 
-const collectViolationKeys = (): Set<string> => {
+const sectionNamesOf = (workflow: ReturnType<typeof generateWorkflow>): string[] => {
+  const names: string[] = [];
+  walkStepTree(workflow.steps as unknown as Step[], (step) => {
+    if (step.type === 'section') names.push(step.name);
+  });
+  return names;
+};
+
+const collectViolationKeys = (
+  generate: typeof generateWorkflow = generateWorkflow,
+  { collapseSections = false }: { collapseSections?: boolean } = {}
+): Set<string> => {
   const keys = new Set<string>();
   for (const seed of SEEDS) {
-    const transformed = transformWorkflowToGraph(generateWorkflow(seed));
+    const workflow = generate(seed);
+    const transformed = transformWorkflowToGraph(workflow, undefined, {
+      collapsedSections: collapseSections ? new Set(sectionNamesOf(workflow)) : undefined,
+    });
     for (const direction of DIRECTIONS) {
       const layout = computeWorkflowLayout(transformed, { direction });
       for (const { invariant } of checkLayoutInvariants({
@@ -220,5 +237,109 @@ describe('workflow layout invariants over generated workflows', () => {
         );
       }
     }
+  });
+});
+
+describe('workflow layout invariants over generated workflows with sections', () => {
+  interface Shape {
+    type?: string;
+    steps?: Shape[];
+    else?: Shape[];
+    default?: Shape[];
+    cases?: Array<{ steps?: Shape[] }>;
+    branches?: Array<{ steps?: Shape[] }>;
+    'on-failure'?: { fallback?: Shape[] };
+  }
+
+  const childLists = (step: Shape): Array<Shape[] | undefined> => [
+    step.steps,
+    step.else,
+    step.default,
+    step['on-failure']?.fallback,
+    ...(step.cases ?? []).map((c) => c.steps),
+    ...(step.branches ?? []).map((b) => b.steps),
+  ];
+
+  const sectionShapes = (): Set<string> => {
+    const found = new Set<string>();
+    const walk = (steps: Shape[] | undefined, insideSection: boolean, insideFork: boolean) => {
+      steps?.forEach((step, index) => {
+        if (step.type === 'section') {
+          found.add('section');
+          if (insideSection) found.add('nested section');
+          if ((step.steps ?? []).length === 0) found.add('empty section');
+          if (steps[index + 1]?.type === 'section') found.add('adjacent sections');
+          if (insideFork) found.add('section inside a branch');
+          if ((step.steps ?? []).some((child) => child.type === 'if')) {
+            found.add('section holding a fork');
+          }
+        }
+        const isFork = step.type === 'if' || step.type === 'switch' || step.type === 'parallel';
+        for (const child of childLists(step)) {
+          walk(child, insideSection || step.type === 'section', insideFork || isFork);
+        }
+      });
+    };
+    for (const seed of SEEDS) {
+      walk((generateSectionedWorkflow(seed) as unknown as { steps: Shape[] }).steps, false, false);
+    }
+    return found;
+  };
+
+  it('generates the same sectioned workflow for the same seed', () => {
+    expect(generateSectionedWorkflow(7)).toEqual(generateSectionedWorkflow(7));
+    expect(generateSectionedWorkflow(7)).not.toEqual(generateSectionedWorkflow(8));
+  });
+
+  it('covers the section shapes real workflows have, and never nests sections', () => {
+    const found = sectionShapes();
+
+    expect(found).not.toContain('nested section');
+    for (const shape of [
+      'section',
+      'empty section',
+      'adjacent sections',
+      'section inside a branch',
+      'section holding a fork',
+    ]) {
+      expect(found).toContain(shape);
+    }
+  });
+
+  it('lays out every sectioned workflow without throwing and deterministically', () => {
+    for (const seed of SEEDS.slice(0, 100)) {
+      const transformed = transformWorkflowToGraph(generateSectionedWorkflow(seed));
+      for (const direction of DIRECTIONS) {
+        const first = computeWorkflowLayout(transformed, { direction });
+        expect(computeWorkflowLayout(transformed, { direction })).toEqual(first);
+      }
+    }
+  });
+
+  it('breaks no layout rule on any sectioned workflow', () => {
+    expect([...collectViolationKeys(generateSectionedWorkflow)].sort()).toEqual([]);
+  });
+
+  it('breaks no layout rule with every section collapsed, at either size', () => {
+    expect(
+      [...collectViolationKeys(generateSectionedWorkflow, { collapseSections: true })].sort()
+    ).toEqual([]);
+  });
+
+  it('collapses sections of both sizes, so both are laid out', () => {
+    const heights = new Set<number>();
+    for (const seed of SEEDS) {
+      const workflow = generateSectionedWorkflow(seed);
+      const transformed = transformWorkflowToGraph(workflow, undefined, {
+        collapsedSections: new Set(sectionNamesOf(workflow)),
+      });
+      for (const node of transformed.nodes) {
+        if (node.type === 'step' && node.data.stepType === 'section') {
+          heights.add(node.style.height);
+        }
+      }
+    }
+
+    expect([...heights].sort((a, b) => a - b)).toEqual([64, 104]);
   });
 });

@@ -41,6 +41,7 @@ import type { ExtraAction } from './extra_actions_bar';
 import { ExtraActionsBar } from './extra_actions_bar';
 import { useAgentBuilderIntegration } from './hooks/use_agent_builder_integration';
 import { useFixWithAi } from './hooks/use_fix_with_ai';
+import { useSectionCodeActions } from './hooks/use_section_code_actions';
 import { useWorkflowYamlCompletionProvider } from './hooks/use_workflow_yaml_completion_provider';
 import { KeyboardShortcutsPopover } from './keyboard_shortcuts_popover';
 import { ServiceAccountEditorWidgets } from './service_accounts/service_account_editor_widgets';
@@ -446,6 +447,7 @@ export const WorkflowYAMLEditor = ({
     isReadOnlyYaml,
     openAgentChat,
   });
+  useSectionCodeActions({ editorRef, workflowLookupRef, isReadOnlyYaml });
 
   useEffect(() => {
     if (!isEditorMounted) {

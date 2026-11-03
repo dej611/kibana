@@ -93,6 +93,12 @@ export function generateBuiltInStepSnippet(
         steps: [{ name: 'merge-step', type: '# Add step type here' }],
       };
       break;
+    case 'section':
+      parameters = {
+        title: 'Section title',
+        steps: [],
+      };
+      break;
     case 'data.set':
       parameters = {
         with: {

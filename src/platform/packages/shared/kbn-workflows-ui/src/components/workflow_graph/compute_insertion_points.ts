@@ -8,7 +8,7 @@
  */
 
 import type { BranchSlot, Step, TransformResult, WorkflowYaml } from '@kbn/workflows';
-import { visitStepChildSlots } from '@kbn/workflows';
+import { CONTAINER_STEP_TYPES, visitStepChildSlots } from '@kbn/workflows';
 import { stepSupportsErrorHandling } from './step_supports_error_handling';
 
 /** Ports mounted on one graph node (edit mode only). */
@@ -130,7 +130,7 @@ export function computeInsertionPoints(
     // Resolve type up-front so it can gate both the container-branch fix and
     // the flow-port addition for container types inside the hasBranches path.
     const type = typeof step.type === 'string' ? step.type : undefined;
-    const isContainerType = type === 'foreach' || type === 'while';
+    const isContainerType = type !== undefined && CONTAINER_STEP_TYPES.has(type);
 
     const branches = new Map<
       string,

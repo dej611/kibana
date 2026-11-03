@@ -9,6 +9,7 @@
 
 import { omit } from 'lodash';
 import { GraphBuildError } from './graph_build_error';
+import { inlineSections } from './inline_sections';
 import { isHitlWaitStepType } from '../../common/hitl';
 import { DEFAULT_WAIT_FOR_APPROVAL_TIMEOUT } from '../../common/wait_for_approval';
 import { DEFAULT_LOOP_MAX_ITERATIONS } from '../../spec/schema';
@@ -943,8 +944,13 @@ function createFallback(
   return graph;
 }
 
-function createStepsSequence(steps: BaseStep[], context: GraphBuildContext): WorkflowGraphType {
+function createStepsSequence(
+  sequenceSteps: BaseStep[],
+  context: GraphBuildContext
+): WorkflowGraphType {
   const graph = createTypedGraph({ directed: true });
+  // Every step body goes through here, so this is the one place sections are made transparent.
+  const steps = inlineSections(sequenceSteps);
 
   let previousGraph: WorkflowGraphType | null = null;
 
@@ -985,6 +991,13 @@ function insertGraphBetweenNodes(
   startNodeId: string,
   endNodeId: string
 ): void {
+  // An empty body (e.g. only empty sections) has nothing to run, but the path must
+  // still lead from its start node to its end node.
+  if (subGraph.nodeCount() === 0) {
+    graph.setEdge(startNodeId, endNodeId);
+    return;
+  }
+
   // Find all start nodes (no incoming edges) and end nodes (no outgoing edges)
   const startNodes = subGraph.nodes().filter((nodeId) => subGraph.inEdges(nodeId)?.length === 0);
   const endNodes = subGraph.nodes().filter((nodeId) => subGraph.outEdges(nodeId)?.length === 0);
@@ -1088,6 +1101,16 @@ function buildParallelBranchBody(
   // by the parallel executor and is rejected here so it fails loudly at compile
   // time rather than silently running only one path at runtime.
   const bodyGraph = createStepsSequence(steps || [], context);
+
+  // The executor starts a branch from its first node, so a branch whose steps are all
+  // empty sections (nothing to run) cannot be skipped the way other empty bodies are.
+  if (bodyGraph.nodeCount() === 0) {
+    throw new GraphBuildError(
+      `Parallel step "${stepId}" has a branch with no runnable steps. ` +
+        `A branch that only contains empty sections has nothing to run; add a step to it.`,
+      stepId
+    );
+  }
 
   const branchingNode = bodyGraph
     .nodes()

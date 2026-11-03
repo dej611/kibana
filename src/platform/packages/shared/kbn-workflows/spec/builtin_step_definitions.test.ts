@@ -19,6 +19,7 @@ const EXPECTED_BUILT_IN_IDS = [
   'loop.continue',
   'switch',
   'parallel',
+  'section',
   'wait',
   'waitForInput',
   'waitForApproval',

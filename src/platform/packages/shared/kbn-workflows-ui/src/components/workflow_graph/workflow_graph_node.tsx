@@ -7,16 +7,24 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import { euiCanAnimate, euiFocusRing, useEuiShadow, useEuiTheme } from '@elastic/eui';
+import {
+  EuiButtonIcon,
+  euiCanAnimate,
+  euiFocusRing,
+  EuiToolTip,
+  useEuiShadow,
+  useEuiTheme,
+} from '@elastic/eui';
 import { keyframes } from '@emotion/react';
 import { Handle, Position, useUpdateNodeInternals } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 import React, { memo, useEffect, useRef, useState } from 'react';
 import { i18n } from '@kbn/i18n';
-import type { WorkflowStepExecutionDto } from '@kbn/workflows';
+import type { CollapsedSectionData, WorkflowStepExecutionDto } from '@kbn/workflows';
 import { TRIGGER_STEP_TYPES } from '@kbn/workflows';
 import type { NodePortTargets } from './compute_insertion_points';
 import { deslugifyStepName } from './deslugify_step_name';
+import { getSectionTitle } from './get_section_title';
 import { NodeActionCluster, NodeRunActions } from './node_action_menu';
 import type { NodeKind, NodeMenuState } from './node_action_menu';
 import { NodeConfigWarningIndicator, NodeFailureBadge, NodeStatusIcon } from './node_badges';
@@ -30,6 +38,8 @@ import {
 } from './node_styles';
 import { errorHandleStyle } from './port_geometry';
 import { resolveExecutionState, resolveNodeColors } from './resolve_node_colors';
+import type { SectionRollUp } from './roll_up_section_status';
+import { getSectionPalette } from './section_palette';
 import {
   getStepContinuesOnFailure,
   getStepHasFallback,
@@ -76,7 +86,14 @@ export interface WorkflowGraphNodeData extends Record<string, unknown> {
    * `max-attempts` / continue-on-failure for corner badges) without having to
    * thread the workflow YAML down a second time.
    */
-  readonly step?: StepFailureConfig;
+  readonly step?: StepFailureConfig & {
+    readonly title?: unknown;
+    readonly description?: unknown;
+  };
+  /** Present when this node stands in for a collapsed section: the steps it hides. */
+  readonly section?: CollapsedSectionData;
+  /** Execution progress rolled up from a section's steps (set with run data only). */
+  readonly sectionProgress?: SectionRollUp;
 }
 
 /** Matches Run button spacing (`EuiButtonIcon size="s"`). */
@@ -207,6 +224,8 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
     portTargets: nodePortTargets,
     configWarning: configWarningReason,
     creatingErrorPath,
+    section,
+    sectionProgress,
   } = node.data;
   const euiThemeContext = useEuiTheme();
   const { euiTheme } = euiThemeContext;
@@ -217,8 +236,17 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
   // Display-only: trigger labels are already human-readable (getTriggerName);
   // step labels are frequently authored as slugs, so deslugify for display.
   // `label` itself must stay untouched — it's used to key execution status.
-  const displayLabel = isTriggerNode ? label : deslugifyStepName(label);
+  const isCollapsedSection = section !== undefined;
+  const displayLabel = isTriggerNode
+    ? label
+    : isCollapsedSection
+    ? getSectionTitle(step, label)
+    : deslugifyStepName(label);
 
+  const sectionDescription =
+    isCollapsedSection && typeof step?.description === 'string' && step.description.trim() !== ''
+      ? step.description
+      : undefined;
   const iconType = isTriggerNode ? getTriggerTypeIconType(stepType) : getStepIconType(stepType);
   const maxAttempts = getStepMaxAttempts(step);
   const retryDelay = getStepRetryDelay(step);
@@ -250,14 +278,16 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
   const isActive = node.selected;
   const [menu, setMenu] = useState<NodeMenuState>({ open: false });
   const isMenuOpen = menu.open;
-  const { onStepRun, canRunSteps, renderStepIcon, onStepSelect, edit } = useWorkflowGraphActions();
+  const { onStepRun, canRunSteps, renderStepIcon, onStepSelect, onToggleSection, edit } =
+    useWorkflowGraphActions();
 
   const execState = resolveExecutionState(stepExecution?.status);
   const colors = resolveNodeColors(euiTheme, stepType, isTriggerNode, execState);
   const borderRadius = NODE_BORDER_RADIUS;
   const chipBorderRadius = CHIP_BORDER_RADIUS;
 
-  const canShowRun = Boolean(canRunSteps && onStepRun) && !isTrigger && !colors.hasStatusIcon;
+  const canShowRun =
+    Boolean(canRunSteps && onStepRun) && !isTrigger && !isCollapsedSection && !colors.hasStatusIcon;
   const isFallback = Boolean(fallbackOf);
   const nodeKind: NodeKind = isTriggerNode ? 'trigger' : isFallback ? 'fallback' : 'step';
   const editMode = edit !== undefined && !preview;
@@ -268,6 +298,11 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
   const trailingReveal = isActive || isMenuOpen;
   const isHorizontal = sourceHandlePos === Position.Right;
   const layoutDirection = isHorizontal ? 'LR' : 'TB';
+
+  const expandLabel = i18n.translate('workflowsUi.graphNode.expandSection', {
+    defaultMessage: 'Expand section {label}',
+    values: { label: displayLabel },
+  });
 
   if (preview) {
     return (
@@ -331,7 +366,9 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
             position: 'relative',
             width: '100%',
             height: '100%',
-            background: euiTheme.colors.backgroundBasePlain,
+            background: isCollapsedSection
+              ? getSectionPalette(euiTheme.colors).tint
+              : euiTheme.colors.backgroundBasePlain,
             // Keep a stable thin border so selection never changes node size.
             border: `${euiTheme.border.width.thin} solid ${colors.panelBorder}`,
             borderRadius,
@@ -341,6 +378,12 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
             gap: euiTheme.size.m,
             padding: euiTheme.size.m,
             overflow: 'visible',
+            // A collapsed section puts its description on a second line, full width, close
+            // under the title. The card wraps rather than nesting the first line in a row,
+            // because the hover actions are revealed by a direct-child selector on the card.
+            ...(isCollapsedSection
+              ? { flexWrap: 'wrap', alignContent: 'flex-start', rowGap: euiTheme.size.xs }
+              : {}),
             transition: 'border-color 120ms ease, background 120ms ease, box-shadow 120ms ease',
             '&:focus': { outline: 'none' },
             '&:focus-visible': euiFocusRing(euiThemeContext),
@@ -348,6 +391,22 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
             [`&:hover > .${TRAILING_ACTIONS_CLASS}, &:focus-within > .${TRAILING_ACTIONS_CLASS}`]:
               TRAILING_ACTIONS_REVEALED,
             '&::after': selectionRingStyle(euiTheme, isActive),
+            // The section's colour, in a bar that run status never repaints.
+            ...(isCollapsedSection
+              ? {
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: -1,
+                    width: 4,
+                    borderRadius: `${borderRadius}px 0 0 ${borderRadius}px`,
+                    background: getSectionPalette(euiTheme.colors).strong,
+                    pointerEvents: 'none',
+                  },
+                }
+              : {}),
           },
           nodeShadow,
           flash
@@ -360,12 +419,34 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
             : {},
         ]}
       >
+        {section && onToggleSection && (
+          <span
+            css={{ display: 'flex', flex: '0 0 auto' }}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => e.stopPropagation()}
+            role="presentation"
+          >
+            <EuiToolTip content={expandLabel} disableScreenReaderOutput>
+              <EuiButtonIcon
+                iconType="chevronSingleRight"
+                size="s"
+                color="text"
+                aria-label={expandLabel}
+                aria-expanded={false}
+                onClick={() => onToggleSection(label)}
+                data-test-subj="workflowGraphSectionToggle"
+              />
+            </EuiToolTip>
+          </span>
+        )}
+
         <NodeIconChip
           background={colors.chipBackground}
           border={colors.chipBorder}
           borderRadius={chipBorderRadius}
           useAiGradient={colors.chipUseAiGradient}
-          fillRow
+          fillRow={!isCollapsedSection}
+          size={isCollapsedSection ? 28 : undefined}
         >
           <NodeStepIcon
             iconType={iconType}
@@ -379,7 +460,8 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
 
         <div
           css={{
-            flex: '1 1 auto',
+            // Basis 0 for a section, so a long title shrinks instead of wrapping the card.
+            flex: isCollapsedSection ? '1 1 0' : '1 1 auto',
             minWidth: 0,
             display: 'flex',
             flexDirection: 'column',
@@ -399,6 +481,26 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
           >
             {displayLabel}
           </span>
+          {section && (
+            <span
+              css={{ ...nodeLabelTypography(euiTheme, '16px'), color: euiTheme.colors.subduedText }}
+              data-test-subj="workflowGraphSectionCount"
+            >
+              {sectionProgress && sectionProgress.ran > 0
+                ? i18n.translate('workflowsUi.graphNode.sectionProgress', {
+                    defaultMessage: '{ran} of {total} ran',
+                    values: { ran: sectionProgress.ran, total: sectionProgress.total },
+                  })
+                : section.memberStepNames.length === 0
+                ? i18n.translate('workflowsUi.graphNode.sectionEmpty', {
+                    defaultMessage: 'Empty',
+                  })
+                : i18n.translate('workflowsUi.graphNode.sectionStepCount', {
+                    defaultMessage: '{count, plural, one {# step} other {# steps}}',
+                    values: { count: section.memberStepNames.length },
+                  })}
+            </span>
+          )}
         </div>
 
         {configWarningReason ? <NodeConfigWarningIndicator reason={configWarningReason} /> : null}
@@ -453,9 +555,49 @@ function WorkflowGraphNodeInner(node: NodeProps<Node<WorkflowGraphNodeData>>) {
                 edit={edit}
                 menu={menu}
                 onMenuChange={setMenu}
+                extraItems={
+                  edit.onExtractSection && section && section.memberStepNames.length > 0
+                    ? [
+                        {
+                          label: i18n.translate('workflowsUi.graphNode.extractSection', {
+                            defaultMessage: 'Extract to new workflow',
+                          }),
+                          iconType: 'workflow',
+                          onClick: () => edit.onExtractSection?.(node.id),
+                          testSubj: 'workflowGraphNodeMenuExtract',
+                        },
+                      ]
+                    : undefined
+                }
               />
             )}
           </div>
+        )}
+        {sectionDescription && (
+          <span
+            css={{
+              ...nodeLabelTypography(euiTheme, '16px'),
+              fontWeight: 400,
+              color: euiTheme.colors.subduedText,
+              flex: '0 0 100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
+              // Lines up with the title: past the toggle (when there is one) and the icon.
+              paddingInlineStart: `calc(${
+                onToggleSection ? `24px + ${euiTheme.size.m} + ` : ''
+              }28px + ${euiTheme.size.m})`,
+              overflowWrap: 'anywhere',
+              // At most two lines: the node reserves room for exactly that.
+              display: '-webkit-box',
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2,
+              overflow: 'hidden',
+            }}
+            title={sectionDescription}
+            data-test-subj="workflowGraphSectionDescription"
+          >
+            {sectionDescription}
+          </span>
         )}
         {editMode && edit && portTargets && (
           <WorkflowGraphConnectionPorts
@@ -489,6 +631,9 @@ function nodePropsAreEqual(
     prev.data.stepExecution?.status === next.data.stepExecution?.status &&
     prev.data.preview === next.data.preview &&
     prev.data.step === next.data.step &&
+    prev.data.section === next.data.section &&
+    prev.data.sectionProgress?.ran === next.data.sectionProgress?.ran &&
+    prev.data.sectionProgress?.total === next.data.sectionProgress?.total &&
     prev.data.fallbackOf === next.data.fallbackOf &&
     prev.data.flash === next.data.flash &&
     prev.data.portTargets === next.data.portTargets &&

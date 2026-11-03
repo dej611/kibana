@@ -17,3 +17,11 @@ export {
 } from './yaml_edit_utils';
 export type { StepDefinition, EditResult } from './yaml_edit_utils';
 export { getStepNode } from './get_step_node';
+export { unwrapSection, wrapStepsInSection } from './section_edit';
+export type { WrapResult } from './section_edit';
+export {
+  buildExtractedWorkflowYaml,
+  readSectionForExtraction,
+  replaceSectionWithWorkflowExecute,
+} from './section_extract';
+export type { ExtractionResult, SectionExtraction } from './section_extract';

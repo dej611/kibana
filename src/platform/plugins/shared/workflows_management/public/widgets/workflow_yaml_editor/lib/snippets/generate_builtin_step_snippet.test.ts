@@ -11,6 +11,24 @@ import type { BuiltInStepType } from '@kbn/workflows';
 import { generateBuiltInStepSnippet } from './generate_builtin_step_snippet';
 
 describe('generateBuiltInStepSnippet', () => {
+  describe('section step', () => {
+    it('generates an empty section with a title, ready to fill in', () => {
+      const result = generateBuiltInStepSnippet('section', { full: true, withStepsSection: false });
+
+      expect(result).toContain('name: section_step');
+      expect(result).toContain('type: section');
+      expect(result).toContain('title: Section title');
+      expect(result).toContain('steps: []');
+    });
+
+    it('generates only the type and parameters when the type key is already present', () => {
+      const result = generateBuiltInStepSnippet('section', { full: false });
+
+      expect(result.startsWith('section\n')).toBe(true);
+      expect(result).toContain('steps: []');
+    });
+  });
+
   describe('foreach step', () => {
     it('should generate a foreach snippet with full structure', () => {
       const result = generateBuiltInStepSnippet('foreach', { full: true, withStepsSection: false });

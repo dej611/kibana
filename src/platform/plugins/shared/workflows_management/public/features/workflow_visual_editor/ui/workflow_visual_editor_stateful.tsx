@@ -41,6 +41,7 @@ import {
   type WorkflowGraphInsertionContext,
   WORKFLOWS_SURFACE_RADIUS,
 } from '@kbn/workflows-ui';
+import { unwrapSection, wrapStepsInSection } from '@kbn/workflows-yaml';
 import {
   CANVAS_CONFIG_PANEL_MARGIN,
   CanvasConfigPanelShell,
@@ -52,7 +53,9 @@ import {
 import type { DataReferenceRunControls } from './data_reference_catalog_tree';
 import { StepConfigPanel } from './step_config_panel';
 import { TriggerConfigPanel } from './trigger_config_panel';
+import { useCollapsedSections } from './use_collapsed_sections';
 import { useCreationAgentChat } from './use_creation_agent_chat';
+import { useExtractSection } from './use_extract_section';
 import { useStepFragmentYamlSupport } from './use_step_fragment_yaml_support';
 import {
   getShowCreationEmptyState,
@@ -110,6 +113,13 @@ import {
 } from '../../actions_menu_popover';
 import { collectStepsByName } from '../lib/collect_steps';
 import { buildDefaultStep, getStepConfigWarningReason } from '../lib/step_form_schema';
+import {
+  collectSections,
+  getAttentionSectionNames,
+  getSectionsHidingNode,
+  isInsertionInsideSection,
+  omitSectionsAroundNode,
+} from '../lib/workflow_sections';
 import {
   appendTrigger,
   collectStepNames,
@@ -229,11 +239,12 @@ const triggerFragmentFor = (triggerType: string): string => {
 
 /** Maps a graph insertion context to the simplified menu context mode. */
 const toMenuInsertionContext = (
-  ctx: WorkflowGraphInsertionContext
+  ctx: WorkflowGraphInsertionContext,
+  insideSection: boolean
 ): ActionsMenuInsertionContext => {
   if (ctx.mode === 'trigger') return { mode: 'trigger' };
   if (ctx.mode === 'fallback') return { mode: 'error' };
-  return { mode: 'step' };
+  return { mode: 'step', insideSection };
 };
 
 /** Maps a name-addressed insertion context to a ghost-card positioning context. */
@@ -316,7 +327,7 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
   const workflowName = useSelector(selectWorkflowName);
   const workflowLookup = useSelector(selectEditorWorkflowLookup);
   const loadedConnectors = useSelector(selectConnectors);
-  const { canExecuteWorkflow, canUpdateWorkflow } = useWorkflowsCapabilities();
+  const { canCreateWorkflow, canExecuteWorkflow, canUpdateWorkflow } = useWorkflowsCapabilities();
   const { selectedStepId, setSelectedStep, setEditorView } = useWorkflowUrlState();
   const dispatch = useDispatch();
   const wrapperRef = useRef<HTMLDivElement | null>(null);
@@ -507,13 +518,62 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
     return hasManual ? (['manual'] as const) : undefined;
   }, [workflow?.triggers]);
 
-  const transformed = useMemo(
-    () =>
-      transformWorkflowToGraph(workflow, (triggerType) =>
-        triggerSchemas.getTriggerName(triggerType)
-      ),
+  const sectionNames = useMemo(
+    () => new Set(collectSections(workflow).map((section) => section.name)),
     [workflow]
   );
+  const { collapsedSections, toggleSection, expandSections, setSectionsCollapsed } =
+    useCollapsedSections({
+      workflowId,
+      sectionNames,
+    });
+  // On the executions tab a section with a failed or waiting step opens by itself, so a
+  // run's problem is not hidden. Kept as a key so a status poll that changes nothing
+  // does not rebuild the graph, and apart from `collapsedSections` so it never changes
+  // what the viewer chose.
+  const attentionKey = useMemo(
+    () =>
+      isExecutionsTab
+        ? JSON.stringify([...getAttentionSectionNames(workflow, stepExecutions)].sort())
+        : '',
+    [isExecutionsTab, workflow, stepExecutions]
+  );
+  const renderedCollapsedSections = useMemo(() => {
+    const attention = new Set<string>(attentionKey ? JSON.parse(attentionKey) : []);
+    return attention.size === 0
+      ? collapsedSections
+      : new Set([...collapsedSections].filter((name) => !attention.has(name)));
+  }, [collapsedSections, attentionKey]);
+
+  const transformed = useMemo(
+    () =>
+      transformWorkflowToGraph(
+        workflow,
+        (triggerType) => triggerSchemas.getTriggerName(triggerType),
+        { collapsedSections: renderedCollapsedSections }
+      ),
+    [workflow, renderedCollapsedSections]
+  );
+
+  // Collapsing every section leaves open the one around a selected step: with the step
+  // hidden, the effect below would open it again.
+  const handleSetSectionsCollapsed = useCallback(
+    (names: readonly string[], collapsed: boolean) =>
+      setSectionsCollapsed(
+        collapsed ? omitSectionsAroundNode(workflow, selectedStepId, names) : names,
+        collapsed
+      ),
+    [setSectionsCollapsed, workflow, selectedStepId]
+  );
+
+  // A selected step that is hidden inside a collapsed section (e.g. a `?stepId=` link) has
+  // no node, so open the section around it.
+  useEffect(() => {
+    if (!selectedStepId || selectedStepId in transformed.nodeRefs || collapsedSections.size === 0) {
+      return;
+    }
+    expandSections(getSectionsHidingNode(workflow, selectedStepId));
+  }, [selectedStepId, transformed.nodeRefs, collapsedSections, workflow, expandSections]);
 
   const stepsByName = useMemo(() => collectStepsByName(workflow), [workflow]);
 
@@ -926,6 +986,21 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
     openEditPanelRef.current(stepName);
   }, [canEdit, selectedStepId]);
 
+  const handleSectionExtracted = useCallback(
+    (nodeId: string, sectionName: string) => {
+      if (selectedStepId === nodeId) setSelectedStep(null);
+      if (panel?.mode === 'edit' && panel.stepName === sectionName) setPanel(null);
+    },
+    [selectedStepId, setSelectedStep, panel]
+  );
+  const { onExtractSection, extractModal } = useExtractSection({
+    yamlString,
+    canCreateWorkflow: Boolean(canCreateWorkflow),
+    nodeRefs: transformed.nodeRefs,
+    applyMutation,
+    onExtracted: handleSectionExtracted,
+  });
+
   const editActions = useMemo<WorkflowGraphEditActions | undefined>(() => {
     if (!canEdit) return undefined;
     return {
@@ -939,6 +1014,20 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
       },
       onEditStep: (nodeId) => {
         requestStepSelect(nodeId);
+      },
+      onUngroupSection: (nodeId) => {
+        const ref = transformed.nodeRefs[nodeId];
+        if (ref?.kind !== 'step') return;
+        if (!applyMutation(unwrapSection(yamlString, ref.stepName))) return;
+        if (selectedStepId === nodeId) setSelectedStep(null);
+        if (panel?.mode === 'edit' && panel.stepName === ref.stepName) setPanel(null);
+      },
+      onExtractSection,
+      onWrapInSection: (stepNames) => {
+        const result = wrapStepsInSection(yamlString, stepNames);
+        if (!applyMutation(result)) return;
+        // Select the new section once the graph has it, so it can be named straight away.
+        if (result.sectionName) pendingSelectStepNameRef.current = result.sectionName;
       },
       onDeleteNode: (nodeId) => {
         const ref = transformed.nodeRefs[nodeId];
@@ -1017,6 +1106,7 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
     notifications.toasts,
     dispatch,
     nodeIdForStepName,
+    onExtractSection,
   ]);
 
   const flyoutTarget = useMemo<FlyoutTarget | null>(() => {
@@ -1246,6 +1336,8 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
         selectedStepId={selectedStepId}
         selectedNodePanelInset={floatingPanelOpen ? panelWidth + PANEL_MARGIN : undefined}
         onStepSelect={handleStepSelect}
+        onToggleSection={toggleSection}
+        onSetSectionsCollapsed={handleSetSectionsCollapsed}
         colorMode={toColorMode(colorMode)}
         direction={direction}
         renderStepIcon={renderStepIcon}
@@ -1279,7 +1371,10 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
           insertionContext={
             insertion.context.mode === 'trigger'
               ? { mode: 'trigger', disabledTriggerIds }
-              : toMenuInsertionContext(insertion.context)
+              : toMenuInsertionContext(
+                  insertion.context,
+                  isInsertionInsideSection(workflow, insertion.context)
+                )
           }
           disabledTriggerIds={disabledTriggerIds}
           onActionSelected={handleInsertAction}
@@ -1389,6 +1484,7 @@ export const WorkflowVisualEditorStateful: React.FC<WorkflowVisualEditorStateful
           </div>
         </EuiFocusTrap>
       )}
+      {extractModal}
     </div>
   );
 };

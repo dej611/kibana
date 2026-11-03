@@ -26,12 +26,14 @@ import type {
   StructureSequence,
 } from './types';
 import {
+  COLLAPSED_SECTION_HEIGHT,
+  COLLAPSED_SECTION_WITH_DESCRIPTION_HEIGHT,
   CONTAINER_STEP_TYPES,
   DEFAULT_NODE_STYLE,
   FOREACH_GROUP_EMPTY_HEIGHT,
   isStep,
 } from './types';
-import { visitStepChildSlots } from './walk_step_tree';
+import { collectDescendantStepNames, visitStepChildSlots } from './walk_step_tree';
 import { getTriggerName } from '../common/get_trigger_name';
 import type { IfStep, MergeStep, ParallelStep, SwitchStep, WorkflowYaml } from '../spec/schema';
 
@@ -53,6 +55,24 @@ const toSteps = (value: unknown): Step[] => (Array.isArray(value) ? value.filter
 export type GetTriggerLabel = (triggerType: string) => string;
 
 const defaultGetTriggerLabel: GetTriggerLabel = (triggerType) => getTriggerName(triggerType);
+
+export interface TransformOptions {
+  /**
+   * Names of `section` steps to render collapsed: one plain step node standing in for
+   * the section, with its members left out. Names that are not sections are ignored.
+   */
+  readonly collapsedSections?: ReadonlySet<string>;
+}
+
+/** The size of a collapsed section: room for its description only when it has one. */
+const getCollapsedSectionStyle = (section: Step) => {
+  const { description } = section as { description?: unknown };
+  const hasDescription = typeof description === 'string' && description.trim() !== '';
+  return {
+    ...DEFAULT_NODE_STYLE,
+    height: hasDescription ? COLLAPSED_SECTION_WITH_DESCRIPTION_HEIGHT : COLLAPSED_SECTION_HEIGHT,
+  };
+};
 
 /** Collapse duplicate exit ids when empty branches fall through via the same gate. */
 function dedupeIds(ids: string[]): string[] {
@@ -127,7 +147,8 @@ interface InternalTransformResult extends Omit<TransformResult, 'structure'> {
  */
 export function transformWorkflowToGraph(
   workflow: WorkflowYaml | undefined,
-  getTriggerLabel: GetTriggerLabel = defaultGetTriggerLabel
+  getTriggerLabel: GetTriggerLabel = defaultGetTriggerLabel,
+  { collapsedSections }: TransformOptions = {}
 ): TransformResult {
   if (!workflow)
     return {
@@ -156,7 +177,7 @@ export function transformWorkflowToGraph(
     workflow.triggers ?? [],
     toSteps(workflow.steps),
     ids,
-    { fallbackDepth: 0 },
+    { fallbackDepth: 0, collapsedSections },
     getTriggerLabel
   );
   // Boundary 1: concatenate all failure edges after all structural edges so
@@ -181,6 +202,8 @@ interface LevelContext {
   readonly graphId?: string;
   /** Number of `on-failure.fallback` boundaries crossed within `graphId`. Resets to 0 at each graph boundary. */
   readonly fallbackDepth: number;
+  /** Sections to render collapsed, at any depth. Carried through every nested level. */
+  readonly collapsedSections?: ReadonlySet<string>;
 }
 
 function transformInternal(
@@ -321,7 +344,9 @@ function transformInternal(
     // edge in (from the previous outer step), one edge out (to the next outer
     // step), and inner steps only connect to each other.
     // CONTAINER_STEP_TYPES is the single source of truth for this set.
-    const isContainerGroup = CONTAINER_STEP_TYPES.has(step.type);
+    // A collapsed section is the exception: it stands in for its steps as one plain node.
+    const isCollapsedSection = step.type === 'section' && ctx.collapsedSections?.has(step.name);
+    const isContainerGroup = CONTAINER_STEP_TYPES.has(step.type) && !isCollapsedSection;
 
     if (isContainerGroup) {
       // Render the container as a `foreachGroup` node (full-width header +
@@ -345,7 +370,11 @@ function transformInternal(
       visitStepChildSlots(step, (slot, children) => {
         if (slot.kind === 'steps') childSteps = children;
       });
-      const inner = transformInternal([], childSteps, ids, { graphId: id, fallbackDepth: 0 });
+      const inner = transformInternal([], childSteps, ids, {
+        graphId: id,
+        fallbackDepth: 0,
+        collapsedSections: ctx.collapsedSections,
+      });
       containerBody = inner.items;
       Object.assign(nodeRefs, inner.nodeRefs);
       for (const [k, v] of inner.forkNodeToJoinId) forkNodeToJoinId.set(k, v);
@@ -375,8 +404,15 @@ function transformInternal(
       const stepNode: PreLayoutStepNode = {
         id,
         type: 'step',
-        data: { label: step.name, stepType: step.type, step },
-        style: { ...DEFAULT_NODE_STYLE },
+        data: {
+          label: step.name,
+          stepType: step.type,
+          step,
+          ...(isCollapsedSection
+            ? { section: { memberStepNames: collectDescendantStepNames(step) } }
+            : {}),
+        },
+        style: isCollapsedSection ? getCollapsedSectionStyle(step) : { ...DEFAULT_NODE_STYLE },
       };
       nodes.push(stepNode);
     }
@@ -624,6 +660,7 @@ function transformInternal(
       const inner = transformInternal([], fallbackSteps, ids, {
         graphId: ctx.graphId,
         fallbackDepth: ctx.fallbackDepth + 1,
+        collapsedSections: ctx.collapsedSections,
       });
       // Stamp fallbackOf on every non-trigger node in the lane (step and
       // foreachGroup containers). Stamping foreachGroup containers lets the

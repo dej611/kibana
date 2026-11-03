@@ -66,6 +66,33 @@ describe('useInsertLayoutAnimation', () => {
     expect(result.current.nodes.find((n) => n.id === 'b')?.position).toEqual({ x: 0, y: 230 });
   });
 
+  it('snaps instead of sliding while disabled, so another animation can own the move', () => {
+    const initial = [node('a', 0, 0), node('b', 0, 100)];
+    const { result, rerender } = renderHook(
+      ({ nodes, disabled }: { nodes: Node[]; disabled: boolean }) =>
+        useInsertLayoutAnimation({ nodes, edges: [], disabled }),
+      { initialProps: { nodes: initial, disabled: false } }
+    );
+
+    const next = [node('a', 0, 0), node('new', 0, 100), node('b', 0, 230)];
+    rerender({ nodes: next, disabled: true });
+    act(() => {
+      jest.advanceTimersByTime(16);
+    });
+
+    expect(result.current.isSliding).toBe(false);
+    expect(result.current.nodes).toBe(next);
+
+    // Once it is no longer disabled, the next insert slides as before.
+    rerender({ nodes: next, disabled: false });
+    const afterwards = [node('a', 0, 0), node('x', 0, 100), node('new', 0, 230), node('b', 0, 360)];
+    rerender({ nodes: afterwards, disabled: false });
+    act(() => {
+      jest.advanceTimersByTime(16);
+    });
+    expect(result.current.isSliding).toBe(true);
+  });
+
   it('slides on horizontal (LR) layout shifts as well', () => {
     const initial = [node('a', 0, 0), node('b', 200, 0)];
     const { result, rerender } = renderHook(

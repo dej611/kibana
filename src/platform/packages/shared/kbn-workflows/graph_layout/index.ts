@@ -8,9 +8,12 @@
  */
 
 export {
+  COLLAPSED_SECTION_HEIGHT,
+  COLLAPSED_SECTION_WITH_DESCRIPTION_HEIGHT,
   CONTAINER_STEP_TYPES,
   FOREACH_GROUP_EMPTY_HEIGHT,
   TRIGGER_STEP_TYPES,
+  type CollapsedSectionData,
   type EdgeBranchType,
   type FallbackLane,
   type ForeachGroup,
@@ -30,9 +33,11 @@ export {
 export {
   transformWorkflowToGraph,
   type GetTriggerLabel,
+  type TransformOptions,
   type TransformResult,
 } from './transform_workflow_to_graph';
 export {
+  collectDescendantStepNames,
   visitStepChildSlots,
   walkStepTree,
   STEP_CHILD_CONTAINER_KEYS,
@@ -40,3 +45,4 @@ export {
   type BranchSlot,
   type StepChildContainerKey,
 } from './walk_step_tree';
+export { resolveSectionWrapRange, type SectionWrapRange } from './resolve_section_wrap_range';

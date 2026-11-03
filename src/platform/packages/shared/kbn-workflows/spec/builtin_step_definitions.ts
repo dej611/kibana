@@ -14,6 +14,7 @@ import {
   ForEachStepConfigSchema,
   IfStepConfigSchema,
   ParallelStepConfigSchema,
+  SectionStepConfigSchema,
   SwitchStepConfigSchema,
   WaitForApprovalStepInputSchema,
   WaitForInputStepInputSchema,
@@ -198,6 +199,32 @@ export const builtInStepDefinitions: BaseStepDefinition[] = [
           type: http
           with:
             url: "http://ip-api.com/json/{{ inputs.source_ip }}"`,
+      ],
+    },
+  },
+  {
+    id: 'section',
+    label: 'Section',
+    description:
+      'Group steps under a title for readability. A section only organizes the workflow: it does not change what runs',
+    category: StepCategory.FlowControl,
+    inputSchema: EmptyObjectSchema,
+    outputSchema: EmptyObjectSchema,
+    configSchema: SectionStepConfigSchema,
+    documentation: {
+      examples: [
+        `- name: ingest
+  type: section
+  title: Ingest alerts
+  steps:
+    - name: fetch_alerts
+      type: console
+      with:
+        message: "Fetching alerts"
+- name: triage
+  type: section
+  title: Triage (to do)
+  steps: []`,
       ],
     },
   },

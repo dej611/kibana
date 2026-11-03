@@ -255,6 +255,81 @@ describe('generateYamlSchemaFromConnectors', () => {
     });
   });
 
+  describe('section steps', () => {
+    const connectors: ConnectorContractUnion[] = [
+      {
+        summary: 'Console',
+        description: 'Console',
+        type: 'console',
+        paramsSchema: z.object({ message: z.string() }),
+        outputSchema: z.object({ message: z.string() }),
+      },
+    ];
+    const strictSchema = generateYamlSchemaFromConnectors(connectors);
+    const log = { name: 'log', type: 'console', with: { message: 'hi' } };
+    const emptySection = { name: 'later', type: 'section', steps: [] };
+
+    it('accepts a section, an empty section and sections inside every kind of body', () => {
+      const workflow = {
+        ...BASE_WORKFLOW,
+        steps: [
+          { name: 'ingest', type: 'section', title: 'Ingest', steps: [log] },
+          emptySection,
+          {
+            name: 'branch',
+            type: 'if',
+            condition: 'a : b',
+            steps: [{ name: 'in_then', type: 'section', steps: [{ ...log, name: 'then_log' }] }],
+            else: [{ ...emptySection, name: 'in_else' }],
+          },
+          {
+            name: 'loop',
+            type: 'foreach',
+            foreach: '{{ items }}',
+            steps: [{ name: 'in_loop', type: 'section', steps: [{ ...log, name: 'loop_log' }] }],
+          },
+          {
+            name: 'guarded',
+            type: 'console',
+            with: { message: 'x' },
+            'on-failure': { fallback: [{ ...emptySection, name: 'in_fallback' }] },
+          },
+        ],
+      };
+
+      expect(strictSchema.safeParse(workflow).success).toBe(true);
+    });
+
+    it('still validates the steps inside a section', () => {
+      const result = strictSchema.safeParse({
+        ...BASE_WORKFLOW,
+        steps: [{ name: 'ingest', type: 'section', steps: [{ name: 'bad', type: 'console' }] }],
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it.each(['if', 'on-failure', 'timeout', 'foreach', 'max-step-size'])(
+      'rejects `%s` on a section instead of stripping it',
+      (key) => {
+        const value = key === 'on-failure' ? { continue: true } : 'x';
+        const result = strictSchema.safeParse({
+          ...BASE_WORKFLOW,
+          steps: [{ name: 'ingest', type: 'section', steps: [log], [key]: value }],
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error?.issues.some((issue) => issue.path.includes(key))).toBe(true);
+      }
+    );
+
+    it('lists `section` as a step type in the editor JSON schema', () => {
+      const jsonSchema = JSON.stringify(getWorkflowJsonSchema(strictSchema));
+
+      expect(jsonSchema).toContain('"const":"section"');
+    });
+  });
+
   describe('on-failure on built-in steps', () => {
     const onFailure = {
       continue: true,

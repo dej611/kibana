@@ -8,7 +8,12 @@
  */
 
 import type { Step } from './types';
-import { STEP_CHILD_CONTAINER_KEYS, visitStepChildSlots, walkStepTree } from './walk_step_tree';
+import {
+  collectDescendantStepNames,
+  STEP_CHILD_CONTAINER_KEYS,
+  visitStepChildSlots,
+  walkStepTree,
+} from './walk_step_tree';
 
 describe('visitStepChildSlots', () => {
   it('emits steps slot for if step', () => {
@@ -198,5 +203,37 @@ describe('STEP_CHILD_CONTAINER_KEYS — object-model ↔ AST invariant', () => {
     for (const name of expected) {
       expect(visited).toContain(name);
     }
+  });
+});
+
+describe('collectDescendantStepNames', () => {
+  const step = (value: unknown) => value as Step;
+
+  it('is empty for a step with no child slots', () => {
+    expect(collectDescendantStepNames(step({ name: 'a', type: 'http' }))).toEqual([]);
+  });
+
+  it('lists nested steps depth first, through every slot, without the step itself', () => {
+    const names = collectDescendantStepNames(
+      step({
+        name: 'owner',
+        type: 'section',
+        steps: [
+          {
+            name: 'gate',
+            type: 'if',
+            steps: [{ name: 'then_step', type: 'http' }],
+            else: [{ name: 'else_step', type: 'http' }],
+          },
+          {
+            name: 'risky',
+            type: 'http',
+            'on-failure': { fallback: [{ name: 'recover', type: 'http' }] },
+          },
+        ],
+      })
+    );
+
+    expect(names).toEqual(['gate', 'then_step', 'else_step', 'risky', 'recover']);
   });
 });

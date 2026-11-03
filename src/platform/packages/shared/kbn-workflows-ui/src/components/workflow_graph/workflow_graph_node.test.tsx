@@ -673,3 +673,194 @@ describe('WorkflowGraphNode render stability', () => {
     expect(renderStepIcon.mock.calls.length).toBeGreaterThan(rendersAtRest);
   });
 });
+
+describe('WorkflowGraphNode — collapsed section', () => {
+  const collapsedData = (
+    overrides: Partial<WorkflowGraphNodeData> = {}
+  ): Partial<WorkflowGraphNodeData> => ({
+    label: 'ingest_alerts',
+    stepType: 'section',
+    step: { title: 'Ingest the alerts' } as WorkflowGraphNodeData['step'],
+    section: { memberStepNames: ['fetch', 'parse'] },
+    ...overrides,
+  });
+
+  it('shows the title, falling back to the deslugified name', () => {
+    renderNode(collapsedData());
+    expect(screen.getByText('Ingest the alerts')).toBeInTheDocument();
+  });
+
+  it('falls back to the deslugified name without a title', () => {
+    renderNode(collapsedData({ step: undefined }));
+    expect(screen.getByText('Ingest Alerts')).toBeInTheDocument();
+  });
+
+  it('shows how many steps it hides, or that it is empty', () => {
+    const { unmount } = renderNode(collapsedData());
+    expect(screen.getByTestId('workflowGraphSectionCount')).toHaveTextContent('2 steps');
+    unmount();
+
+    renderNode(collapsedData({ section: { memberStepNames: ['only'] } }));
+    expect(screen.getByTestId('workflowGraphSectionCount')).toHaveTextContent('1 step');
+  });
+
+  it('shows Empty for a section with no steps', () => {
+    renderNode(collapsedData({ section: { memberStepNames: [] } }));
+    expect(screen.getByTestId('workflowGraphSectionCount')).toHaveTextContent('Empty');
+  });
+
+  it('shows how many of its steps ran once there are executions', () => {
+    renderNode(
+      collapsedData({
+        sectionProgress: { status: ExecutionStatus.RUNNING, ran: 2, total: 5 },
+        stepExecution: { status: ExecutionStatus.RUNNING } as any,
+      })
+    );
+    expect(screen.getByTestId('workflowGraphSectionCount')).toHaveTextContent('2 of 5 ran');
+  });
+
+  it('expands by the section name without selecting the node', () => {
+    const onToggleSection = jest.fn();
+    const onStepSelect = jest.fn();
+    renderNode(collapsedData(), false, { onToggleSection, onStepSelect });
+
+    const toggle = screen.getByTestId('workflowGraphSectionToggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(toggle).toHaveAccessibleName('Expand section Ingest the alerts');
+    fireEvent.click(toggle);
+
+    expect(onToggleSection).toHaveBeenCalledWith('ingest_alerts');
+    expect(onStepSelect).not.toHaveBeenCalled();
+  });
+
+  describe('extract to a workflow', () => {
+    const editWith = (onExtractSection?: jest.Mock) => ({
+      onInsert: jest.fn(),
+      onEditStep: jest.fn(),
+      onDeleteNode: jest.fn(),
+      onExtractSection,
+    });
+
+    it('is in the ⋮ menu, and extracts by the node id', () => {
+      const onExtractSection = jest.fn();
+      renderNode(collapsedData(), false, { edit: editWith(onExtractSection) });
+
+      const menuButton = screen.getByTestId('workflowGraphNodeMenuButton');
+      fireEvent.click(menuButton);
+      fireEvent.click(screen.getByTestId('workflowGraphNodeMenuExtract'));
+
+      expect(onExtractSection).toHaveBeenCalledWith('node-1');
+      expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('is between Edit and Delete', () => {
+      renderNode(collapsedData(), false, { edit: editWith(jest.fn()) });
+
+      fireEvent.click(screen.getByTestId('workflowGraphNodeMenuButton'));
+
+      const panel = screen.getByTestId('workflowGraphNodeMenuPanel');
+      expect(
+        Array.from(panel.querySelectorAll('button'), (item) => item.getAttribute('data-test-subj'))
+      ).toEqual([
+        'workflowGraphNodeMenuEdit',
+        'workflowGraphNodeMenuExtract',
+        'workflowGraphNodeMenuDelete',
+      ]);
+    });
+
+    it('is not offered when the editor cannot extract', () => {
+      renderNode(collapsedData(), false, { edit: editWith() });
+
+      fireEvent.click(screen.getByTestId('workflowGraphNodeMenuButton'));
+
+      expect(screen.queryByTestId('workflowGraphNodeMenuExtract')).not.toBeInTheDocument();
+    });
+
+    it('is not offered for a section with no steps', () => {
+      renderNode(collapsedData({ section: { memberStepNames: [] } }), false, {
+        edit: editWith(jest.fn()),
+      });
+
+      fireEvent.click(screen.getByTestId('workflowGraphNodeMenuButton'));
+
+      expect(screen.queryByTestId('workflowGraphNodeMenuExtract')).not.toBeInTheDocument();
+    });
+
+    it('is never offered for an ordinary step', () => {
+      renderNode({}, false, { edit: editWith(jest.fn()) });
+
+      fireEvent.click(screen.getByTestId('workflowGraphNodeMenuButton'));
+
+      expect(screen.queryByTestId('workflowGraphNodeMenuExtract')).not.toBeInTheDocument();
+    });
+  });
+
+  it('puts the toggle to the left of the title, as an accordion does', () => {
+    renderNode(collapsedData(), false, { onToggleSection: jest.fn() });
+
+    const toggle = screen.getByTestId('workflowGraphSectionToggle');
+    const title = screen.getByText('Ingest the alerts');
+
+    // eslint-disable-next-line no-bitwise
+    expect(toggle.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  describe('description', () => {
+    const description = 'Pull alerts from the SIEM and drop duplicates before triage starts.';
+    const withDescription = (value: unknown) =>
+      collapsedData({
+        step: { title: 'Ingest the alerts', description: value } as WorkflowGraphNodeData['step'],
+      });
+
+    it('is shown, with the full text on hover since it can be cut short', () => {
+      renderNode(withDescription(description));
+
+      const shown = screen.getByTestId('workflowGraphSectionDescription');
+      expect(shown).toHaveTextContent(description);
+      expect(shown).toHaveAttribute('title', description);
+    });
+
+    it('comes after the title and the count', () => {
+      renderNode(withDescription(description));
+
+      const shown = screen.getByTestId('workflowGraphSectionDescription');
+      const count = screen.getByTestId('workflowGraphSectionCount');
+
+      // eslint-disable-next-line no-bitwise
+      expect(count.compareDocumentPosition(shown) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it.each([[undefined], [''], ['   '], [42]])('is not shown when it is %p', (value) => {
+      renderNode(withDescription(value));
+
+      expect(screen.queryByTestId('workflowGraphSectionDescription')).not.toBeInTheDocument();
+    });
+
+    it('is not shown on an ordinary step, whatever it holds', () => {
+      renderNode({
+        label: 'plain',
+        stepType: 'http',
+        step: { description } as WorkflowGraphNodeData['step'],
+      });
+
+      expect(screen.queryByTestId('workflowGraphSectionDescription')).not.toBeInTheDocument();
+    });
+  });
+
+  it('has no toggle without an onToggleSection handler', () => {
+    renderNode(collapsedData());
+    expect(screen.queryByTestId('workflowGraphSectionToggle')).not.toBeInTheDocument();
+  });
+
+  it('has no run action, since a section is not a runnable step', () => {
+    renderNode(collapsedData(), false, { onStepRun: jest.fn(), canRunSteps: true });
+    fireEvent.mouseEnter(screen.getByRole('button', { name: /Ingest the alerts/ }));
+    expect(screen.queryByTestId('workflowGraphNodeRunStep')).not.toBeInTheDocument();
+  });
+
+  it('adds nothing section-specific to an ordinary step', () => {
+    renderNode();
+    expect(screen.queryByTestId('workflowGraphSectionToggle')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('workflowGraphSectionCount')).not.toBeInTheDocument();
+  });
+});

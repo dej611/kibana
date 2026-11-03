@@ -12,6 +12,7 @@ import { isActionGroup } from '../types';
 
 const TRIGGERS_GROUP_ID = 'triggers';
 const FLOW_CONTROL_GROUP_ID = 'flowControl';
+const SECTION_OPTION_ID = 'section';
 
 /** Remove trigger leaves whose ids are in `disabledTriggerIds` (e.g. Manual once one exists). */
 export const omitDisabledTriggers = (
@@ -31,7 +32,7 @@ export const omitDisabledTriggers = (
  * One function for the full menu and the compact popover — never fork lists.
  *
  * - `trigger`: only the Triggers group's leaves; hides `disabledTriggerIds`
- * - `step`: hide Triggers
+ * - `step`: hide Triggers; inside a section, also hide Section (sections cannot be nested)
  * - `error`: hide Triggers and Flow control (same as canvas error-port eligibility)
  */
 export const filterOptionsForInsertionContext = (
@@ -49,6 +50,13 @@ export const filterOptionsForInsertionContext = (
   const withoutTriggers = options.filter((o) => o.id !== TRIGGERS_GROUP_ID);
   if (context.mode === 'error') {
     return withoutTriggers.filter((o) => o.id !== FLOW_CONTROL_GROUP_ID);
+  }
+  if (context.mode === 'step' && context.insideSection) {
+    return withoutTriggers.map((opt) =>
+      opt.id === FLOW_CONTROL_GROUP_ID && isActionGroup(opt)
+        ? { ...opt, options: opt.options.filter((leaf) => leaf.id !== SECTION_OPTION_ID) }
+        : opt
+    );
   }
   return withoutTriggers;
 };

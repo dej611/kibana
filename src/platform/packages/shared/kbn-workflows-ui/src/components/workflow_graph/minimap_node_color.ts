@@ -19,7 +19,10 @@ const MINIMAP_CONTAINER_ALPHAS = [0.2, 0.35] as const;
 export type MinimapNodeColors = Pick<
   EuiThemeComputed['colors'],
   'danger' | 'success' | 'dangerText' | 'accent' | 'primary'
->;
+> & {
+  /** The colour of sections, from `getSectionPalette(colors).strong`. */
+  readonly section: string;
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;
@@ -38,15 +41,18 @@ export const getMinimapNodeColor = (
   if (node.type === 'bypassLane') return 'transparent';
   // Loop containers are a translucent primary tint (regardless of execution
   // status) so the solid inner steps painted on top of them stay visible.
-  if (node.type === 'foreachGroup') {
+  if (node.type === 'foreachGroup' || node.type === 'sectionGroup') {
+    const base = node.type === 'sectionGroup' ? colors.section : colors.primary;
     const alpha = MINIMAP_CONTAINER_ALPHAS[containerDepth - 1];
-    return alpha === undefined ? colors.primary : transparentize(colors.primary, alpha);
+    return alpha === undefined ? base : transparentize(base, alpha);
   }
   const data = isRecord(node.data) ? node.data : undefined;
   const stepExecution = isRecord(data?.stepExecution) ? data.stepExecution : undefined;
   const status = stepExecution?.status;
   if (status === 'failed') return colors.danger;
   if (status === 'completed') return colors.success;
+  // A collapsed section is one node standing for many steps, so it gets its own colour.
+  if (data?.stepType === 'section') return colors.section;
   // Fallback-lane nodes that have not yet failed render in a lighter-danger
   // tint so they read as "the error path" without impersonating a failed step.
   // The `status === 'failed'` arm above takes priority, so a fallback step

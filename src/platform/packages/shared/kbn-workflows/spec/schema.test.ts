@@ -11,6 +11,7 @@ import { z } from '@kbn/zod/v4';
 import type { CollisionStrategy, ConcurrencySettings } from './schema';
 import {
   BaseConnectorStepSchema,
+  BuiltInStepTypes,
   CollisionStrategySchema,
   ConcurrencySettingsSchema,
   DataSetStepSchema,
@@ -20,6 +21,7 @@ import {
   DynamicTimeoutSchema,
   ElasticsearchStepSchema,
   EventTimestampSchema,
+  getSectionStepSchema,
   HITL_HTTP_DESTINATION_ERROR,
   IfStepSchema,
   KibanaStepSchema,
@@ -30,6 +32,7 @@ import {
   PARALLEL_BRANCH_NAMES_UNIQUE_MESSAGE,
   PARALLEL_MODE_REFINEMENT_MESSAGE,
   ParallelStepSchema,
+  SectionStepSchema,
   TimeoutPropSchema,
   WaitForApprovalChannelsSchema,
   WaitForApprovalStepSchema,
@@ -46,7 +49,11 @@ import {
 import { BaseEventSchema } from './schema/common/base_event';
 import { JsonModelSchema } from './schema/common/json_model_schema';
 import { isManualTrigger } from './schema/triggers/manual_trigger_schema';
-import { IF_CONDITION_MAX_LENGTH } from '../common/constants';
+import {
+  IF_CONDITION_MAX_LENGTH,
+  SECTION_DESCRIPTION_MAX_LENGTH,
+  SECTION_TITLE_MAX_LENGTH,
+} from '../common/constants';
 import { MAX_DURATION_LENGTH } from '../common/utils/duration/duration';
 import { getShape } from '../common/utils/zod';
 
@@ -1322,6 +1329,94 @@ describe('`if` condition on step schemas', () => {
 
     expect(IfStepSchema.safeParse({ ...ifStep, condition: atLimit }).success).toBe(true);
     expect(IfStepSchema.safeParse({ ...ifStep, condition: overLimit }).success).toBe(false);
+  });
+});
+
+describe('SectionStepSchema', () => {
+  const inner = { name: 'inner', type: 'console', with: { message: 'hi' } };
+  const section = { name: 'ingest', type: 'section', steps: [inner] };
+
+  it('accepts a section with steps, a title and a description', () => {
+    const result = SectionStepSchema.safeParse({
+      ...section,
+      title: 'Ingest alerts',
+      description: 'Pull and normalise alerts',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts an empty section, with `steps: []` or without `steps`', () => {
+    expect(SectionStepSchema.safeParse({ ...section, steps: [] }).success).toBe(true);
+    expect(SectionStepSchema.safeParse({ name: 'ingest', type: 'section' }).success).toBe(true);
+  });
+
+  it.each(['if', 'on-failure', 'timeout', 'foreach', 'max-step-size'])(
+    'rejects `%s` on a section, because a section has no execution semantics',
+    (key) => {
+      const value = key === 'on-failure' ? { retry: { 'max-attempts': 2 } } : 'x';
+      const result = SectionStepSchema.safeParse({ ...section, [key]: value });
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0].path).toEqual([key]);
+    }
+  );
+
+  it('bounds `title` and `description`', () => {
+    const atLimit = (max: number) => 'a'.repeat(max);
+    const overLimit = (max: number) => 'a'.repeat(max + 1);
+
+    expect(
+      SectionStepSchema.safeParse({ ...section, title: atLimit(SECTION_TITLE_MAX_LENGTH) }).success
+    ).toBe(true);
+    expect(
+      SectionStepSchema.safeParse({ ...section, title: overLimit(SECTION_TITLE_MAX_LENGTH) })
+        .success
+    ).toBe(false);
+    expect(
+      SectionStepSchema.safeParse({
+        ...section,
+        description: atLimit(SECTION_DESCRIPTION_MAX_LENGTH),
+      }).success
+    ).toBe(true);
+    expect(
+      SectionStepSchema.safeParse({
+        ...section,
+        description: overLimit(SECTION_DESCRIPTION_MAX_LENGTH),
+      }).success
+    ).toBe(false);
+  });
+
+  it('is a built-in step type', () => {
+    expect(BuiltInStepTypes).toContain('section');
+  });
+
+  it('parses nested steps through the supplied step schema', () => {
+    const stepSchema = z.object({ name: z.string(), type: z.literal('console') });
+    const schema = getSectionStepSchema(stepSchema);
+
+    expect(schema.safeParse({ ...section, steps: [{ name: 'a', type: 'console' }] }).success).toBe(
+      true
+    );
+    expect(schema.safeParse({ ...section, steps: [{ name: 'a', type: 'nope' }] }).success).toBe(
+      false
+    );
+  });
+
+  it('loose mode only requires `type`', () => {
+    const schema = getSectionStepSchema(z.object({ name: z.string() }), true);
+    expect(schema.safeParse({ type: 'section' }).success).toBe(true);
+  });
+
+  it('is accepted as a workflow step, at any position and with empty bodies', () => {
+    const workflow = {
+      name: 'wf',
+      triggers: [{ type: 'manual' }],
+      steps: [
+        { ...section, title: 'Ingest' },
+        { name: 'triage', type: 'section', steps: [] },
+        inner,
+      ],
+    };
+    expect(WorkflowSchema.safeParse(workflow).success).toBe(true);
   });
 });
 

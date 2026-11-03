@@ -14,6 +14,10 @@ The output of `graph_layout/transform_workflow_to_graph.ts`. A placement-indepen
 **execution graph**
 The output of `graph/build_execution_graph/build_execution_graph.ts`. A compiled step graph used by the execution engine. The `EnterTryBlock`/`ExitTryBlock` diamond pattern for `on-failure.fallback` lives here, not in the logical graph.
 
+**section**
+A `type: section` step that groups sibling steps under a name (and optional `title`) for reading. It is transparent to execution: `createStepsSequence` in the execution-graph builder inlines its steps in its place (`inlineSections`), so a section never becomes an execution node and never has a step execution. A section with no steps is valid and runs as a no-op. Sections cannot nest, at any depth, and cannot carry `if`, `on-failure`, `timeout`, `foreach` or `max-step-size`. Not a child workflow (that is `workflow.execute`).
+_Avoid_: sub-workflow, block (both already mean something else here), group (reserved for the `foreachGroup` canvas node).
+
 **layout key**
 A stable string of the logical graph's layout-relevant shape (node ids and sizes, edge endpoints, groups, lanes, branch structure), derived from the `TransformResult` by `computeLayoutKey` in `kbn-workflows-ui`'s `use_workflow_layout.ts`. It is the memo key for the layout: layout is recalculated only when the key changes, so edits that don't change the structure (descriptions, params, expressions) never re-run dagre.
 
@@ -40,7 +44,7 @@ lane. `bypass lane node` and `fallback lane` are specialisations.
 An _edge_ tag, not a node type. Set to `true` on edges whose target has in-degree > 1 **and** whose source is a bypass-lane node or a fallback-lane leaf (i.e., edges that participate in the fan-in matching a synthetic fork bus). Computed in `use_workflow_layout.ts`; drives `buildMergeBusPath` routing. There is no join node in the logical graph — `transform_workflow_to_graph.ts` wires branch leaves directly to the next sibling via `exitIds = dedupeIds(branchExits)`. Widening this to plain in-degree > 1 is deferred (ADR-0012; the nested-`continue` rejoin is the motivating shape, tracked in [security-team#19542](https://github.com/elastic/security-team/issues/19542)).
 
 **container step**
-A step whose body renders as a group box on the canvas. The set is `CONTAINER_STEP_TYPES = new Set(['foreach', 'while'])`. The React Flow node type literal `'foreachGroup'` is a legacy misnomer: it also covers `while` steps.
+A step whose body renders as a group box on the canvas. The set is `CONTAINER_STEP_TYPES = new Set(['foreach', 'while', 'section'])`. The transform's node type literal `'foreachGroup'` is a legacy misnomer: it also covers `while` and `section` steps. A `section` is rendered by its own React Flow node type, `'sectionGroup'`, which `use_workflow_layout` assigns after layout. A **collapsed** section is not a container at all: the transform (given `collapsedSections`) emits one plain `step` node for it, with `data.section.memberStepNames` listing the steps it hides, and no group, inner nodes or lanes.
 
 **container members vs container descendants**
 `ForeachGroup.innerNodes` holds **members** — the direct children of the container's body. A nested container (a `foreach` inside a `foreach`) contributes its *container node* to the parent's `innerNodes` and pushes its own body as a **sibling** entry in `foreachGroups` (see `transform_workflow_to_graph.ts`). Any layout pass that moves a container must carry **all descendants** transitively (the `containerDescendants` closure from `buildContainerDescendants`), not just members. Carrying only members moves the nested container node while leaving its body behind, displacing grandchildren by the shift delta and rendering them outside their box.

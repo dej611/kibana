@@ -20,6 +20,7 @@ import { isMac } from '@kbn/shared-ux-utility';
 import { useWorkflowBottomBarState } from '@kbn/workflows-ui';
 
 const COMMAND_KEY = isMac ? '⌘' : 'Ctrl';
+const OPTION_KEY = isMac ? '⌥' : 'Alt';
 
 interface KeyboardShortcut {
   label: string;
@@ -57,6 +58,20 @@ const shortcuts: KeyboardShortcut[] = [
       defaultMessage: 'Open actions menu',
     }),
     keys: [COMMAND_KEY, 'K'],
+  },
+  {
+    label: i18n.translate('workflows.yamlEditor.shortcuts.collapseSections', {
+      defaultMessage: 'Collapse sections in graph',
+    }),
+    keys: [COMMAND_KEY, OPTION_KEY, '['],
+    showInReadOnly: true,
+  },
+  {
+    label: i18n.translate('workflows.yamlEditor.shortcuts.expandSections', {
+      defaultMessage: 'Expand sections in graph',
+    }),
+    keys: [COMMAND_KEY, OPTION_KEY, ']'],
+    showInReadOnly: true,
   },
   {
     label: i18n.translate('workflows.yamlEditor.shortcuts.find', {

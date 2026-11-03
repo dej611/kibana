@@ -36,11 +36,15 @@ import { ensureWorkflowGraphEuiIcons } from './ensure_eui_icons';
 import { GraphErrorBoundary } from './graph_error_boundary';
 import { getMinimapNodeColor } from './minimap_node_color';
 import type { PendingInsertVisual } from './pending_insert';
+import { getSectionPalette } from './section_palette';
 import { WORKFLOWS_CANVAS_CHROME_INSET } from './surface_radius';
 import { useAppendStepShortcut } from './use_append_step_shortcut';
 import { useCanvasViewport } from './use_canvas_viewport';
 import { useDecoratedNodes } from './use_decorated_nodes';
 import { useInsertLayoutAnimation } from './use_insert_layout_animation';
+import { useSectionMarquee } from './use_section_marquee';
+import { useSectionShortcuts } from './use_section_shortcuts';
+import { SECTION_TOGGLE_MS, useSectionToggleAnimation } from './use_section_toggle_animation';
 import { useWorkflowLayout } from './use_workflow_layout';
 import {
   type NodeConfigWarningReason,
@@ -59,6 +63,8 @@ import {
 import { WorkflowGraphForeachGroupNode } from './workflow_graph_foreach_group_node';
 import { WorkflowGraphNode } from './workflow_graph_node';
 import { WorkflowGraphPendingNode } from './workflow_graph_pending_node';
+import { WorkflowGraphSectionGroupNode } from './workflow_graph_section_group_node';
+import { WorkflowGraphSectionMarqueeOverlay } from './workflow_graph_section_marquee_overlay';
 import { WorkflowGraphSettingsGroupNode } from './workflow_graph_settings_group_node';
 import { WorkflowGraphSettingsNode } from './workflow_graph_settings_node';
 
@@ -68,6 +74,7 @@ const NODE_TYPES: NodeTypes = {
   settings: WorkflowGraphSettingsNode,
   settingsGroup: WorkflowGraphSettingsGroupNode,
   foreachGroup: WorkflowGraphForeachGroupNode,
+  sectionGroup: WorkflowGraphSectionGroupNode,
   bypassLane: WorkflowGraphBypassLaneNode,
 };
 
@@ -102,6 +109,16 @@ export interface WorkflowGraphCanvasProps {
   readonly onStepRun?: (stepName: string) => void;
   /** Disables the per-node Run action when false. */
   readonly canRunSteps?: boolean;
+  /**
+   * Collapses or expands a section, by its step name. The caller owns the collapsed state
+   * and applies it to the `transformed` graph it passes in.
+   */
+  readonly onToggleSection?: (stepName: string) => void;
+  /**
+   * Collapses or expands several sections in one change, by their step names. Offers the
+   * ⌘⌥[ and ⌘⌥] shortcuts, which need it; the caller owns the state as for `onToggleSection`.
+   */
+  readonly onSetSectionsCollapsed?: (stepNames: readonly string[], collapsed: boolean) => void;
   /**
    * Optional renderer for step icons. When provided the canvas delegates icon
    * resolution to the caller (e.g. plugin's `<StepIcon/>`) instead of the
@@ -207,6 +224,8 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
     colorMode,
     onStepRun,
     canRunSteps,
+    onToggleSection: onToggleSectionProp,
+    onSetSectionsCollapsed: onSetSectionsCollapsedProp,
     renderStepIcon,
     direction = 'TB',
     fitView: fitViewProp = false,
@@ -266,6 +285,13 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
     [workflow, graphTransform]
   );
 
+  // A section collapsing or expanding is animated by CSS while `isToggling` is set.
+  const { isToggling, onToggleSection, onSetSectionsCollapsed } = useSectionToggleAnimation({
+    onToggleSection: onToggleSectionProp,
+    onSetSectionsCollapsed: onSetSectionsCollapsedProp,
+    nodes,
+  });
+
   // Only stable, caller-supplied callbacks live in the context. Volatile
   // per-node values are written onto node `data` (see `nodesWithEditData`).
   const actions = useMemo<WorkflowGraphActions>(
@@ -274,10 +300,19 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
       canRunSteps,
       renderStepIcon,
       onStepSelect,
+      onToggleSection,
       onSettingsNodeSelect,
       edit,
     }),
-    [onStepRun, canRunSteps, renderStepIcon, onStepSelect, onSettingsNodeSelect, edit]
+    [
+      onStepRun,
+      canRunSteps,
+      renderStepIcon,
+      onStepSelect,
+      onToggleSection,
+      onSettingsNodeSelect,
+      edit,
+    ]
   );
 
   // First-paint mark: time from component mount, not from navigation start.
@@ -306,6 +341,8 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
     nodes: nodesWithEditData,
     edges: layoutEdges,
     flashNodeId,
+    // A section toggle moves nodes by CSS transition, so the JS tween must not also move them.
+    disabled: isToggling,
   });
 
   const handleNodeClick = useCallback(
@@ -357,14 +394,16 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
 
   // ⌘K / Ctrl+K appends to the selected sequence (trunk when nothing selected).
   useAppendStepShortcut({ edit, suppressInsertionControls, insertionPoints, selectedStepId });
+  // ⌘⌥[ / ⌘⌥] collapse or expand the selected section, or all of them.
+  useSectionShortcuts({ nodes, selectedStepId, onSetSectionsCollapsed });
 
-  // Nesting depth of each loop container (outermost = 1), from the `parentId`
+  // Nesting depth of each loop or section container (outermost = 1), from the `parentId`
   // chain of the stable layout output.
   const containerDepthById = useMemo(() => {
     const parentById = new Map(nodes.map((n) => [n.id, n.parentId]));
     const depths = new Map<string, number>();
     for (const n of nodes) {
-      if (n.type === 'foreachGroup') {
+      if (n.type === 'foreachGroup' || n.type === 'sectionGroup') {
         let depth = 1;
         for (let id = n.parentId; id !== undefined; id = parentById.get(id)) depth++;
         depths.set(n.id, depth);
@@ -373,6 +412,7 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
     return depths;
   }, [nodes]);
 
+  const sectionMinimapColor = getSectionPalette(euiTheme.colors).strong;
   const minimapNodeColor = useCallback(
     (n: { id: string; type?: string; data?: unknown }) =>
       getMinimapNodeColor(
@@ -383,6 +423,7 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
           dangerText: euiTheme.colors.dangerText,
           accent: euiTheme.colors.accent,
           primary: euiTheme.colors.primary,
+          section: sectionMinimapColor,
         },
         containerDepthById.get(n.id)
       ),
@@ -393,6 +434,7 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
       euiTheme.colors.dangerText,
       euiTheme.colors.accent,
       euiTheme.colors.primary,
+      sectionMinimapColor,
     ]
   );
 
@@ -401,6 +443,21 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
   // until the workflow has structure (no `panOnDrag`, so React Flow shows no grab cursor). Hide chrome entirely for the prototype
   // creation empty-state overlay, which owns the full viewport.
   const isEmptyWorkflow = edit !== undefined && !hasWorkflowStructure;
+
+  // Shift+drag picks steps for a new section.
+  const onWrapInSection = edit?.onWrapInSection;
+  const marquee = useSectionMarquee({
+    containerRef: wrapperRef,
+    enabled: Boolean(onWrapInSection) && !suppressInsertionControls && !isEmptyWorkflow,
+    workflow,
+    transformed: graphTransform,
+    onWrap: (stepNames) => onWrapInSection?.(stepNames),
+  });
+  const { cancel: cancelMarquee } = marquee;
+  const handlePaneClickAndCancelMarquee = useCallback(() => {
+    cancelMarquee();
+    handlePaneClick();
+  }, [cancelMarquee, handlePaneClick]);
   const showNavChrome = hasWorkflowStructure || emptyState == null;
   const canPan = hasWorkflowStructure;
   const showZoomCluster = showNavChrome && showZoomControls;
@@ -415,7 +472,23 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
           width: '100%',
           height: '100%',
           background: showBackground ? euiTheme.colors.backgroundBaseSubdued : 'transparent',
+          // A section toggle changes the layout in one step. These let the browser animate
+          // it with no JavaScript per frame: nodes keep their `transform` positions, so
+          // they glide to the new ones; new nodes fade in; and edges, which cannot be
+          // interpolated, are hidden while the nodes move and fade back after.
+          [euiCanAnimate]: {
+            '&[data-section-toggling] .react-flow__node': {
+              transition: `transform ${SECTION_TOGGLE_MS}ms ease-out, opacity ${SECTION_TOGGLE_MS}ms ease-out`,
+              '@starting-style': { opacity: 0 },
+            },
+            '& .react-flow__edges, & .react-flow__viewport-portal': {
+              transition: 'opacity 150ms ease-out',
+            },
+            '&[data-section-toggling] .react-flow__edges, &[data-section-toggling] .react-flow__viewport-portal':
+              { opacity: 0, transition: 'none' },
+          },
         }}
+        data-section-toggling={isToggling ? '' : undefined}
         data-test-subj="workflowGraphCanvas"
       >
         {dimmed && (
@@ -463,7 +536,7 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
               defaultViewport={defaultViewport}
               onMoveEnd={handleMoveEnd}
               onNodeClick={handleNodeClick}
-              onPaneClick={handlePaneClick}
+              onPaneClick={handlePaneClickAndCancelMarquee}
               nodesDraggable={false}
               nodesConnectable={false}
               // Prevent React Flow from boosting a selected node's z-index above
@@ -514,8 +587,28 @@ function WorkflowGraphCanvasInner(props: WorkflowGraphCanvasProps) {
                   forkNodeToJoinId={graphTransform.forkNodeToJoinId}
                 />
               )}
+              {onWrapInSection && (
+                <WorkflowGraphSectionMarqueeOverlay
+                  dragRect={marquee.dragRect}
+                  proposal={marquee.proposal}
+                  onConfirm={marquee.confirm}
+                  onCancel={marquee.cancel}
+                />
+              )}
               {edit && !suppressInsertionControls && !isEmptyWorkflow && (
                 <Panel position="bottom-center" style={{ marginBottom: euiTheme.size.s }}>
+                  {onWrapInSection && (
+                    <EuiText
+                      size="xs"
+                      color="subdued"
+                      data-test-subj="workflowGraphMarqueeCaption"
+                      css={{ userSelect: 'none', pointerEvents: 'none', textAlign: 'center' }}
+                    >
+                      {i18n.translate('workflowsUi.graph.marqueeCaption', {
+                        defaultMessage: 'Shift+drag to group steps into a section',
+                      })}
+                    </EuiText>
+                  )}
                   <EuiText
                     size="xs"
                     color="subdued"

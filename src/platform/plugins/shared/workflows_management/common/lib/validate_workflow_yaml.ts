@@ -10,6 +10,8 @@
 import type { ESQLCallbacks } from '@kbn/esql-types';
 import {
   collectIgnoredKibanaFetcherOccurrences,
+  findNestedSections,
+  getNestedSectionMessage,
   IGNORED_KIBANA_FETCHER_SETTING_MESSAGE,
   shouldWarnIgnoredKibanaFetcher,
   validateStepNameUniqueness,
@@ -131,6 +133,19 @@ export async function validateWorkflowYaml(
       }
     } catch {
       // Structure too malformed for step name validation
+    }
+
+    try {
+      for (const nested of findNestedSections(parsedWorkflow)) {
+        diagnostics.push({
+          severity: 'error',
+          message: getNestedSectionMessage(nested),
+          source: 'section-nesting',
+          ruleId: 'nestedSection',
+        });
+      }
+    } catch {
+      // Structure too malformed for section validation
     }
 
     if (options?.triggerDefinitions) {

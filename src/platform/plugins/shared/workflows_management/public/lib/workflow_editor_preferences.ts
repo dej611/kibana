@@ -49,3 +49,26 @@ export const getStoredHideControlsMenu = (): boolean | undefined => {
 export const setStoredHideControlsMenu = (hide: boolean): void => {
   storage.set(HIDE_CONTROLS_MENU_KEY, hide);
 };
+
+const collapsedSectionsKey = (workflowId: string | undefined): string =>
+  `workflowsUi.graph.collapsedSections.${workflowId ?? 'new'}`;
+
+/** Returns the section names this browser last collapsed in the workflow, or none. */
+export const getStoredCollapsedSections = (workflowId: string | undefined): string[] => {
+  const value = storage.get(collapsedSectionsKey(workflowId));
+  return Array.isArray(value)
+    ? value.filter((name): name is string => typeof name === 'string')
+    : [];
+};
+
+/** Persists the collapsed section names for the workflow; an empty list clears the entry. */
+export const setStoredCollapsedSections = (
+  workflowId: string | undefined,
+  names: readonly string[]
+): void => {
+  if (names.length === 0) {
+    storage.remove(collapsedSectionsKey(workflowId));
+  } else {
+    storage.set(collapsedSectionsKey(workflowId), [...names]);
+  }
+};

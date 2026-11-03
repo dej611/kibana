@@ -9,6 +9,7 @@
 
 import type { useEuiTheme } from '@elastic/eui';
 import { getBuiltInStepDefinition, StepCategory, TRIGGER_STEP_TYPES } from '@kbn/workflows';
+import { getSectionPalette } from './section_palette';
 
 type EuiTheme = ReturnType<typeof useEuiTheme>['euiTheme'];
 
@@ -38,7 +39,7 @@ function isBrandStepType(stepType: string): boolean {
 
 function categoryTokens(
   colors: EuiTheme['colors'],
-  kind: 'trigger' | 'flow' | 'data' | 'code' | 'ai' | 'external' | 'brand'
+  kind: 'trigger' | 'flow' | 'section' | 'data' | 'code' | 'ai' | 'external' | 'brand'
 ): Pick<NodeChipStyle, 'background' | 'border' | 'iconColor'> {
   switch (kind) {
     case 'trigger':
@@ -53,6 +54,10 @@ function categoryTokens(
         border: colors.borderBaseAccentSecondary,
         iconColor: colors.textAccentSecondary,
       };
+    case 'section': {
+      const { chipBackground, chipBorder, chipIcon } = getSectionPalette(colors);
+      return { background: chipBackground, border: chipBorder, iconColor: chipIcon };
+    }
     case 'data':
       return {
         background: colors.backgroundBaseWarning,
@@ -89,9 +94,13 @@ function categoryTokens(
 function resolveChipKind(
   stepType: string,
   isTrigger: boolean
-): 'trigger' | 'flow' | 'data' | 'code' | 'ai' | 'external' | 'brand' {
+): 'trigger' | 'flow' | 'section' | 'data' | 'code' | 'ai' | 'external' | 'brand' {
   if (isTriggerStepType(stepType, isTrigger)) {
     return 'trigger';
+  }
+  // Listed under flow control, but it organises steps rather than routing them.
+  if (stepType === 'section') {
+    return 'section';
   }
   if (CODE_STEP_TYPES.has(stepType)) {
     return 'code';

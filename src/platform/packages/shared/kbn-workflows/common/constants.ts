@@ -82,6 +82,10 @@ export const ALL_CONNECTOR_IDS = '*';
  */
 export const IF_CONDITION_MAX_LENGTH = 2000;
 
+/** Upper bounds on a `section` step's display `title` and free-text `description`. */
+export const SECTION_TITLE_MAX_LENGTH = 200;
+export const SECTION_DESCRIPTION_MAX_LENGTH = 2000;
+
 /**
  * Map of regular (saved object) connector types -> their system connector equivalents.
  * Use this map to make the `connector-id` step config property optional for a given connector step type, allowing it to be executed via its linked system connector.

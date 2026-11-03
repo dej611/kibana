@@ -18,7 +18,12 @@ import {
   isManualTrigger,
   LegacyWorkflowInputSchema,
 } from './schema/triggers/manual_trigger_schema';
-import { CONNECTOR_ID_MAX_LENGTH, IF_CONDITION_MAX_LENGTH } from '../common/constants';
+import {
+  CONNECTOR_ID_MAX_LENGTH,
+  IF_CONDITION_MAX_LENGTH,
+  SECTION_DESCRIPTION_MAX_LENGTH,
+  SECTION_TITLE_MAX_LENGTH,
+} from '../common/constants';
 import {
   HITL_EXTERNAL_APPROVE_LINK_CONTEXT_KEY,
   HITL_EXTERNAL_CHANNELS_DESCRIPTION,
@@ -926,6 +931,60 @@ export const getIfStepSchema = (stepSchema: z.ZodType, loose: boolean = false) =
   return schema;
 };
 
+// A section only groups steps for reading, so every key that would give it execution
+// behaviour is rejected rather than stripped: the author sees why it has no effect.
+const sectionUnsupportedKey = (key: string) =>
+  z
+    .never({ error: `A section only groups steps for reading; \`${key}\` is not supported here` })
+    .optional();
+
+export const SectionStepConfigSchema = z.object({
+  title: z
+    .string()
+    .max(SECTION_TITLE_MAX_LENGTH)
+    .optional()
+    .describe('Label shown for the section. Defaults to the section name'),
+  description: z
+    .string()
+    .max(SECTION_DESCRIPTION_MAX_LENGTH)
+    .optional()
+    .describe('What this section is for. Free text, shown with the section'),
+  steps: z
+    .array(BaseStepSchema)
+    .optional()
+    .describe(
+      'Steps in this section. May be empty or omitted to sketch a section to fill in later'
+    ),
+});
+
+export const SectionStepSchema = BaseStepSchema.extend({
+  type: z
+    .literal('section')
+    .describe(
+      'Group steps under a title for readability. A section is only a visual grouping: it has no effect on execution, and its steps run exactly as if they were listed in its place'
+    ),
+  ...SectionStepConfigSchema.shape,
+  'max-step-size': sectionUnsupportedKey('max-step-size'),
+  if: sectionUnsupportedKey('if'),
+  'on-failure': sectionUnsupportedKey('on-failure'),
+  timeout: sectionUnsupportedKey('timeout'),
+  foreach: sectionUnsupportedKey('foreach'),
+});
+export type SectionStep = z.infer<typeof SectionStepSchema>;
+
+export const getSectionStepSchema = (stepSchema: z.ZodType, loose: boolean = false) => {
+  const schema = SectionStepSchema.extend({
+    steps: z.array(stepSchema).optional(),
+  });
+
+  if (loose) {
+    // make all fields optional, but require type to be present for discriminated union
+    return schema.partial().required({ type: true });
+  }
+
+  return schema;
+};
+
 // Default for the number of branches that may run at once.
 export const DEFAULT_PARALLEL_CONCURRENCY = 5;
 // Hard ceiling on the requested concurrency, regardless of what an author sets.
@@ -1283,6 +1342,7 @@ const StepSchema = z.lazy(() =>
     KibanaStepSchema,
     ParallelStepSchema,
     MergeStepSchema,
+    SectionStepSchema,
     WorkflowExecuteStepSchema,
     WorkflowExecuteAsyncStepSchema,
     WorkflowOutputStepSchema,
@@ -1306,6 +1366,7 @@ export const BuiltInStepTypes = [
   SwitchStepSchema.shape.type.value,
   ParallelStepObjectSchema.shape.type.value,
   MergeStepSchema.shape.type.value,
+  SectionStepSchema.shape.type.value,
   DataSetStepSchema.shape.type.value,
   WaitStepSchema.shape.type.value,
   WaitForInputStepSchema.shape.type.value,

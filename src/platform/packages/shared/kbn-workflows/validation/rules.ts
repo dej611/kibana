@@ -200,6 +200,13 @@ export interface WorkflowValidationRules {
     values: Record<string, never>;
   };
 
+  /** A section inside another section, at any depth. */
+  nestedSection: {
+    owner: 'section-nesting-validation';
+    defaultSeverity: 'error';
+    values: Record<string, never>;
+  };
+
   // -- deprecations -------------------------------------------------------------
   deprecatedStepType: {
     owner: 'deprecated-step-validation';
@@ -296,6 +303,7 @@ export const WORKFLOW_VALIDATION_RULES: {
     defaultSeverity: 'warning',
   },
   invalidParallelMode: { owner: 'parallel-mode-validation', defaultSeverity: 'error' },
+  nestedSection: { owner: 'section-nesting-validation', defaultSeverity: 'error' },
 
   deprecatedStepType: { owner: 'deprecated-step-validation', defaultSeverity: 'warning' },
   ignoredFetcherSetting: { owner: 'deprecated-step-validation', defaultSeverity: 'warning' },

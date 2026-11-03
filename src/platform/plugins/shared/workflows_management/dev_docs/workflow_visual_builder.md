@@ -35,8 +35,25 @@ foundations now in place (specs 00 and 01):
 | Add trigger overlay | ❌ Not implemented | 06 | — |
 | Fallback authoring (red port → write `fallback`; `continue` toggle) | ❌ Not implemented | 07 | ADR-0004 |
 | Pending node and insert animation (ghost card, FLIP) | ❌ Not implemented | 08 | ADR-0002 |
+| Sections: a transparent `type: section` grouping step (schema, execution, nesting validation) | ✅ Implemented | — | ADR-0014 |
+| Sections on the canvas: frame, collapse / expand per viewer, rolled-up run status | ✅ Implemented | — | ADR-0014 |
+| Section authoring: "Section" in the Actions menu, Ungroup, Shift+drag to wrap, YAML Wrap / Unwrap code actions | ✅ Implemented | — | ADR-0014 |
+| Extract a section to a new workflow (`⋮` menu): the steps move as written into a new manual-trigger workflow, and the section becomes a `workflow.execute` step of the same name. References that cross the boundary are listed for confirmation, not rewritten | ✅ Implemented | Needs create-workflow permission; the new workflow is saved at once, the edit to this one only when it is saved | ADR-0014 |
+| Collapse / expand sections from the keyboard: `⌘⌥[` collapses and `⌘⌥]` expands the selected section, or every section when none is selected; works in read-only mode and animates like a click | ✅ Implemented | The code editor's own fold/unfold keys, in the form that works in a browser. VS Code's `⌘K` chords are not used: the graph already takes `⌘K` to add a step. With a step selected inside a section, collapsing leaves that section open | ADR-0014 |
 
 ## Known limitations
+
+### Sections
+
+- A collapsed section has no Ungroup in its `⋮` menu; expand it first.
+- A collapsed section has no Extract either. Extraction does not wire `inputs` or outputs: the new workflow cannot read this one's variables, constants, inputs, event or step outputs, and the section's `title` and `description` become the new workflow's name and description, because `workflow.execute` has no field for them.
+- On the executions tab, a section with a failed or waiting step is shown expanded and cannot be
+  collapsed there.
+- The Shift+drag marquee cannot sub-group inside a section (sections cannot nest). The YAML code
+  action wraps steps anywhere a section is allowed.
+- A `?stepId=` link to a step inside a collapsed section opens the section. "Open in YAML" /
+  "Show in graph" from the YAML editor does not select anything on the graph today, so it does not
+  expand a section either.
 
 ### Dead end: "insert after a whole block"
 

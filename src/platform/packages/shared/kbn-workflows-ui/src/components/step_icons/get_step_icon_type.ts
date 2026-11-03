@@ -105,6 +105,9 @@ export const getStepIconType = (type: string): IconType => {
     case 'while':
       iconType = 'refresh';
       break;
+    case 'section':
+      iconType = 'grid';
+      break;
     case 'foreach-iteration':
     case 'while-iteration':
       // Outline-style list icon — matches other tree-row EuiIcons (size m via StepIcon).

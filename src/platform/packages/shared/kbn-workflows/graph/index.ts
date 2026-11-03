@@ -12,6 +12,7 @@ export {
   visitWaitForInputStep,
 } from './build_execution_graph/build_execution_graph';
 export { GraphBuildError, isGraphBuildError } from './build_execution_graph/graph_build_error';
+export { inlineSections } from './build_execution_graph/inline_sections';
 export { WorkflowGraph } from './workflow_graph/workflow_graph';
 
 export type {

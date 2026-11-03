@@ -104,6 +104,18 @@ export class WorkflowGraphAuthoringPage {
     await this.page.testSubj.click('workflowGraphForeachGroupAddFirstStep');
   }
 
+  /** Opens the Actions menu to add the first step inside an empty section. */
+  async openAddFirstStepInSection(): Promise<void> {
+    await this.page.testSubj.click('workflowGraphSectionAddFirstStep');
+  }
+
+  /** The collapse (expanded section) or expand (collapsed section) toggle of a section, by its label. */
+  sectionToggle(label: string, state: 'expanded' | 'collapsed'): Locator {
+    return this.page.getByRole('button', {
+      name: `${state === 'expanded' ? 'Collapse' : 'Expand'} section ${label}`,
+    });
+  }
+
   /**
    * Picks a step/connector action from the currently open Actions menu by
    * its exact display label. Narrows via the search box first so the match

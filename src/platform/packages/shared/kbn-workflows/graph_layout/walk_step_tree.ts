@@ -150,3 +150,12 @@ export const STEP_CHILD_CONTAINER_KEYS = [
 ] as const;
 
 export type StepChildContainerKey = (typeof STEP_CHILD_CONTAINER_KEYS)[number];
+
+/** Names of every step under `step`, in declaration order, at any depth and through every slot. */
+export const collectDescendantStepNames = (step: Step): string[] => {
+  const names: string[] = [];
+  visitStepChildSlots(step, (_slot, children) => {
+    walkStepTree(children, (descendant) => names.push(descendant.name));
+  });
+  return names;
+};

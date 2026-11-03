@@ -724,3 +724,110 @@ describe('useWorkflowLayout', () => {
     });
   });
 });
+
+describe('useWorkflowLayout — sections', () => {
+  const sectioned = minimal({
+    steps: [
+      { name: 'before', type: 'http' },
+      {
+        name: 'ingest',
+        type: 'section',
+        title: 'Ingest',
+        steps: [
+          { name: 'fetch', type: 'http' },
+          { name: 'parse', type: 'http' },
+        ],
+      },
+      { name: 'later', type: 'section', steps: [] },
+    ] as unknown as WorkflowYaml['steps'],
+  });
+
+  const nodeOf = (nodes: Array<{ id: string }>, id: string) =>
+    nodes.find((n) => n.id === id) as
+      | { type?: string; parentId?: string; data: Record<string, unknown> }
+      | undefined;
+
+  it('renders an expanded section as a section frame around its steps', () => {
+    const { result } = renderHook(() => useWorkflowLayout({ workflow: sectioned }));
+
+    expect(nodeOf(result.current.nodes, 'ingest')).toMatchObject({
+      type: 'sectionGroup',
+      data: { stepType: 'section', hasBodySteps: true },
+    });
+    expect(nodeOf(result.current.nodes, 'fetch')?.parentId).toBe('ingest');
+    expect(nodeOf(result.current.nodes, 'later')).toMatchObject({
+      type: 'sectionGroup',
+      data: { hasBodySteps: false },
+    });
+  });
+
+  it('keeps foreach containers on their own node type', () => {
+    const workflow = minimal({
+      steps: [
+        { name: 'loop', type: 'foreach', foreach: 'items', steps: [{ name: 'i', type: 'http' }] },
+      ] as unknown as WorkflowYaml['steps'],
+    });
+    const { result } = renderHook(() => useWorkflowLayout({ workflow }));
+
+    expect(nodeOf(result.current.nodes, 'loop')?.type).toBe('foreachGroup');
+  });
+
+  it('renders a collapsed section as one step node that lists what it hides', () => {
+    const { result } = renderHook(() =>
+      useWorkflowLayout({ workflow: sectioned, collapsedSections: new Set(['ingest']) })
+    );
+
+    expect(nodeOf(result.current.nodes, 'ingest')).toMatchObject({
+      type: 'step',
+      data: { section: { memberStepNames: ['fetch', 'parse'] } },
+    });
+    expect(nodeOf(result.current.nodes, 'fetch')).toBeUndefined();
+    // The other section stays expanded.
+    expect(nodeOf(result.current.nodes, 'later')?.type).toBe('sectionGroup');
+  });
+
+  describe('execution status', () => {
+    it.each([
+      ['expanded', undefined],
+      ['collapsed', new Set(['ingest'])],
+    ])('rolls the status of the steps up to the %s section', (_state, collapsedSections) => {
+      const { result } = renderHook(() =>
+        useWorkflowLayout({
+          workflow: sectioned,
+          collapsedSections,
+          stepExecutions: [
+            stepExec('fetch', ExecutionStatus.COMPLETED),
+            stepExec('parse', ExecutionStatus.FAILED),
+          ],
+        })
+      );
+
+      expect(nodeOf(result.current.nodes, 'ingest')?.data).toMatchObject({
+        stepExecution: { status: ExecutionStatus.FAILED },
+        sectionProgress: { status: ExecutionStatus.FAILED, ran: 2, total: 2 },
+      });
+    });
+
+    it('rolls up nothing for a section with no steps', () => {
+      const { result } = renderHook(() =>
+        useWorkflowLayout({
+          workflow: sectioned,
+          stepExecutions: [stepExec('fetch', ExecutionStatus.COMPLETED)],
+        })
+      );
+
+      expect(nodeOf(result.current.nodes, 'later')?.data.stepExecution).toBeUndefined();
+      expect(nodeOf(result.current.nodes, 'later')?.data.sectionProgress).toMatchObject({
+        ran: 0,
+        total: 0,
+      });
+    });
+
+    it('adds no progress when there are no executions', () => {
+      const { result } = renderHook(() => useWorkflowLayout({ workflow: sectioned }));
+
+      expect(nodeOf(result.current.nodes, 'ingest')?.data.sectionProgress).toBeUndefined();
+      expect(nodeOf(result.current.nodes, 'ingest')?.data.stepExecution).toBeUndefined();
+    });
+  });
+});

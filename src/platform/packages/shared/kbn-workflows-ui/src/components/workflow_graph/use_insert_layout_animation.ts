@@ -22,7 +22,7 @@ function easeOutCubic(t: number): number {
   return 1 - (1 - t) ** 3;
 }
 
-function prefersReducedMotion(): boolean {
+export function prefersReducedMotion(): boolean {
   if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
     return false;
   }
@@ -65,16 +65,22 @@ export function useInsertLayoutAnimation({
   nodes,
   edges,
   flashNodeId,
+  disabled = false,
 }: {
   readonly nodes: Node[];
   readonly edges: Edge[];
   readonly flashNodeId?: string;
+  /** Snap to every new layout, because something else is animating the move. */
+  readonly disabled?: boolean;
 }): {
   readonly nodes: Node[];
   readonly edges: Edge[];
   readonly isSliding: boolean;
 } {
   const prevPositionsRef = useRef<Map<string, TrackedNode>>(new Map());
+  // Read inside the layout effect, so turning it on or off never re-runs a slide.
+  const disabledRef = useRef(disabled);
+  disabledRef.current = disabled;
   const [displayNodes, setDisplayNodes] = useState(nodes);
   // Ids of the nodes inserted by the running slide; `null` when not sliding.
   const [insertedIds, setInsertedIds] = useState<ReadonlySet<string> | null>(null);
@@ -128,7 +134,7 @@ export function useInsertLayoutAnimation({
       rafRef.current = null;
     }
 
-    if (prefersReducedMotion() || prev.size === 0) {
+    if (disabledRef.current || prefersReducedMotion() || prev.size === 0) {
       finish();
       return;
     }

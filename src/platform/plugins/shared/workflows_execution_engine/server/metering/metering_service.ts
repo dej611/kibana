@@ -12,6 +12,7 @@ import type { Logger } from '@kbn/core/server';
 import type { UsageRecord, UsageReportingService } from '@kbn/usage-api-plugin/server';
 import type { EsWorkflowExecution } from '@kbn/workflows';
 import { ExecutionStatus, isTerminalStatus, pickManagedWorkflowFields } from '@kbn/workflows';
+import { inlineSections } from '@kbn/workflows/graph';
 
 import { BUCKET_SIZE_MS, METERING_SOURCE_ID, WORKFLOWS_USAGE_TYPE } from './constants';
 
@@ -174,7 +175,8 @@ export class WorkflowsMeteringService {
       return stepTypes;
     }
 
-    for (const step of steps) {
+    // Sections only group steps for reading, so they are not metered.
+    for (const step of inlineSections(steps)) {
       const stepType = step?.type || 'unknown';
       stepTypes[stepType] = (stepTypes[stepType] || 0) + 1;
     }

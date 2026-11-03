@@ -39,6 +39,7 @@ describe('workflow validation rules registry', () => {
         "invalidWorkflowOutput",
         "liquidSyntaxError",
         "missingRequiredInput",
+        "nestedSection",
         "parallelFanOutExceedsLimit",
         "schemaViolation",
         "targetWorkflowNotFound",

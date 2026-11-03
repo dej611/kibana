@@ -24,6 +24,7 @@ import { validateIgnoredFetcherSetting } from './validate_ignored_fetcher_settin
 import { validateJsonSchemaDefaults } from './validate_json_schema_defaults';
 import { validateParallelFanOut } from './validate_parallel_fan_out';
 import { validateParallelMode } from './validate_parallel_mode';
+import { validateSectionNesting } from './validate_section_nesting';
 import { validateStepNameUniqueness } from './validate_step_name_uniqueness';
 import { validateTriggerConditions } from './validate_trigger_conditions';
 import { validateWorkflowOutputsInYaml } from './validate_workflow_outputs_in_yaml';
@@ -82,6 +83,7 @@ export function runWorkflowYamlValidations({
       ...validateIgnoredFetcherSetting(workflowLookup, lineCounter, warnIgnoredKibanaFetcher),
       ...validateIfConditions(workflowLookup, lineCounter),
       ...validateParallelMode(workflowLookup, lineCounter),
+      ...validateSectionNesting(workflowLookup, lineCounter),
       ...validateParallelFanOut(workflowLookup, lineCounter)
     );
   }

@@ -298,6 +298,17 @@ export function getActionOptions(
         stability: getBuiltInStepDefinition('parallel')?.stability,
       },
       {
+        id: 'section',
+        label: i18n.translate('workflows.actionsMenu.section', {
+          defaultMessage: 'Section',
+        }),
+        description: i18n.translate('workflows.actionsMenu.sectionDescription', {
+          defaultMessage: 'Group steps under a title for readability, without changing what runs',
+        }),
+        iconType: 'grid',
+        iconColor: euiTheme.colors.textAccentSecondary,
+      },
+      {
         id: 'wait',
         label: i18n.translate('workflows.actionsMenu.wait', {
           defaultMessage: 'Wait',

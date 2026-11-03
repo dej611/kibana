@@ -115,7 +115,7 @@ export function isActionOption(option: ActionOptionData): option is ActionOption
  */
 export type ActionsMenuInsertionContext =
   | { readonly mode: 'trigger'; readonly disabledTriggerIds?: readonly string[] }
-  | { readonly mode: 'step' }
+  | { readonly mode: 'step'; readonly insideSection?: boolean }
   | { readonly mode: 'error' };
 
 /**

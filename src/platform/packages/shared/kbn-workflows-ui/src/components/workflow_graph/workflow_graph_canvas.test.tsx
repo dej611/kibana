@@ -11,6 +11,8 @@ import { transparentize, useEuiTheme } from '@elastic/eui';
 import { act, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import React from 'react';
 import { ensureWorkflowGraphEuiIcons } from './ensure_eui_icons';
+import { SECTION_TOGGLE_WINDOW_MS } from './use_section_toggle_animation';
+import { useWorkflowGraphActions } from './workflow_graph_actions_context';
 import { WorkflowGraphCanvasWithoutProvider } from './workflow_graph_canvas';
 
 jest.mock('./ensure_eui_icons', () => ({ ensureWorkflowGraphEuiIcons: jest.fn() }));
@@ -652,6 +654,184 @@ describe('WorkflowGraphCanvas creation-state chrome', () => {
     );
     expect(screen.queryByTestId('customEmptyState')).not.toBeInTheDocument();
     expect(screen.getByTestId('workflowGraphPendingNode')).toBeInTheDocument();
+  });
+});
+
+describe('WorkflowGraphCanvas section toggle animation', () => {
+  const ToggleButton = () => {
+    const { onToggleSection } = useWorkflowGraphActions();
+    return (
+      <button type="button" data-test-subj="toggleSection" onClick={() => onToggleSection?.('box')}>
+        {'toggle'}
+      </button>
+    );
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    window.matchMedia = jest.fn().mockReturnValue({ matches: false }) as typeof window.matchMedia;
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('marks the canvas as animating from the toggle until the new layout has had time to play', () => {
+    const onToggleSection = jest.fn();
+    const props = { ...baseProps, onToggleSection, toolbar: <ToggleButton /> };
+    const { rerender } = render(<WorkflowGraphCanvasWithoutProvider {...props} />);
+    const canvas = screen.getByTestId('workflowGraphCanvas');
+    expect(canvas).not.toHaveAttribute('data-section-toggling');
+
+    fireEvent.click(screen.getByTestId('toggleSection'));
+
+    expect(onToggleSection).toHaveBeenCalledWith('box');
+    expect(canvas).toHaveAttribute('data-section-toggling');
+
+    // The layout takes a while to arrive; the animation waits for it.
+    act(() => {
+      jest.advanceTimersByTime(SECTION_TOGGLE_WINDOW_MS * 3);
+    });
+    expect(canvas).toHaveAttribute('data-section-toggling');
+
+    mockLayoutNodesOverride = mockNodes.map((n) => ({ ...n }));
+    rerender(<WorkflowGraphCanvasWithoutProvider {...props} />);
+    act(() => {
+      // One frame to show the new layout, then the window the transitions play in.
+      jest.advanceTimersByTime(16 + SECTION_TOGGLE_WINDOW_MS);
+    });
+    expect(canvas).not.toHaveAttribute('data-section-toggling');
+  });
+
+  it('still toggles, without animating, for reduced motion', () => {
+    window.matchMedia = jest.fn().mockReturnValue({ matches: true }) as typeof window.matchMedia;
+    const onToggleSection = jest.fn();
+    render(
+      <WorkflowGraphCanvasWithoutProvider
+        {...baseProps}
+        onToggleSection={onToggleSection}
+        toolbar={<ToggleButton />}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('toggleSection'));
+
+    expect(onToggleSection).toHaveBeenCalledWith('box');
+    expect(screen.getByTestId('workflowGraphCanvas')).not.toHaveAttribute('data-section-toggling');
+  });
+
+  describe('from the keyboard', () => {
+    const sectionNode = (name: string, collapsed: boolean) => ({
+      id: name,
+      type: collapsed ? 'step' : 'sectionGroup',
+      position: { x: 0, y: 0 },
+      data: {
+        label: name,
+        stepType: 'section',
+        ...(collapsed ? { section: { memberStepNames: ['a'] } } : {}),
+      },
+    });
+
+    afterEach(() => {
+      mockLayoutNodesOverride = undefined;
+    });
+
+    it('collapses the sections, animating as a click does', () => {
+      mockLayoutNodesOverride = [sectionNode('box', false), sectionNode('other', true)];
+      const onSetSectionsCollapsed = jest.fn();
+      render(
+        <WorkflowGraphCanvasWithoutProvider
+          {...baseProps}
+          onSetSectionsCollapsed={onSetSectionsCollapsed}
+        />
+      );
+
+      fireEvent.keyDown(window, { code: 'BracketLeft', key: '[', metaKey: true, altKey: true });
+
+      expect(onSetSectionsCollapsed).toHaveBeenCalledWith(['box'], true);
+      expect(screen.getByTestId('workflowGraphCanvas')).toHaveAttribute('data-section-toggling');
+    });
+
+    it('expands the sections', () => {
+      mockLayoutNodesOverride = [sectionNode('box', false), sectionNode('other', true)];
+      const onSetSectionsCollapsed = jest.fn();
+      render(
+        <WorkflowGraphCanvasWithoutProvider
+          {...baseProps}
+          onSetSectionsCollapsed={onSetSectionsCollapsed}
+        />
+      );
+
+      fireEvent.keyDown(window, { code: 'BracketRight', key: ']', metaKey: true, altKey: true });
+
+      expect(onSetSectionsCollapsed).toHaveBeenCalledWith(['other'], false);
+    });
+
+    it('acts on the selected section only', () => {
+      mockLayoutNodesOverride = [sectionNode('box', false), sectionNode('other', false)];
+      const onSetSectionsCollapsed = jest.fn();
+      render(
+        <WorkflowGraphCanvasWithoutProvider
+          {...baseProps}
+          selectedStepId="other"
+          onSetSectionsCollapsed={onSetSectionsCollapsed}
+        />
+      );
+
+      fireEvent.keyDown(window, { code: 'BracketLeft', key: '[', metaKey: true, altKey: true });
+
+      expect(onSetSectionsCollapsed).toHaveBeenCalledWith(['other'], true);
+    });
+
+    it('does nothing when the caller gave no handler', () => {
+      mockLayoutNodesOverride = [sectionNode('box', false)];
+      render(<WorkflowGraphCanvasWithoutProvider {...baseProps} />);
+
+      fireEvent.keyDown(window, { code: 'BracketLeft', key: '[', metaKey: true, altKey: true });
+
+      expect(screen.getByTestId('workflowGraphCanvas')).not.toHaveAttribute(
+        'data-section-toggling'
+      );
+    });
+  });
+
+  it('offers no toggle when the caller gave none', () => {
+    render(<WorkflowGraphCanvasWithoutProvider {...baseProps} toolbar={<ToggleButton />} />);
+
+    // The button calls an undefined handler: nothing happens, and nothing is marked.
+    fireEvent.click(screen.getByTestId('toggleSection'));
+
+    expect(screen.getByTestId('workflowGraphCanvas')).not.toHaveAttribute('data-section-toggling');
+  });
+});
+
+describe('WorkflowGraphCanvas section marquee', () => {
+  const edit = {
+    onInsert: jest.fn(),
+    onEditStep: jest.fn(),
+    onDeleteNode: jest.fn(),
+  };
+
+  it('hints at Shift+drag when the editor can wrap steps in a section', () => {
+    render(
+      <WorkflowGraphCanvasWithoutProvider
+        {...baseProps}
+        edit={{ ...edit, onWrapInSection: jest.fn() }}
+      />
+    );
+
+    expect(screen.getByTestId('workflowGraphMarqueeCaption')).toHaveTextContent(
+      'Shift+drag to group steps into a section'
+    );
+  });
+
+  it('has no hint when the editor cannot wrap, or the canvas is read-only', () => {
+    const { unmount } = render(<WorkflowGraphCanvasWithoutProvider {...baseProps} edit={edit} />);
+    expect(screen.queryByTestId('workflowGraphMarqueeCaption')).not.toBeInTheDocument();
+    unmount();
+
+    render(<WorkflowGraphCanvasWithoutProvider {...baseProps} />);
+    expect(screen.queryByTestId('workflowGraphMarqueeCaption')).not.toBeInTheDocument();
   });
 });
 

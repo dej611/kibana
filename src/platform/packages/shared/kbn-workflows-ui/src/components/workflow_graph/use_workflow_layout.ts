@@ -11,7 +11,12 @@ import type { Edge, Node } from '@xyflow/react';
 import { Position } from '@xyflow/react';
 import { useMemo, useRef } from 'react';
 import useLatest from 'react-use/lib/useLatest';
-import { ExecutionStatus, getTriggerName, transformWorkflowToGraph } from '@kbn/workflows';
+import {
+  collectDescendantStepNames,
+  ExecutionStatus,
+  getTriggerName,
+  transformWorkflowToGraph,
+} from '@kbn/workflows';
 import type {
   HandleSide,
   LayoutDirection,
@@ -20,6 +25,7 @@ import type {
   WorkflowStepExecutionDto,
   WorkflowYaml,
 } from '@kbn/workflows';
+import { rollUpSectionStatus } from './roll_up_section_status';
 import { computeWorkflowLayout } from './workflow_layout_pipeline';
 import type { LayoutSnapshot } from './workflow_layout_pipeline';
 import { nodeLabel } from './workflow_node_data';
@@ -94,6 +100,19 @@ const computeLayoutKey = (transformed: TransformResult): string =>
     ...structureSignature(transformed.structure.items),
   ].join('\n');
 
+type PreLayoutNode = TransformResult['nodes'][number];
+
+/** A section frame is a transform container, but it renders with its own node type. */
+const getReactFlowNodeType = (n: PreLayoutNode): string =>
+  n.type === 'foreachGroup' && n.data.stepType === 'section' ? 'sectionGroup' : n.type;
+
+/** Every step under a section, expanded or collapsed; `undefined` for any other node. */
+const getSectionMembers = (n: PreLayoutNode): readonly string[] | undefined => {
+  if (n.type === 'trigger' || n.data.stepType !== 'section') return undefined;
+  if (n.type === 'step' && n.data.section) return n.data.section.memberStepNames;
+  return n.data.step ? collectDescendantStepNames(n.data.step) : [];
+};
+
 const HANDLE_SIDE_TO_POSITION: Record<HandleSide, Position> = {
   top: Position.Top,
   right: Position.Right,
@@ -109,6 +128,11 @@ interface UseWorkflowLayoutParams {
    */
   transformed?: TransformResult;
   stepExecutions?: WorkflowStepExecutionDto[];
+  /**
+   * Names of sections to render collapsed. Only used when the hook computes the transform
+   * itself; a caller that passes `transformed` has already applied it.
+   */
+  collapsedSections?: ReadonlySet<string>;
   /** Dagre rank direction: `'TB'` (default) or `'LR'`. */
   direction?: LayoutDirection;
   onPerfMark?: (name: 'transform_ms' | 'layout_ms', ms: number) => void;
@@ -133,6 +157,7 @@ export function useWorkflowLayout({
   workflow,
   transformed: transformedProp,
   stepExecutions,
+  collapsedSections,
   direction = 'TB',
   onPerfMark,
   onLayoutFailed,
@@ -147,15 +172,18 @@ export function useWorkflowLayout({
     if (transformedProp) return transformedProp;
     if (!workflow) return EMPTY_TRANSFORM;
     const t0 = performance.now();
-    const next = transformWorkflowToGraph(workflow, (triggerType) =>
-      getTriggerName(
-        triggerType,
-        services?.workflowsExtensions.getTriggerDefinition(triggerType)?.title
-      )
+    const next = transformWorkflowToGraph(
+      workflow,
+      (triggerType) =>
+        getTriggerName(
+          triggerType,
+          services?.workflowsExtensions.getTriggerDefinition(triggerType)?.title
+        ),
+      { collapsedSections }
     );
     onPerfMarkRef.current?.('transform_ms', performance.now() - t0);
     return next;
-  }, [transformedProp, workflow, onPerfMarkRef, services]);
+  }, [transformedProp, workflow, collapsedSections, onPerfMarkRef, services]);
 
   // Keyed on the layout inputs (not `transformed` identity) so edits that change
   // neither the topology nor an empty branch's label never retrigger dagre.
@@ -404,7 +432,7 @@ export function useWorkflowLayout({
         const parentId = innerNodeToGroupId.get(n.id);
         return {
           id: n.id,
-          type: n.type,
+          type: getReactFlowNodeType(n),
           position: { x: 0, y: 0 },
           data: n.data,
           ...(parentId ? { parentId, extent: 'parent' as const } : {}),
@@ -427,12 +455,21 @@ export function useWorkflowLayout({
 
       const label = nodeLabel(n);
       const explicitExec = stepExecutionMap?.[label ?? n.id] ?? stepExecutionMap?.[n.id];
-      const exec =
-        explicitExec ?? (n.type === 'trigger' ? syntheticTriggerExecution ?? undefined : undefined);
+      // A section has no execution of its own: show what its steps add up to.
+      const sectionMembers = getSectionMembers(n);
+      const sectionRollUp =
+        sectionMembers && stepExecutionMap
+          ? rollUpSectionStatus(sectionMembers, stepExecutionMap)
+          : undefined;
+      const triggerExec = n.type === 'trigger' ? syntheticTriggerExecution ?? undefined : undefined;
+      const sectionExec = sectionRollUp?.status
+        ? ({ status: sectionRollUp.status } as WorkflowStepExecutionDto)
+        : undefined;
+      const exec = explicitExec ?? triggerExec ?? sectionExec;
 
       return {
         id: n.id,
-        type: n.type,
+        type: getReactFlowNodeType(n),
         position,
         parentId,
         extent: parentId ? ('parent' as const) : undefined,
@@ -453,6 +490,7 @@ export function useWorkflowLayout({
         data: {
           ...n.data,
           stepExecution: exec,
+          ...(sectionRollUp ? { sectionProgress: sectionRollUp } : {}),
           ...(n.type === 'foreachGroup'
             ? { hasBodySteps: (innerNodeCountByGroupId.get(n.id) ?? 0) > 0 }
             : {}),

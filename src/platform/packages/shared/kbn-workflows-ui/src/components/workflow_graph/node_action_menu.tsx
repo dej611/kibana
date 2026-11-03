@@ -41,6 +41,14 @@ const NODE_MENU_INSIDE_TEST_SUBJS = [
   'workflowGraphNodeContextMenuAnchor',
 ] as const;
 
+/** One more action in a node's context menu. */
+export interface StepContextMenuItem {
+  label: string;
+  iconType: string;
+  onClick: () => void;
+  testSubj: string;
+}
+
 /** Edit / Delete context-menu panel shared by step nodes and container groups. */
 export function StepContextMenuPanel({
   editLabel,
@@ -49,6 +57,7 @@ export function StepContextMenuPanel({
   onDelete,
   editTestSubj,
   deleteTestSubj,
+  extraItems,
 }: {
   editLabel: string;
   deleteLabel: string;
@@ -56,6 +65,8 @@ export function StepContextMenuPanel({
   onDelete: () => void;
   editTestSubj: string;
   deleteTestSubj: string;
+  /** More actions, shown between Edit and Delete. */
+  extraItems?: readonly StepContextMenuItem[];
 }) {
   const { euiTheme } = useEuiTheme();
   return (
@@ -64,6 +75,16 @@ export function StepContextMenuPanel({
         <EuiContextMenuItem key="edit" icon="pencil" onClick={onEdit} data-test-subj={editTestSubj}>
           {editLabel}
         </EuiContextMenuItem>,
+        ...(extraItems ?? []).map((item) => (
+          <EuiContextMenuItem
+            key={item.testSubj}
+            icon={item.iconType}
+            onClick={item.onClick}
+            data-test-subj={item.testSubj}
+          >
+            {item.label}
+          </EuiContextMenuItem>
+        )),
         <EuiContextMenuItem
           key="delete"
           icon="trash"
@@ -125,12 +146,15 @@ export function NodeActionCluster({
   edit,
   menu,
   onMenuChange,
+  extraItems,
 }: {
   nodeId: string;
   kind: NodeKind;
   edit: WorkflowGraphEditActions;
   menu: NodeMenuState;
   onMenuChange: (next: NodeMenuState) => void;
+  /** More actions, shown between Edit and Delete. The menu closes before each runs. */
+  extraItems?: readonly StepContextMenuItem[];
 }) {
   const clusterRef = useRef<HTMLDivElement | null>(null);
   const isMenuOpen = menu.open;
@@ -166,6 +190,7 @@ export function NodeActionCluster({
       onDelete={run(() => edit.onDeleteNode(nodeId))}
       editTestSubj="workflowGraphNodeMenuEdit"
       deleteTestSubj="workflowGraphNodeMenuDelete"
+      extraItems={extraItems?.map((item) => ({ ...item, onClick: run(item.onClick) }))}
     />
   );
 

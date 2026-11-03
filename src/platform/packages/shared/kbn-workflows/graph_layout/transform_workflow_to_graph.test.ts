@@ -1491,3 +1491,227 @@ describe('transformWorkflowToGraph — structure', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 });
+
+describe('transformWorkflowToGraph — sections', () => {
+  const transform = (steps: unknown) =>
+    transformWorkflowToGraph(minimal({ steps: steps as WorkflowYaml['steps'] }));
+
+  const http = (name: string) => ({ name, type: 'http' });
+
+  it('renders a section as a group container holding its steps', () => {
+    const r = transform([
+      http('before'),
+      { name: 'middle', type: 'section', title: 'Middle', steps: [http('a'), http('b')] },
+      http('after'),
+    ]);
+
+    expect(r.foreachGroups.map((g) => g.id)).toEqual(['middle']);
+    expect(r.foreachGroups[0].innerNodes.map((n) => n.data.label)).toEqual(['a', 'b']);
+    expect(r.nodes.find((n) => n.id === 'middle')).toMatchObject({
+      type: 'foreachGroup',
+      data: { stepType: 'section' },
+    });
+    expect(r.nodeRefs.middle).toEqual({ kind: 'step', stepName: 'middle' });
+    // One edge in and one out, none across the boundary.
+    expect(r.edges).toContainEqual(expect.objectContaining({ source: 'before', target: 'middle' }));
+    expect(r.edges).toContainEqual(expect.objectContaining({ source: 'middle', target: 'after' }));
+    expect(r.edges.filter((e) => e.source === 'middle' || e.target === 'a')).toHaveLength(1);
+  });
+
+  it.each([
+    ['with `steps: []`', { name: 'later', type: 'section', steps: [] }],
+    ['without `steps`', { name: 'later', type: 'section' }],
+  ])('renders an empty section %s as an empty container', (_label, section) => {
+    const r = transform([http('before'), section, http('after')]);
+
+    expect(r.foreachGroups).toEqual([
+      expect.objectContaining({ id: 'later', innerNodes: [], innerEdges: [] }),
+    ]);
+    expect(r.edges).toContainEqual(expect.objectContaining({ source: 'before', target: 'later' }));
+    expect(r.edges).toContainEqual(expect.objectContaining({ source: 'later', target: 'after' }));
+  });
+
+  it('keeps a section inside an if branch, next to a sibling section', () => {
+    const r = transform([
+      {
+        name: 'gate',
+        type: 'if',
+        condition: 'x',
+        steps: [http('ok')],
+        else: [
+          { name: 'record', type: 'section', steps: [http('r1')] },
+          { name: 'notify', type: 'section', steps: [http('n1')] },
+        ],
+      },
+    ]);
+
+    expect(r.foreachGroups.map((g) => g.id).sort()).toEqual(['notify', 'record']);
+    expect(r.edges).toContainEqual(expect.objectContaining({ source: 'record', target: 'notify' }));
+    expect(r.edges).toContainEqual(expect.objectContaining({ source: 'gate', target: 'record' }));
+  });
+
+  describe('when collapsed', () => {
+    const collapsed = (steps: unknown, names: string[]) =>
+      transformWorkflowToGraph(minimal({ steps: steps as WorkflowYaml['steps'] }), undefined, {
+        collapsedSections: new Set(names),
+      });
+
+    it('renders the section as one step node with no body, and drops its members', () => {
+      const r = collapsed(
+        [
+          http('before'),
+          { name: 'middle', type: 'section', steps: [http('a'), http('b')] },
+          http('after'),
+        ],
+        ['middle']
+      );
+
+      expect(r.foreachGroups).toEqual([]);
+      expect(r.nodes.filter((n) => n.type !== 'trigger').map((n) => n.id)).toEqual([
+        'before',
+        'middle',
+        'after',
+      ]);
+      expect(r.nodes.find((n) => n.id === 'middle')).toMatchObject({
+        type: 'step',
+        style: { width: 300, height: 64 },
+        data: { stepType: 'section', section: { memberStepNames: ['a', 'b'] } },
+      });
+      // Members get no node refs, so they get no ports or selection either.
+      expect(Object.keys(r.nodeRefs).sort()).toEqual(['after', 'before', 'manual', 'middle']);
+      expect(r.nodeRefs.middle).toEqual({ kind: 'step', stepName: 'middle' });
+      expect(r.edges.map((e) => `${e.source}>${e.target}`)).toEqual([
+        'manual>before',
+        'before>middle',
+        'middle>after',
+      ]);
+      expect(r.structure?.items).toEqual([
+        { kind: 'step', id: 'before', lanes: [] },
+        { kind: 'step', id: 'middle', lanes: [] },
+        { kind: 'step', id: 'after', lanes: [] },
+      ]);
+    });
+
+    describe('size', () => {
+      const collapsedNode = (section: Record<string, unknown>) =>
+        collapsed([{ name: 'box', type: 'section', ...section }], ['box']).nodes.find(
+          (n) => n.id === 'box'
+        );
+
+      it('is a little taller than a step, the same width so lanes do not widen', () => {
+        expect(collapsedNode({ steps: [http('a')] })?.style).toEqual({ width: 300, height: 64 });
+        expect(collapsedNode({})?.style).toEqual({ width: 300, height: 64 });
+      });
+
+      it('has room for the description when there is one', () => {
+        expect(collapsedNode({ description: 'What this part does' })?.style).toEqual({
+          width: 300,
+          height: 104,
+        });
+      });
+
+      it.each([[''], ['   '], [undefined], [42]])(
+        'does not reserve room for a description that is %p',
+        (description) => {
+          expect(collapsedNode({ description })?.style.height).toBe(64);
+        }
+      );
+
+      it('does not change what a plain step measures', () => {
+        const r = collapsed([http('plain')], []);
+
+        expect(r.nodes.find((n) => n.id === 'plain')?.style).toEqual({ width: 300, height: 52 });
+      });
+    });
+
+    it('lists every descendant step as a member, including loop bodies and fallbacks', () => {
+      const r = collapsed(
+        [
+          {
+            name: 'group',
+            type: 'section',
+            steps: [
+              { name: 'loop', type: 'foreach', foreach: 'items', steps: [http('in_loop')] },
+              { ...http('risky'), 'on-failure': { fallback: [http('recover')] } },
+            ],
+          },
+        ],
+        ['group']
+      );
+
+      expect(r.nodes.find((n) => n.id === 'group')).toMatchObject({
+        data: {
+          section: { memberStepNames: ['loop', 'in_loop', 'risky', 'recover'] },
+        },
+      });
+      expect(r.foreachGroups).toEqual([]);
+    });
+
+    it('collapses an empty section to a node with no members', () => {
+      const r = collapsed([{ name: 'later', type: 'section' }], ['later']);
+
+      expect(r.nodes.find((n) => n.id === 'later')).toMatchObject({
+        type: 'step',
+        data: { section: { memberStepNames: [] } },
+      });
+    });
+
+    it('collapses only the named sections, and only sections', () => {
+      const r = collapsed(
+        [
+          { name: 'one', type: 'section', steps: [http('a')] },
+          { name: 'two', type: 'section', steps: [http('b')] },
+          { name: 'loop', type: 'foreach', foreach: 'items', steps: [http('c')] },
+        ],
+        ['one', 'loop']
+      );
+
+      expect(r.foreachGroups.map((g) => g.id).sort()).toEqual(['loop', 'two']);
+      expect(r.nodes.find((n) => n.id === 'one')).toMatchObject({ type: 'step' });
+    });
+
+    it('collapses a section inside an if branch, next to an expanded sibling', () => {
+      const r = collapsed(
+        [
+          {
+            name: 'gate',
+            type: 'if',
+            condition: 'x',
+            steps: [http('ok')],
+            else: [
+              { name: 'record', type: 'section', steps: [http('r1')] },
+              { name: 'notify', type: 'section', steps: [http('n1')] },
+            ],
+          },
+        ],
+        ['record']
+      );
+
+      expect(r.foreachGroups.map((g) => g.id)).toEqual(['notify']);
+      expect(r.edges).toContainEqual(
+        expect.objectContaining({ source: 'record', target: 'notify' })
+      );
+      expect(r.nodes.map((n) => n.id)).toContain('record');
+    });
+
+    it('is the same graph as expanded when nothing is collapsed', () => {
+      const steps = [{ name: 'middle', type: 'section', steps: [http('a')] }, http('after')];
+
+      expect(collapsed(steps, [])).toEqual(transform(steps));
+    });
+  });
+
+  it('models a section as a container in the structure', () => {
+    const r = transform([{ name: 'middle', type: 'section', steps: [http('a')] }, http('after')]);
+
+    expect(r.structure?.items).toEqual([
+      {
+        kind: 'container',
+        id: 'middle',
+        body: [{ kind: 'step', id: 'a', lanes: [] }],
+        lanes: [],
+      },
+      { kind: 'step', id: 'after', lanes: [] },
+    ]);
+  });
+});

@@ -154,6 +154,10 @@ interface YamlValidationResultParallelMode extends YamlValidationDiagnosticBase 
   owner: 'parallel-mode-validation';
 }
 
+interface YamlValidationResultSectionNesting extends YamlValidationDiagnosticBase {
+  owner: 'section-nesting-validation';
+}
+
 interface YamlValidationResultGraphBuild extends YamlValidationDiagnosticBase {
   owner: 'graph-build-validation';
 }
@@ -181,6 +185,7 @@ export const CUSTOM_YAML_VALIDATION_MARKER_OWNERS = [
   'esql-validation',
   'parallel-fan-out-validation',
   'parallel-mode-validation',
+  'section-nesting-validation',
   'graph-build-validation',
 ] as const;
 
@@ -210,6 +215,7 @@ export type YamlValidationDiagnostic =
   | YamlValidationResultEsql
   | YamlValidationResultParallelFanOut
   | YamlValidationResultParallelMode
+  | YamlValidationResultSectionNesting
   | YamlValidationResultGraphBuild;
 
 export type YamlValidationDecoration =

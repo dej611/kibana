@@ -145,3 +145,82 @@ export const generateWorkflow = (seed: number): WorkflowYaml => {
     steps: sequence(0, int(1, 4)),
   } as unknown as WorkflowYaml;
 };
+
+const SECTION_SEED_OFFSET = 7919;
+const SECTION_RUN_CHANCE = 0.3;
+const EMPTY_SECTION_CHANCE = 0.12;
+const SECTION_DESCRIPTION_CHANCE = 0.5;
+const MAX_SECTION_RUN = 3;
+
+const mapChildLists = (
+  step: GeneratedStep,
+  map: (steps: GeneratedStep[]) => GeneratedStep[]
+): GeneratedStep => {
+  const next: GeneratedStep = { ...step };
+  for (const key of ['steps', 'else', 'default']) {
+    if (Array.isArray(next[key])) next[key] = map(next[key] as GeneratedStep[]);
+  }
+  for (const key of ['branches', 'cases']) {
+    if (Array.isArray(next[key])) {
+      next[key] = (next[key] as Array<{ steps?: GeneratedStep[] }>).map((item) =>
+        item.steps ? { ...item, steps: map(item.steps) } : item
+      );
+    }
+  }
+  const onFailure = next['on-failure'] as { fallback?: GeneratedStep[] } | undefined;
+  if (onFailure?.fallback) {
+    next['on-failure'] = { ...onFailure, fallback: map(onFailure.fallback) };
+  }
+  return next;
+};
+
+/**
+ * `generateWorkflow(seed)` with random contiguous runs of steps wrapped in `section`
+ * steps, at any depth, plus the occasional empty section. Sections never nest, so
+ * nothing inside a section is wrapped again. The shapes of the plain generator are
+ * unchanged, which keeps the two corpora comparable seed by seed.
+ */
+export const generateSectionedWorkflow = (seed: number): WorkflowYaml => {
+  const workflow = generateWorkflow(seed) as unknown as { steps: GeneratedStep[] };
+  const rng = createRng(seed + SECTION_SEED_OFFSET);
+  let sectionCount = 0;
+  const nextSectionName = (): string => {
+    const name = `section_${sectionCount}`;
+    sectionCount += 1;
+    return name;
+  };
+
+  const process = (steps: GeneratedStep[], insideSection: boolean): GeneratedStep[] => {
+    const result: GeneratedStep[] = [];
+    let index = 0;
+    while (index < steps.length) {
+      const wrap = !insideSection && rng() < SECTION_RUN_CHANCE;
+      if (wrap) {
+        const length = Math.min(1 + Math.floor(rng() * MAX_SECTION_RUN), steps.length - index);
+        const run = steps.slice(index, index + length);
+        result.push({
+          name: nextSectionName(),
+          type: 'section',
+          // Half have a description, which a collapsed section makes room for.
+          ...(rng() < SECTION_DESCRIPTION_CHANCE ? { description: 'What this part is for' } : {}),
+          steps: run.map((step) => mapChildLists(step, (inner) => process(inner, true))),
+        });
+        index += length;
+      } else {
+        result.push(mapChildLists(steps[index], (inner) => process(inner, insideSection)));
+        index += 1;
+      }
+      if (!insideSection && index < steps.length && rng() < EMPTY_SECTION_CHANCE) {
+        result.push({
+          name: nextSectionName(),
+          type: 'section',
+          ...(rng() < SECTION_DESCRIPTION_CHANCE ? { description: 'Still to fill in' } : {}),
+          steps: [],
+        });
+      }
+    }
+    return result;
+  };
+
+  return { ...workflow, steps: process(workflow.steps, false) } as unknown as WorkflowYaml;
+};

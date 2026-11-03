@@ -43,6 +43,7 @@ describe('getStepIconType', () => {
     ['refresh', 'foreach'],
     ['refresh', 'while'],
     ['refresh', 'enter-while'],
+    ['grid', 'section'],
     ['list', 'foreach-iteration'],
     ['list', 'while-iteration'],
     ['controls', 'loop.break'],

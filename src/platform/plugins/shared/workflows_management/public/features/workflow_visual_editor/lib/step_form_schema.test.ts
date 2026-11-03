@@ -57,6 +57,18 @@ describe('step_form_schema', () => {
   });
 
   describe('getStepFormSchema', () => {
+    it('gives a section a title and a description, and nothing that would make it run', () => {
+      const schema = getStepFormSchema('section', connectors);
+
+      expect(schema).toBeDefined();
+      const byKey = Object.fromEntries(schema!.fields.map((f) => [f.key, f]));
+      expect(byKey.title).toMatchObject({ path: ['title'], required: false, kind: 'text' });
+      expect(byKey.description).toMatchObject({ path: ['description'], required: false });
+      expect(Object.keys(byKey)).not.toEqual(
+        expect.arrayContaining(['if', 'on-failure', 'timeout', 'foreach'])
+      );
+    });
+
     it('derives connector fields from paramsSchema under `with` plus connector-id', () => {
       const schema = getStepFormSchema('slack', connectors);
       expect(schema).toBeDefined();

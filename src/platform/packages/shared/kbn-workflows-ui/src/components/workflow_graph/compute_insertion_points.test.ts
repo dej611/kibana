@@ -195,6 +195,40 @@ describe('computeInsertionPoints', () => {
     });
   });
 
+  it.each([
+    ['an empty body', { name: 'group', type: 'section', steps: [] }],
+    ['no body', { name: 'group', type: 'section' }],
+  ])(
+    'gives a section a flow port but no branches.steps (%s), like a foreach',
+    (_label, section) => {
+      const workflow = wf([section, { name: 'after', type: 'console' }]);
+      const points = computeInsertionPoints(workflow, transformWorkflowToGraph(workflow));
+      const sectionPorts = points.byNodeId.get('group');
+
+      // The section's own ⊕ button handles body insertion, as for a foreach.
+      expect(sectionPorts?.branches).toBeUndefined();
+      expect(sectionPorts?.step).toMatchObject({
+        sourceNodeId: 'group',
+        stepName: 'group',
+        isTerminal: false,
+      });
+    }
+  );
+
+  it('keeps ports for the steps inside a section', () => {
+    const workflow = wf([
+      { name: 'group', type: 'section', steps: [{ name: 'inner', type: 'console' }] },
+    ]);
+    const points = computeInsertionPoints(workflow, transformWorkflowToGraph(workflow));
+
+    expect(points.byNodeId.get('group')?.branches).toBeUndefined();
+    expect(points.byNodeId.get('inner')?.step).toMatchObject({
+      sourceNodeId: 'inner',
+      stepName: 'inner',
+      isTerminal: true,
+    });
+  });
+
   it('gives foreach nodes a flow port but no branches.steps (non-empty body), inner step keeps its port', () => {
     const workflow = wf([
       {

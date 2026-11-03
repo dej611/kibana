@@ -16,6 +16,7 @@ const colors = {
   dangerText: 'darkred',
   accent: 'pink',
   primary: 'blue',
+  section: 'violet',
 };
 
 describe('getMinimapNodeColor', () => {
@@ -53,8 +54,40 @@ describe('getMinimapNodeColor', () => {
     expect(getMinimapNodeColor({}, colors)).toBe('blue');
   });
 
+  describe('a collapsed section', () => {
+    const collapsed = { type: 'step', data: { stepType: 'section' } };
+
+    it('has its own colour, so it stands out from the steps around it', () => {
+      expect(getMinimapNodeColor(collapsed, colors)).toBe('violet');
+      expect(getMinimapNodeColor({ data: { stepType: 'http' } }, colors)).toBe('blue');
+    });
+
+    it('still shows how its run went', () => {
+      expect(
+        getMinimapNodeColor(
+          { ...collapsed, data: { stepType: 'section', stepExecution: { status: 'failed' } } },
+          colors
+        )
+      ).toBe('red');
+      expect(
+        getMinimapNodeColor(
+          { ...collapsed, data: { stepType: 'section', stepExecution: { status: 'completed' } } },
+          colors
+        )
+      ).toBe('green');
+    });
+  });
+
   describe('loop containers', () => {
     const container = { type: 'foreachGroup' };
+
+    it('tints a section frame like a container, in the colour of sections, whatever its status', () => {
+      const section = { type: 'sectionGroup', data: { stepExecution: { status: 'failed' } } };
+
+      expect(getMinimapNodeColor(section, colors, 1)).toBe(transparentize('violet', 0.2));
+      expect(getMinimapNodeColor(section, colors, 2)).toBe(transparentize('violet', 0.35));
+      expect(getMinimapNodeColor(section, colors, 3)).toBe('violet');
+    });
 
     it('tints by nesting depth, with the outermost lightest', () => {
       expect(getMinimapNodeColor(container, colors, 1)).toBe(transparentize('blue', 0.2));

@@ -32,6 +32,10 @@ const theme = {
     backgroundBaseDanger: 'danger-bg',
     borderBaseDanger: 'danger-border',
     textDanger: 'danger-text',
+    backgroundLightText: 'section-tint',
+    backgroundBasePlain: 'section-bg',
+    borderBasePlain: 'section-border',
+    borderStrongText: 'section-strong',
     success: 'success-color',
     danger: 'danger-color',
   },
@@ -143,5 +147,28 @@ describe('resolveNodeChipStyle', () => {
       expect(chip.border).toBe('success-color');
       expect(chip.iconColor).toBe('neutral-text');
     });
+  });
+});
+
+describe('resolveNodeChipStyle — section', () => {
+  it('gives a section its own colours, not those of the flow control steps it is listed with', () => {
+    const section = resolveNodeChipStyle(theme, 'section', false, idle);
+
+    expect(section).toMatchObject({
+      background: 'section-bg',
+      border: 'section-border',
+      iconColor: 'neutral-text',
+      isBrand: false,
+    });
+    expect(section).not.toEqual(resolveNodeChipStyle(theme, 'foreach', false, idle));
+  });
+
+  it('is recoloured by a run like any other step, so status stays readable', () => {
+    expect(
+      resolveNodeChipStyle(theme, 'section', false, { isSuccess: true, isFailed: false })
+    ).toMatchObject({ background: 'success-bg', iconColor: 'success-color' });
+    expect(
+      resolveNodeChipStyle(theme, 'section', false, { isSuccess: false, isFailed: true })
+    ).toMatchObject({ background: 'danger-bg', iconColor: 'danger-color' });
   });
 });
